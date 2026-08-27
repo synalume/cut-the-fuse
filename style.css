@@ -1,0 +1,333 @@
+/* Cut the Fuse — retro off-white note-paper aesthetic (from prototype) */
+
+/* Self-hosted 1930s poster fonts (local so the game works offline on portals). */
+@font-face {
+    font-family: 'Luckiest Guy';
+    font-style: normal;
+    font-weight: 400;
+    font-display: swap;
+    src: url('assets/fonts/luckiest-guy-latin.woff2') format('woff2');
+}
+@font-face {
+    font-family: 'Baloo 2';
+    font-style: normal;
+    font-weight: 400 800; /* variable font */
+    font-display: swap;
+    src: url('assets/fonts/baloo-2-latin.woff2') format('woff2');
+}
+
+body, html {
+    margin: 0; padding: 0; width: 100%; height: 100%;
+    background-color: #F2E8D0; /* Aged off-white paper fallback */
+    background-image: url('assets/ui/ui-bg-paper.png');
+    background-repeat: repeat;
+    background-size: 1024px 1024px; /* tileable vintage paper */
+    overflow: hidden;
+    font-family: 'Baloo 2', 'Luckiest Guy', 'Courier New', Courier, monospace;
+    touch-action: none; /* Prevents mobile scrolling so we can swipe! */
+    -webkit-user-select: none; user-select: none;
+}
+#game-container { position: relative; width: 100%; height: 100%; }
+canvas { display: block; position: absolute; z-index: 10; }
+
+/* Vintage film grain + scratches over the whole game, under the UI chrome.
+   soft-light keeps the texture without darkening the paper. */
+#film-overlay {
+    position: absolute; inset: 0; z-index: 15;
+    pointer-events: none;
+    background-image:
+        url('assets/ui/ui-bg-scratches.png'),
+        url('assets/ui/ui-bg-grain.png');
+    background-repeat: repeat;
+    background-size: 1024px 1024px, 512px 512px;
+    mix-blend-mode: soft-light;
+    opacity: 0.65;
+}
+
+#ui-layer {
+    position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+    pointer-events: none; z-index: 20;
+    padding: 20px; box-sizing: border-box;
+}
+.header {
+    display: flex; justify-content: space-between; align-items: center;
+    color: #1c1917; font-size: 1.5rem; font-weight: bold;
+    font-family: 'Luckiest Guy', 'Baloo 2', 'Courier New', Courier, monospace;
+}
+#level-label { text-transform: uppercase; }
+#star-display {
+    color: #d97706;
+    display: inline-flex; align-items: center; gap: 6px;
+    line-height: 1;
+}
+#star-display::before {
+    content: ""; display: inline-block;
+    width: 22px; height: 22px;
+    margin-top: -6px; /* Luckiest Guy numerals sit high; lift the icon to match */
+    background: url('assets/ui/ui-icon-star.png') no-repeat center / contain;
+}
+#snips-counter {
+    display: inline-flex; align-items: center; gap: 6px;
+    line-height: 1;
+}
+#snips-counter::before {
+    content: ""; display: inline-block;
+    width: 20px; height: 20px;
+    margin-top: -5px; /* Luckiest Guy numerals sit high; lift the icon to match */
+    background: url('assets/ui/ui-icon-scissors.png') no-repeat center / contain;
+}
+
+.controls {
+    position: absolute; bottom: 20px; right: 20px;
+    display: flex; gap: 10px; pointer-events: auto;
+}
+.controls button {
+    position: relative;
+    background: #f5f5f4; border: 3px solid #1c1917; color: #1c1917;
+    width: 56px; height: 56px; border-radius: 10px; font-size: 1.2rem;
+    cursor: pointer; font-weight: bold;
+    box-shadow: 4px 4px 0px rgba(0,0,0,0.2);
+    display: flex; justify-content: center; align-items: center;
+    padding: 0;
+}
+.controls button img {
+    width: 30px; height: 30px; object-fit: contain;
+    pointer-events: none;
+}
+.controls button:hover { background: #e7e5e4; transform: translateY(-2px); }
+.controls button.active { background: #fef08a; }
+/* Muted speaker: dimmed + red slash badge */
+#btn-mute.muted img { filter: grayscale(0.85) brightness(0.55); }
+#btn-mute.muted::after {
+    content: "✕";
+    position: absolute; top: 6px; right: 8px;
+    font-size: 1rem; line-height: 1; color: #ef4444; font-weight: bold;
+}
+
+/* Modals at bottom, high z-index to prevent canvas blocking clicks */
+.message-box {
+    position: absolute; bottom: 40px; top: auto; left: 50%;
+    transform: translateX(-50%);
+    background-image: url('assets/ui/ui-card-modal.png');
+    background-repeat: no-repeat;
+    background-size: 100% 100%;
+    padding: 40px 52px;
+    border-radius: 0;
+    border: 0;
+    box-sizing: border-box; /* width/max-width include padding so modals never overflow small screens */
+    text-align: center; color: #2B1F14;
+    pointer-events: auto; display: none;
+    box-shadow: none;
+    z-index: 100;
+    max-width: 92vw;
+}
+.message-box h1 { margin: 0 0 10px 0; font-size: 2.2rem; text-transform: uppercase; font-family: 'Luckiest Guy', 'Baloo 2', 'Courier New', Courier, monospace; letter-spacing: 0.03em; }
+.message-box p { font-size: 1.1rem; }
+/* Direct-child buttons get the frame art. Scoped with > so inner buttons
+   (e.g. the 60 level-select cells, which are <button> too) keep their own look.
+   Frame is drawn in CSS (cream card + ink border + hard offset shadow) so it
+   matches the mute/hint/zoom buttons exactly — no PNG corners to show through. */
+.message-box > button {
+    position: relative;
+    background: #F6ECD1;              /* cream card fill */
+    border: 4px solid #2B1F14;        /* ink outline */
+    border-radius: 14px;
+    box-shadow: 5px 5px 0 rgba(43, 31, 20, 0.85); /* hard offset shadow */
+    outline: none;
+    min-width: 220px; height: 96px;
+    padding: 0 34px;
+    font-size: 1.25rem;
+    cursor: pointer; font-weight: bold; color: #2B1F14;
+    font-family: 'Luckiest Guy', 'Baloo 2', 'Courier New', Courier, monospace;
+    letter-spacing: 0.04em;
+    margin: 8px 6px;
+    display: inline-flex; align-items: center; justify-content: center;
+    text-shadow: 1px 1px 0 rgba(255, 244, 214, 0.35);
+    transition: transform 0.08s ease, box-shadow 0.08s ease;
+}
+.message-box > button img {
+    width: 30px; height: 30px; object-fit: contain;
+    margin-right: 10px; pointer-events: none;
+}
+/* One frame for all states — hover lifts, press pushes down. Transform only:
+   applying a filter here makes Chromium rasterize transparent PNG corners
+   as a white box. */
+.message-box > button:hover {
+    transform: translateY(-2px) scale(1.03);
+    box-shadow: 7px 7px 0 rgba(43, 31, 20, 0.85);
+}
+.message-box > button:active {
+    transform: translateY(4px) scale(0.99);
+    box-shadow: 2px 2px 0 rgba(43, 31, 20, 0.85);
+}
+
+/* Bottom action modals (lose/win): the button IS the modal — no card-in-card. */
+#modal-lose,
+#modal-win {
+    background-image: none;
+    background: none;
+    border: 0;
+    box-shadow: none;
+    padding: 20px 24px;
+}
+
+.win-stars { display: flex; justify-content: center; gap: 12px; margin: 4px 0 16px; }
+.win-stars img { width: 46px; height: 46px; object-fit: contain; }
+.win-stars img.dim { filter: grayscale(1) brightness(0.7); opacity: 0.4; }
+
+/* Tutorial overlay */
+#tutorial-overlay {
+    position: absolute; inset: 0; z-index: 90;
+    display: none; justify-content: center; align-items: flex-start;
+    pointer-events: none;
+    padding-top: 15vh;
+}
+#tutorial-box {
+    background-image: url('assets/ui/ui-card-modal.png');
+    background-repeat: no-repeat;
+    background-size: 100% 100%;
+    border: 0; border-radius: 0; box-shadow: none;
+    padding: 30px 42px; text-align: center; color: #2B1F14;
+    pointer-events: auto; max-width: 360px;
+}
+#tutorial-text { margin: 0 0 12px; font-size: 1.05rem; line-height: 1.35; }
+#tutorial-next {
+    background: #F6ECD1;
+    border: 4px solid #2B1F14;
+    border-radius: 12px;
+    box-shadow: 4px 4px 0 rgba(43, 31, 20, 0.85);
+    color: #2B1F14; font-family: 'Luckiest Guy', 'Baloo 2', 'Courier New', Courier, monospace;
+    font-size: 1.1rem; font-weight: bold; padding: 0 26px;
+    min-width: 150px; height: 62px; cursor: pointer;
+    transition: transform 0.08s ease, box-shadow 0.08s ease;
+}
+#tutorial-next:hover { transform: translateY(-2px) scale(1.03); box-shadow: 6px 6px 0 rgba(43, 31, 20, 0.85); }
+#tutorial-next:active { transform: translateY(3px) scale(0.99); box-shadow: 1px 1px 0 rgba(43, 31, 20, 0.85); }
+
+/* Skin select / level select / DDA: tall or multi-row dialogs keep a plain
+   cream card so the frame art isn't stretched. */
+.message-box.skins,
+.message-box.level-select,
+#modal-dda {
+    box-sizing: border-box;
+    background-image: none;
+    background-color: #f6ecd1;
+    border: 6px solid #1c1917;
+    border-radius: 20px;
+    box-shadow: 10px 10px 0px rgba(0,0,0,0.3);
+}
+.message-box.skins { width: min(92vw, 520px); }
+#skin-grid { display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; margin: 12px 0; }
+.skin-card {
+    width: 110px; border: 3px solid #1c1917; border-radius: 12px;
+    background: #f5f5f4; padding: 8px; cursor: pointer; text-align: center;
+    box-sizing: border-box;
+}
+.skin-card img { width: 60px; height: 60px; object-fit: contain; }
+.skin-card.locked { opacity: 0.35; cursor: not-allowed; }
+.skin-card.selected { background: #fef08a; box-shadow: 0 0 0 3px #d97706; }
+.skin-card .cost { font-size: 0.8rem; color: #d97706; font-weight: bold; }
+
+/* Level selector */
+#level-label {
+    cursor: pointer;
+    pointer-events: auto;
+    padding: 4px 8px;
+    margin: -4px -8px;
+}
+#level-label:hover { text-decoration: underline; }
+#star-display { pointer-events: auto; }
+.message-box.level-select {
+    top: 50%; left: 50%; bottom: auto;
+    transform: translate(-50%, -50%);
+    width: min(94vw, 760px);
+    max-height: 86vh;
+    padding: 20px 24px;
+    display: none; flex-direction: column; align-items: center;
+}
+.message-box.level-select h1 { font-size: 1.8rem; }
+#level-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(64px, 1fr));
+    gap: 8px;
+    width: 100%;
+    max-height: 56vh;
+    overflow-y: auto;
+    padding: 4px;
+    margin: 12px 0;
+    box-sizing: border-box;
+}
+.level-cell {
+    border: 3px solid #1c1917; border-radius: 10px;
+    background: #f5f5f4; color: #1c1917;
+    font-family: inherit; cursor: pointer;
+    padding: 6px 2px; text-align: center;
+    display: flex; flex-direction: column; gap: 2px;
+    align-items: center;
+    box-sizing: border-box;
+}
+.level-cell:hover:not(.locked) { background: #e7e5e4; transform: translateY(-1px); }
+.level-cell .num { font-size: 1.05rem; font-weight: bold; line-height: 1; font-family: 'Luckiest Guy', 'Baloo 2', 'Courier New', Courier, monospace; }
+.level-cell .stars { font-size: 0.7rem; color: #d97706; letter-spacing: 1px; line-height: 1; }
+.level-cell.current { background: #fef08a; box-shadow: 0 0 0 3px #d97706; }
+.level-cell.locked { opacity: 0.45; cursor: not-allowed; }
+.level-cell.locked .stars { visibility: hidden; }
+
+/* ---------------------------------------------------------------------------
+   Mobile / short-screen responsive passes.
+   Small phones (<= 480px wide) and landscape phones (short height) get more
+   compact chrome so every button, modal, and the puzzle stay on screen.
+--------------------------------------------------------------------------- */
+@media (max-width: 480px) {
+    .message-box {
+        padding: 24px 20px;
+        max-width: 94vw;
+    }
+    .message-box > button {
+        min-width: 0;
+        width: min(78vw, 300px);
+        height: 76px;
+        padding: 0 22px;
+        font-size: 1.05rem;
+    }
+    #modal-lose,
+    #modal-win {
+        padding: 14px 18px;
+    }
+    .message-box.skins { width: min(92vw, 520px); }
+    .header { font-size: 1.15rem; }
+    .controls { bottom: 14px; right: 14px; gap: 8px; }
+    .controls button { width: 48px; height: 48px; }
+    .controls button img { width: 26px; height: 26px; }
+    .win-stars img { width: 38px; height: 38px; }
+    .message-box.level-select h1 { font-size: 1.4rem; }
+    #level-grid { max-height: 52vh; }
+    .skin-card { width: 96px; }
+    #tutorial-box { max-width: 92vw; padding: 22px 26px; }
+}
+
+/* Landscape phones: height is the scarce dimension. Compact the tall dialogs
+   so DDA/level-select never push off the top or bottom. */
+@media (max-height: 480px) and (orientation: landscape) {    .message-box > button {
+        height: 64px;
+        font-size: 1rem;
+    }
+    #modal-dda {
+        max-height: 92vh;
+        overflow-y: auto;
+        padding: 16px 22px;
+    }
+    #modal-dda h1 { font-size: 1.5rem; margin: 0 0 6px; }
+    #modal-dda p { font-size: 0.95rem; margin: 0 0 8px; }
+    .message-box.level-select { max-height: 94vh; }
+    #level-grid { max-height: 62vh; }
+    .win-stars { gap: 8px; margin: 2px 0 10px; }
+    #modal-lose, #modal-win { padding: 10px 16px; }
+}
+
+/* Hide the corner control buttons while any modal / tutorial is open, so they
+   never peek out from under a modal on small screens. */
+#game-container:has(.message-box:not([style*="display: none"])) .controls,
+#game-container:has(#tutorial-overlay[style*="flex"]) .controls {
+    display: none;
+}

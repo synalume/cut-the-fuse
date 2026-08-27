@@ -1,0 +1,112 @@
+<!DOCTYPE html><html><head><meta charset="utf-8">
+<title>Cut the Fuse — audio cue review</title>
+<style>
+  body { font-family: -apple-system, system-ui, sans-serif; max-width: 760px; margin: 24px auto; padding: 0 16px; background: #f5f2ec; color: #222; }
+  h1 { font-size: 20px; letter-spacing: 0.05em; text-transform: uppercase; }
+  .cue { border: 2px solid #ddd; background: #fffdf8; border-radius: 8px; padding: 14px 16px; margin: 14px 0; }
+  h2 { margin: 0 0 4px; font-size: 16px; display: flex; gap: 10px; align-items: center; }
+  .status { font-size: 11px; color: #8a6d3b; background: #fcf3dc; padding: 2px 8px; border-radius: 10px; }
+  .status.ok { color: #276749; background: #e2f3ea; }
+  .role { color: #666; font-size: 13px; margin: 0 0 10px; }
+  .row { display: flex; align-items: center; gap: 10px; margin: 6px 0; flex-wrap: wrap; }
+  .row span { width: 74px; font-size: 12px; color: #444; font-weight: 600; }
+  .row span.baked { color: #276749; }
+  .row audio { height: 30px; }
+  .row code { font-size: 11px; color: #888; }
+  .muted { color: #999; font-size: 12px; }
+</style></head><body>
+<h1>Cut the Fuse — audio cue review</h1>
+<p>Click play on any take. Once you approve a cue, bake + wire it:
+<code>node gen-audio/gen-mmaudio.mjs process &lt;cue&gt;</code> then <code>node gen-audio/gen-mmaudio.mjs wire &lt;cue&gt;</code></p>
+<section class="cue">
+        <h2>ignite <span class="status ok">✓ APPROVED</span></h2>
+        <p class="role">Matchstick striking at ignition — plays the moment a spark starts burning</p>
+        <div class="row"><span>ignite_v1</span>
+                <audio controls preload="none" src="/audio/mmaudio_staging/ignite/ignite_v1.mp3"></audio>
+                <code>mmaudio_staging/ignite/ignite_v1.mp3</code></div>
+<div class="row"><span>ignite_v2</span>
+                <audio controls preload="none" src="/audio/mmaudio_staging/ignite/ignite_v2.mp3"></audio>
+                <code>mmaudio_staging/ignite/ignite_v2.mp3</code></div>
+<div class="row"><span>ignite_v3</span>
+                <audio controls preload="none" src="/audio/mmaudio_staging/ignite/ignite_v3.mp3"></audio>
+                <code>mmaudio_staging/ignite/ignite_v3.mp3</code></div>
+        <div class="row"><span class="baked">BAKED</span>
+                <audio controls preload="none" src="/audio/samples/baked/ignite.mp3"></audio>
+                <code>samples/baked/ignite.mp3</code></div>
+      </section>
+<section class="cue">
+        <h2>snip <span class="status ok">✓ APPROVED</span></h2>
+        <p class="role">Razor shears cutting a fuse — the core feedback for every snip</p>
+        <div class="row"><span>snip_v1</span>
+                <audio controls preload="none" src="/audio/mmaudio_staging/snip/snip_v1.mp3"></audio>
+                <code>mmaudio_staging/snip/snip_v1.mp3</code></div>
+<div class="row"><span>snip_v2</span>
+                <audio controls preload="none" src="/audio/mmaudio_staging/snip/snip_v2.mp3"></audio>
+                <code>mmaudio_staging/snip/snip_v2.mp3</code></div>
+<div class="row"><span>snip_v3</span>
+                <audio controls preload="none" src="/audio/mmaudio_staging/snip/snip_v3.mp3"></audio>
+                <code>mmaudio_staging/snip/snip_v3.mp3</code></div>
+        <div class="row"><span class="baked">BAKED</span>
+                <audio controls preload="none" src="/audio/samples/baked/snip.mp3"></audio>
+                <code>samples/baked/snip.mp3</code></div>
+      </section>
+<section class="cue">
+        <h2>dud <span class="status ok">✓ APPROVED</span></h2>
+        <p class="role">Spark snuffed out in a cut gap — a sad fizzle</p>
+        <div class="row"><span>dud_v1</span>
+                <audio controls preload="none" src="/audio/mmaudio_staging/dud/dud_v1.mp3"></audio>
+                <code>mmaudio_staging/dud/dud_v1.mp3</code></div>
+<div class="row"><span>dud_v2</span>
+                <audio controls preload="none" src="/audio/mmaudio_staging/dud/dud_v2.mp3"></audio>
+                <code>mmaudio_staging/dud/dud_v2.mp3</code></div>
+<div class="row"><span>dud_v3</span>
+                <audio controls preload="none" src="/audio/mmaudio_staging/dud/dud_v3.mp3"></audio>
+                <code>mmaudio_staging/dud/dud_v3.mp3</code></div>
+        <div class="row"><span class="baked">BAKED</span>
+                <audio controls preload="none" src="/audio/samples/baked/dud.mp3"></audio>
+                <code>samples/baked/dud.mp3</code></div>
+      </section>
+<section class="cue">
+        <h2>blast <span class="status ok">✓ APPROVED</span></h2>
+        <p class="role">Bomb detonation on failure — big but cartoonish</p>
+        <div class="row"><span>blast_v1</span>
+                <audio controls preload="none" src="/audio/mmaudio_staging/blast/blast_v1.mp3"></audio>
+                <code>mmaudio_staging/blast/blast_v1.mp3</code></div>
+<div class="row"><span>blast_v2</span>
+                <audio controls preload="none" src="/audio/mmaudio_staging/blast/blast_v2.mp3"></audio>
+                <code>mmaudio_staging/blast/blast_v2.mp3</code></div>
+<div class="row"><span>blast_v3</span>
+                <audio controls preload="none" src="/audio/mmaudio_staging/blast/blast_v3.mp3"></audio>
+                <code>mmaudio_staging/blast/blast_v3.mp3</code></div>
+        <div class="row"><span class="baked">BAKED</span>
+                <audio controls preload="none" src="/audio/samples/baked/blast.mp3"></audio>
+                <code>samples/baked/blast.mp3</code></div>
+      </section>
+<section class="cue">
+        <h2>win_star <span class="status ok">✓ APPROVED</span></h2>
+        <p class="role">Coin ping as each star lights in the win modal — ascending pitch per star</p>
+        <div class="muted">no takes yet — generate with <code>node gen-mmaudio.mjs win_star</code></div>
+        <div class="row"><span class="baked">BAKED</span>
+                <audio controls preload="none" src="/audio/samples/baked/win_star.mp3"></audio>
+                <code>samples/baked/win_star.mp3</code></div>
+      </section>
+<section class="cue">
+        <h2>wick_crackle <span class="status ok">✓ APPROVED</span></h2>
+        <p class="role">Fuse wick burning bed — plays while any spark is travelling</p>
+        <div class="row"><span>wick_crackle_v1</span>
+                <audio controls preload="none" src="/audio/mmaudio_staging/wick_crackle/wick_crackle_v1.mp3"></audio>
+                <code>mmaudio_staging/wick_crackle/wick_crackle_v1.mp3</code></div>
+<div class="row"><span>wick_crackle_v2</span>
+                <audio controls preload="none" src="/audio/mmaudio_staging/wick_crackle/wick_crackle_v2.mp3"></audio>
+                <code>mmaudio_staging/wick_crackle/wick_crackle_v2.mp3</code></div>
+<div class="row"><span>wick_crackle_v3</span>
+                <audio controls preload="none" src="/audio/mmaudio_staging/wick_crackle/wick_crackle_v3.mp3"></audio>
+                <code>mmaudio_staging/wick_crackle/wick_crackle_v3.mp3</code></div>
+        <div class="row"><span class="baked">BAKED</span>
+                <audio controls preload="none" src="/audio/samples/baked/wick_crackle.mp3"></audio>
+                <code>samples/baked/wick_crackle.mp3</code></div>
+<div class="row"><span class="baked">BAKED</span>
+                <audio controls preload="none" src="/audio/samples/baked/wick_crackle.wav"></audio>
+                <code>samples/baked/wick_crackle.wav</code></div>
+      </section>
+</body></html>

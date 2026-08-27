@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<!--
+  ============================================================================
+  UI ASSET PROMPTS - copy a full prompt line below into Gemini (Nano Banana),
+  cut out the background if needed, then save as assets/<file>.
+  Same workflow as tools/art-queue for the bomb/matchstick art.
+  ============================================================================
+
+  ---- STYLE LOCK (paste onto the end of every prompt below) ----
+  1930s rubber-hose cartoon style, Fleischer Studios animation cel, thick
+  hand-inked outline in warm dark brown #2B1F14, flat vintage cel colors,
+  no gradients, no photo texture, no text, no letters, no watermark,
+  centered, filling most of the frame, transparent background, PNG
+
+  ---- BUTTON FRAME (draw the text with Luckiest Guy in code, so keep
+       the frame art text-free) ----
+  ui-btn.png:
+  Chunky rounded rectangle game button frame, cream #F6ECD1 card fill, solid
+  hard offset drop shadow in warm dark brown #2B1F14 slightly below and right,
+  thin lighter highlight along the top-left inner edge, slightly darker band
+  along the bottom inside edge, [STYLE LOCK]
+
+  ui-btn-hover.png:
+  Same chunky rounded rectangle game button frame as normal state but HOVER
+  state, button lifted with a soft pale-yellow glow behind it, outline slightly
+  thicker, [STYLE LOCK]
+
+  ui-btn-pressed.png:
+  Same chunky rounded rectangle game button frame but PRESSED state, button
+  pushed flat down so the offset shadow disappears under the card, fill
+  slightly darker, outline thicker, [STYLE LOCK]
+
+  ---- ICONS (flat line-art, one object each) ----
+  ui-icon-unmute.png:
+  Tiny vintage gramophone horn speaker with three curved sound waves, [STYLE LOCK]
+
+  ui-icon-mute.png:
+  Tiny vintage gramophone horn speaker with a bold red X slash through it,
+  [STYLE LOCK]
+
+  ui-icon-hint.png:
+  Classic cartoon lightbulb with short radial rays and a small exclamation
+  mark inside, [STYLE LOCK]
+
+  ui-icon-zoom-in.png:
+  Vintage magnifying glass with a chunky plus sign inside the lens, [STYLE LOCK]
+
+  ui-icon-zoom-out.png:
+  Vintage magnifying glass with a chunky minus sign inside the lens, [STYLE LOCK]
+
+  ui-icon-retry.png:
+  Chubby circular arrow looping clockwise, [STYLE LOCK]
+
+  ui-icon-next.png:
+  Right-pointing cartoon hand with a pointing index finger and three motion
+  lines behind it, [STYLE LOCK]
+
+  ui-icon-scissors.png:
+  Vintage tailor scissors with round finger loops, slightly open, [STYLE LOCK]
+
+  ui-icon-star.png:
+  Chunky five-pointed star with a small sparkle highlight on the top facet,
+  [STYLE LOCK]
+
+  ---- BACKGROUND LAYERS (keep the off-white vintage paper look) ----
+  ui-bg-paper.png (512x512, seamless tile):
+  Seamless tileable aged off-white paper texture #F2E8D0 with subtle hand-painted
+  watercolor mottle, faint warm cream and beige blotches at very low contrast,
+  gentle worn fibers, flat and uniform overall brightness, no vignette, no
+  borders, tileable seamless pattern filling the whole frame, PNG, 512x512
+
+  ui-bg-grain.png (256x256, seamless tile):
+  Seamless tileable fine black-and-white film grain noise texture, uniform
+  fine grain, subtle, flat, tileable seamless pattern filling the whole frame,
+  PNG, 256x256
+
+  ui-bg-scratches.png (seamless tile, transparent):
+  Vintage film damage overlay on a transparent background, a few very fine
+  vertical scratches and tiny dust specks near the edges, very low opacity,
+  subtle, tileable seamless pattern, PNG
+
+  ---- OPTIONAL: POPUP CARD FRAME (for win / retry / level-select modals) ----
+  ui-card-modal.png:
+  Chunky rounded rectangle game UI card frame for a popup dialog, cream
+  #F6ECD1 card fill, solid hard offset drop shadow in warm dark brown #2B1F14,
+  thin highlight along the top-left inner edge, [STYLE LOCK]
+-->
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Cut the Fuse: Bomb Puzzle</title>
+    <link rel="stylesheet" href="style.css">
+    <!-- YouTube Playables SDK — stripped in Playgama / Poki / portal builds -->
+    <script src="https://www.youtube.com/game_api/v1"></script>
+</head>
+<body>
+
+<div id="game-container">
+    <canvas id="game-canvas"></canvas>
+    <!-- Vintage film grain + scratches layered over the game, under the UI -->
+    <div id="film-overlay" aria-hidden="true"></div>
+
+    <div id="ui-layer">
+        <div class="header">
+            <div id="level-label" title="Level Select">LEVEL 1 ▾</div>
+            <div id="star-display">★ 0</div>
+            <div id="snips-counter">✂️ SNIPS: 2</div>
+        </div>
+        <div class="controls">
+            <button id="btn-mute" title="Mute"><img src="assets/ui/ui-icon-mute.png" alt="Mute"></button>
+            <button id="btn-hint" title="Toggle X-Ray Hint"><img src="assets/ui/ui-icon-hint.png" alt="Hint"></button>
+            <button id="btn-zoom-out" title="Zoom Out"><img src="assets/ui/ui-icon-zoom-out.png" alt="Zoom out"></button>
+            <button id="btn-zoom-in" title="Zoom In"><img src="assets/ui/ui-icon-zoom-in.png" alt="Zoom in"></button>
+        </div>
+    </div>
+
+    <!-- Tutorial overlay (driven by level.tutorial) -->
+    <div id="tutorial-overlay">
+        <div id="tutorial-box">
+            <p id="tutorial-text"></p>
+            <button id="tutorial-next">OK</button>
+        </div>
+    </div>
+
+    <!-- Modals -->
+    <div id="modal-lose" class="message-box">
+        <button id="btn-retry"><img src="assets/ui/ui-icon-retry.png" alt="">TRY AGAIN</button>
+    </div>
+
+    <div id="modal-win" class="message-box">
+        <div id="win-stars" class="win-stars"></div>
+        <button id="btn-next"><img src="assets/ui/ui-icon-next.png" alt="">NEXT LEVEL</button>
+    </div>
+
+    <!-- DDA: offered after repeated fails -->
+    <div id="modal-dda" class="message-box">
+        <h1 style="color: #d97706;">FEELING STUCK?</h1>
+        <p id="dda-text"></p>
+        <button id="btn-dda-accept">YES, HELP ME</button>
+        <button id="btn-dda-decline">NO, I GOT THIS</button>
+    </div>
+
+    <!-- End of content -->
+    <div id="modal-end" class="message-box">
+        <h1 style="color: #22c55e;">THAT'S ALL FOR NOW!</h1>
+        <p>More acts are on the way.</p>
+        <button id="btn-end-replay">PLAY AGAIN</button>
+    </div>
+
+    <!-- Skin select screen -->
+    <div id="modal-skins" class="message-box skins">
+        <h1>ARMORY</h1>
+        <div id="skin-grid"></div>
+        <button id="btn-skins-close">BACK</button>
+    </div>
+
+    <!-- Level selector -->
+    <div id="modal-levels" class="message-box level-select">
+        <h1>LEVEL SELECT</h1>
+        <div id="level-grid"></div>
+        <button id="btn-levels-close">BACK</button>
+    </div>
+</div>
+
+<script type="module" src="src/main.js"></script>
+</body>
+</html>

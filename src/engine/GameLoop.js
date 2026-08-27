@@ -1,0 +1,380 @@
+// GameLoop.js — rAF loop, state machine, and the simulation.
+// Owns all mutable game state. Renders through the injected Renderer.
+import { getBezierXY, distToSegment, clamp } from "./MathUtils.js";
+
+export const STATE = { PLAYING: "playing", WON: "won", LOST: "lost", PAUSED: "paused" };
+
+export class GameLoop {
+    constructor({ canvas, renderer, audio, analytics, platform }) {
+        this.canvas = canvas;
+        this.renderer = renderer;
+        this.audio = audio;
+        this.analytics = analytics;
+        this.platform = platform;
+
+        // Mutable state.
+        this.gameState = STATE.PLAYING;
+        this.frameCount = 0;
+        this.camera = { x: 0, y: 0, zoom: 1 };
+        this.snipsRemaining = 2;
+        this.snipsUsed = 0;
+        this.nodes = [];
+        this.fuses = [];
+        this.sparks = [];
+        this.cuts = [];
+        this.particles = [];
+        this.fadingSlashes = [];
+        this.hintActive = false;
+        this.failCount = 0;
+        this.ddaTier = 0;
+        this.level = null;
+        this.levelIndex = 0;
+        this.attempts = 0;
+        this.startedAt = 0;
+        this.lastLevelWin = null;
+        this.lostAt = null; // frameCount when the bomb detonated (drives the blast FX)
+        this.wonAt = null; // frameCount when the level was defused (drives the win text)
+        this.tutorialActive = false;
+
+        // Callbacks (wired by main.js).
+        this.onSnipsChange = null;
+        this.onLevelComplete = null;
+        this.onDdaTierChanged = null;
+        this.onTutorialStep = null;
+
+        this._rafId = null;
+        this._lastT = 0;
+        this._running = false;
+    }
+
+    // ---- Level loading ------------------------------------------------------
+
+    loadLevel(level, levelIndex) {
+        this.level = level;
+        this.levelIndex = levelIndex;
+        this.resetLevel();
+    }
+
+    resetLevel() {
+        this.gameState = STATE.PLAYING;
+        this.frameCount = 0;
+        this.cuts = [];
+        this.particles = [];
+        this.fadingSlashes = [];
+        this.snipsUsed = 0;
+        this.failCount = 0;
+        this.ddaTier = 0;
+        this.hintActive = false;
+        this.tutorialActive = false;
+        this.lostAt = null;
+        this.wonAt = null;
+
+        this.snipsRemaining = this.level.snipsAllowed;
+        this.nodes = this.level.nodes;
+        this.fuses = this.level.fuses;
+        this.sparks = this.level.sparks;
+        // Reset fuse burn + sparks to fresh.
+        for (const f of this.fuses) f.burntProgress = 0;
+        for (const s of this.sparks) {
+            s.progress = 0;
+            s.active = true;
+            s.ignited = false;
+            s.ignitedAt = null; // frameCount when this spark lit (drives reaction words)
+            s.diedAt = null;    // frameCount when it was snuffed by a cut
+        }
+
+        this.camera = this.level.camera
+            ? { x: this.level.camera.x, y: this.level.camera.y, zoom: this.level.camera.zoom }
+            : this.renderer.computeFitCamera?.(this.level) || { x: 0, y: 0, zoom: 1 };
+
+        this.attempts++;
+        this.startedAt = this.frameCount;
+        if (this.analytics) this.analytics.track("level_start", { level: this.level.level_id, attempts: this.attempts });
+
+        if (this.onSnipsChange) this.onSnipsChange(this.snipsRemaining);
+        if (this.onDdaTierChanged) this.onDdaTierChanged(this.ddaTier);
+    }
+
+    // ---- Public controls -----------------------------------------------------
+
+    changeZoom(amount) {
+        this.camera.zoom = clamp(this.camera.zoom + amount, 0.3, 3);
+    }
+
+    panCamera(dx, dy) {
+        this.camera.x += dx / this.camera.zoom;
+        this.camera.y += dy / this.camera.zoom;
+    }
+
+    toggleHint() {
+        this.hintActive = !this.hintActive;
+        return this.hintActive;
+    }
+
+    setHint(on) {
+        this.hintActive = !!on;
+    }
+
+    // ---- Cutting (spatial, from the prototype's handlePointerUp) -------------
+
+    tryCut(swipeStart, swipeEnd, trail) {
+        if (this.gameState !== STATE.PLAYING || this.snipsRemaining <= 0) return false;
+
+        let closestDist = Infinity;
+        let snipPoint = null;
+        let snipFuse = null;
+        let snipT = 0;
+
+        // Check the swipe line segment against every fuse curve.
+        for (const fuse of this.fuses) {
+            const p0 = fuse.startNode;
+            const p3 = fuse.endNode;
+            for (let t = 0; t <= 1; t += 0.02) {
+                const pt = getBezierXY(t, p0, fuse.cp1, fuse.cp2, p3);
+                const dist = distToSegment(pt, swipeStart, swipeEnd);
+                if (dist < closestDist) {
+                    closestDist = dist;
+                    snipPoint = pt;
+                    snipFuse = fuse;
+                    snipT = t;
+                }
+            }
+        }
+
+        if (closestDist < 25 && snipPoint) {
+            // Dedupe: ignore cuts within 30px of an existing cut.
+            for (const c of this.cuts) {
+                if (Math.hypot(snipPoint.x - c.x, snipPoint.y - c.y) < 30) return false;
+            }
+
+            const swipeAngle = Math.atan2(swipeEnd.y - swipeStart.y, swipeEnd.x - swipeStart.x);
+            this.cuts.push({ x: snipPoint.x, y: snipPoint.y, radius: 15, angle: swipeAngle, fuseId: snipFuse.id, snipT });
+
+            // The fading blade-trail slash follows the finger path (Cut-the-Rope
+            // style), falling back to a straight swipe if no trail was recorded.
+            const trailPts = Array.isArray(trail) && trail.length >= 2
+                ? trail.map((p) => ({ x: p.x, y: p.y }))
+                : [{ ...swipeStart }, { ...swipeEnd }];
+            this.fadingSlashes.push({ trail: trailPts, life: 1.0 });
+
+            this.snipsRemaining--;
+            this.snipsUsed++;
+            if (this.onSnipsChange) this.onSnipsChange(this.snipsRemaining);
+            if (this.audio) this.audio.play("snip");
+            if (this.analytics) this.analytics.track("snips_used", { level: this.level.level_id });
+
+            for (let p = 0; p < 15; p++) {
+                this.particles.push({
+                    x: snipPoint.x, y: snipPoint.y,
+                    vx: (Math.random() - 0.5) * 12, vy: (Math.random() - 0.5) * 12,
+                    life: 1.0, size: Math.random() * 8 + 4, color: "#fef08a",
+                });
+            }
+            return true;
+        }
+        return false;
+    }
+
+    // ---- DDA: adaptive difficulty tier ladder --------------------------------
+
+    offerDdaIfNeeded() {
+        const dda = this.level.dda;
+        const threshold = dda?.failThreshold ?? 3;
+        if (this.failCount < threshold) return;
+        const maxTier = dda?.tierSteps?.length || 3;
+        if (this.ddaTier >= maxTier) return;
+        if (this.onDdaTierChanged) this.onDdaTierChanged(this.ddaTier, true);
+    }
+
+    acceptDda() {
+        const dda = this.level.dda;
+        const steps = dda?.tierSteps || ["snip", "slow", "hint"];
+        const next = this.ddaTier + 1;
+        if (next > steps.length) return;
+
+        this.ddaTier = next;
+        const step = steps[next - 1]; // tier 1 applies steps[0], tier 2 applies steps[1]...
+
+        if (step === "snip") {
+            this.snipsRemaining++;
+            if (this.onSnipsChange) this.onSnipsChange(this.snipsRemaining);
+        } else if (step === "slow") {
+            for (const s of this.sparks) s.speed *= 0.7;
+        } else if (step === "hint") {
+            this.setHint(true);
+        }
+
+        if (this.analytics) this.analytics.track("dda_accept", { level: this.level.level_id, tier: this.ddaTier });
+        if (this.onDdaTierChanged) this.onDdaTierChanged(this.ddaTier, false);
+    }
+
+    declineDda() {
+        if (this.analytics) this.analytics.track("dda_decline", { level: this.level.level_id, tier: this.ddaTier });
+    }
+
+    // ---- Star scoring ----------------------------------------------------------
+
+    computeStars() {
+        // 3 stars: >= 1 snip left. 2 stars: used all snips. 1: any win.
+        if (this.snipsRemaining >= 1) return 3;
+        if (this.snipsUsed > 0) return 2;
+        return 1;
+    }
+
+    // ---- State transitions ------------------------------------------------------
+
+    _finishLevel(win) {
+        if (this.gameState !== STATE.PLAYING) return;
+        this.audio?.stopLoop("wick_crackle");
+        if (win) {
+            const stars = this.computeStars();
+            this.gameState = STATE.WON;
+            this.wonAt = this.frameCount;
+            this.lastLevelWin = stars;
+            if (this.analytics) {
+                this.analytics.track("level_win", {
+                    level: this.level.level_id, stars, attempts: this.attempts,
+                    duration: this.frameCount - this.startedAt, snips_used: this.snipsUsed,
+                });
+            }
+            if (this.platform) this.platform.gameplayStop();
+            if (this.onLevelComplete) this.onLevelComplete(this.level.level_id, stars, true);
+        } else {
+            this.gameState = STATE.LOST;
+            this.lostAt = this.frameCount;
+            this.failCount++;
+            if (this.audio) this.audio.play("blast");
+            if (this.analytics) {
+                this.analytics.track("level_fail", {
+                    level: this.level.level_id, attempts: this.attempts,
+                    duration: this.frameCount - this.startedAt,
+                });
+            }
+            if (this.platform) this.platform.gameplayStop();
+            if (this.onLevelComplete) this.onLevelComplete(this.level.level_id, 0, false);
+        }
+    }
+
+    // ---- Loop -------------------------------------------------------------------
+
+    start() {
+        if (this._running) return;
+        this._running = true;
+        this._lastT = performance.now();
+        this._rafId = requestAnimationFrame((t) => this._frame(t));
+    }
+
+    stop() {
+        this._running = false;
+        if (this._rafId) cancelAnimationFrame(this._rafId);
+        this._rafId = null;
+    }
+
+    setPaused(paused) {
+        if (paused && this.gameState === STATE.PLAYING) {
+            this.gameState = STATE.PAUSED;
+        } else if (!paused && this.gameState === STATE.PAUSED) {
+            this.gameState = STATE.PLAYING;
+            this._lastT = performance.now();
+        }
+    }
+
+    _frame(t) {
+        if (!this._running) return;
+        const dt = Math.min(32, t - this._lastT);
+        this._lastT = t;
+
+        if (this.gameState !== STATE.PAUSED) {
+            this.frameCount++;
+            this._update();
+        }
+        this.renderer.draw(this);
+        this._rafId = requestAnimationFrame((nt) => this._frame(nt));
+    }
+
+    _update() {
+        if (this.gameState !== STATE.PLAYING) return;
+
+        let activeSparks = 0;
+        let anyBurning = false;
+
+        for (const spark of this.sparks) {
+            if (!spark.active) continue;
+            activeSparks++;
+
+            if (this.frameCount < spark.delay) continue;
+            if (!spark.ignited) {
+                spark.ignited = true;
+                spark.ignitedAt = this.frameCount;
+                if (this.audio) this.audio.play("ignite");
+            }
+            anyBurning = true;
+
+            const fuse = this.fuses[spark.fuseIndex];
+            spark.progress += spark.speed;
+            fuse.burntProgress = Math.max(fuse.burntProgress, spark.progress);
+
+            const pos = getBezierXY(spark.progress, fuse.startNode, fuse.cp1, fuse.cp2, fuse.endNode);
+
+            // Cut-circle collision: a spark dies if it travels inside a cut.
+            let fellIntoGap = false;
+            for (const cut of this.cuts) {
+                if (Math.hypot(pos.x - cut.x, pos.y - cut.y) < cut.radius) {
+                    fellIntoGap = true;
+                    break;
+                }
+            }
+
+            if (fellIntoGap) {
+                spark.active = false;
+                spark.diedAt = this.frameCount;
+                if (this.audio) this.audio.play("dud");
+                for (let p = 0; p < 15; p++) {
+                    this.particles.push({
+                        x: pos.x, y: pos.y, vx: (Math.random() - 0.5) * 3.5, vy: (Math.random() - 0.5) * 3.5,
+                        life: 1.0, size: Math.random() * 3.5 + 1.5, color: "#9ca3af",
+                    });
+                }
+                continue;
+            }
+
+            if (Math.random() > 0.4) {
+                this.particles.push({
+                    x: pos.x, y: pos.y, vx: (Math.random() - 0.5) * 2.8, vy: (Math.random() - 0.5) * 2.8,
+                    life: 1.0, size: Math.random() * 4 + 2, color: "#292524",
+                });
+            }
+
+            if (spark.progress >= 1) {
+                if (fuse.endNode.type === "payload") {
+                    this._finishLevel(false);
+                    return;
+                }
+            }
+        }
+
+        // Particles.
+        for (let i = this.particles.length - 1; i >= 0; i--) {
+            const p = this.particles[i];
+            p.x += p.vx;
+            p.y += p.vy;
+            p.life -= 0.04;
+            if (p.life <= 0) this.particles.splice(i, 1);
+        }
+
+        // Fading slashes (fast fade = snappy blade trail, like Cut the Rope).
+        for (let i = this.fadingSlashes.length - 1; i >= 0; i--) {
+            this.fadingSlashes[i].life -= 0.11;
+            if (this.fadingSlashes[i].life <= 0) this.fadingSlashes.splice(i, 1);
+        }
+
+        // Win condition: all sparks snuffed (or all delays not yet fired is still playable).
+        if (activeSparks === 0 && this.gameState === STATE.PLAYING) {
+            this._finishLevel(true);
+        }
+
+        // Wick-crackle loop follows the burn state.
+        if (anyBurning) this.audio?.startLoop("wick_crackle");
+        else this.audio?.stopLoop("wick_crackle");
+    }
+}

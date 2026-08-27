@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Cut the Fuse art queue</title>
+<style>
+  :root { color-scheme: light; }
+  * { box-sizing: border-box; }
+  body {
+    font-family: system-ui, -apple-system, sans-serif;
+    margin: 0; padding: 24px; max-width: 1100px; margin: 0 auto;
+    background: #f5f5f4; color: #1c1917;
+  }
+  h1 { font-size: 22px; margin: 0 0 4px; }
+  .lede { color: #6a635a; font-size: 14px; margin: 0 0 18px; }
+  .lede code { background: #ece7da; padding: 1px 6px; border-radius: 4px; }
+  .bar { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-bottom: 14px; }
+  .bar .count { font-size: 13px; color: #6a635a; }
+  .filters { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 18px; }
+  .pill {
+    border: 1px solid #d8d0c0; background: #fff; color: #241f18;
+    padding: 5px 12px; border-radius: 999px; font-size: 13px; cursor: pointer;
+  }
+  .pill.active { background: #241f18; color: #f6f3ec; border-color: #241f18; }
+  table { width: 100%; border-collapse: collapse; background: #fff; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,.08); }
+  th { text-align: left; font-size: 12px; text-transform: uppercase; letter-spacing: .04em; color: #6a635a; padding: 10px 12px; border-bottom: 1px solid #ece7da; background: #faf8f2; }
+  td { padding: 10px 12px; border-bottom: 1px solid #f1ecdf; font-size: 14px; vertical-align: top; }
+  tr:last-child td { border-bottom: none; }
+  .file { font-family: ui-monospace, Menlo, monospace; font-size: 12.5px; color: #4a4238; white-space: nowrap; }
+  .subject { color: #241f18; max-width: 460px; }
+  .btn {
+    border: 1px solid #c9c0ae; background: #fff; border-radius: 6px;
+    font-size: 12.5px; padding: 4px 10px; cursor: pointer; color: #241f18;
+  }
+  .btn:hover { background: #f1ecdf; }
+  .btn.primary { background: #241f18; border-color: #241f18; color: #f6f3ec; }
+  .btn.primary:hover { background: #3a322a; }
+  .status { font-size: 12px; font-weight: 700; white-space: nowrap; }
+  .status.done { color: #1f7a3d; }
+  .status.pending { color: #b08020; }
+  .template-box { background: #fff; border: 1px solid #ece7da; border-radius: 8px; padding: 14px 16px; margin-bottom: 18px; }
+  .template-box h3 { margin: 0 0 6px; font-size: 14px; }
+  .template-box p { margin: 0 0 8px; font-size: 13px; color: #4a4238; }
+  .template-box pre { margin: 0; background: #faf8f2; border-radius: 6px; padding: 10px; font-size: 12.5px; white-space: pre-wrap; font-family: ui-monospace, Menlo, monospace; }
+  .copied { background: #1f7a3d !important; border-color: #1f7a3d !important; color: #fff !important; }
+  .group-head td { background: #faf8f2; font-weight: 700; font-size: 13px; color: #4a4238; }
+</style>
+</head>
+<body>
+  <h1>Cut the Fuse art queue</h1>
+  <p class="lede">One PNG per row. Copy the subject or full prompt → paste into Gemini → cut out / remove background in Canva → save to <code>assets/&lt;file&gt;</code>. Dropping a PNG into <code>assets/</code> auto-upgrades the game (LevelManager.resolveAssets). Same workflow as the UFO Puzzle / Big Fluff queues.</p>
+
+  <div class="bar">
+    <div id="counts" class="count"></div>
+    <button class="btn" id="refresh">Refresh status</button>
+  </div>
+
+  <div class="filters" id="filters"></div>
+
+  <div id="tableWrap"></div>
+
+  <script src="art-queue-data.js"></script>
+  <script>
+  const state = { act: "all", type: "all", status: "all" };
+
+  async function exists(file) {
+    try {
+      const r = await fetch("../../assets/" + file, { method: "GET" });
+      return r.ok;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  async function refreshStatuses() {
+    const rows = document.querySelectorAll("[data-file]");
+    await Promise.all([...rows].map(async (tr) => {
+      const file = tr.dataset.file;
+      const ok = await exists(file);
+      const cell = tr.querySelector(".status");
+      cell.textContent = ok ? "done" : "pending";
+      cell.className = "status " + (ok ? "done" : "pending");
+    }));
+    updateCounts();
+  }
+
+  function fullPrompt(item) {
+    const t = TEMPLATES[item.template];
+    return t.replace("[SUBJECT]", item.subject);
+  }
+
+  async function copyText(text, btn) {
+    try { await navigator.clipboard.writeText(text); }
+    catch (_) {
+      const el = document.createElement("textarea");
+      el.value = text; document.body.appendChild(el); el.select();
+      document.execCommand("copy"); el.remove();
+    }
+    const prev = btn.textContent;
+    btn.textContent = "Copied";
+    btn.classList.add("copied");
+    setTimeout(() => { btn.textContent = prev; btn.classList.remove("copied"); }, 900);
+  }
+
+  function actLabel(a) {
+    return a === "all" ? "All acts" : `Act ${a}`;
+  }
+
+  function renderFilters() {
+    const el = document.getElementById("filters");
+    el.innerHTML =
+      [{ id: "all", label: "All acts" }, { id: 1, label: "Act 1" }, { id: 2, label: "Act 2" }, { id: 3, label: "Act 3" }]
+        .map((o) => `<button class="pill ${state.act === o.id ? "active" : ""}" data-act="${o.id}">${o.label}</button>`).join("") +
+      `<span style="flex:1"></span>` +
+      [{ id: "all", label: "All" }, { id: "bomb", label: "Bombs" }, { id: "matchstick", label: "Matchsticks" }]
+        .map((o) => `<button class="pill ${state.type === o.id ? "active" : ""}" data-type="${o.id}">${o.label}</button>`).join("") +
+      `<span style="flex:1"></span>` +
+      [{ id: "all", label: "All status" }, { id: "done", label: "Done" }, { id: "pending", label: "Pending" }]
+        .map((o) => `<button class="pill ${state.status === o.id ? "active" : ""}" data-status="${o.id}">${o.label}</button>`).join("");
+    el.onclick = (e) => {
+      const a = e.target.closest("[data-act]");
+      if (a) { state.act = Number(a.dataset.act) || "all"; render(); }
+      const t = e.target.closest("[data-type]");
+      if (t) { state.type = t.dataset.type; render(); }
+      const s = e.target.closest("[data-status]");
+      if (s) { state.status = s.dataset.status; render(); }
+    };
+  }
+
+  function rowFor(item) {
+    return `<tr data-file="${item.file}" data-status-row="pending">
+      <td class="file">${item.file}</td>
+      <td class="subject">${item.subject}</td>
+      <td><button class="btn" data-copy="subject" data-id="${item.id}">Copy subject</button>
+          <button class="btn primary" data-copy="full" data-id="${item.id}">Copy full prompt</button></td>
+      <td class="status pending">pending</td>
+    </tr>`;
+  }
+
+  function renderTable() {
+    const acts = { 1: [], 2: [], 3: [] };
+    for (const item of ITEMS) {
+      if (state.act !== "all" && item.act !== state.act) continue;
+      if (state.type !== "all" && item.type !== state.type) continue;
+      acts[item.act].push(item);
+    }
+    const wrap = document.getElementById("tableWrap");
+    let html = "";
+    for (const a of [1, 2, 3]) {
+      const items = acts[a];
+      if (!items.length) continue;
+      html += `<table style="margin-bottom:22px">
+        <thead><tr><th style="width:230px">Save as</th><th>Subject</th><th></th><th>Status</th></tr></thead>
+        <tbody>
+          <tr class="group-head"><td colspan="4">${actLabel(a)} · ${items.length}</td></tr>
+          ${items.map(rowFor).join("")}
+        </tbody></table>`;
+    }
+    if (!html) html = `<p class="lede">Nothing matches this filter.</p>`;
+    wrap.innerHTML = html;
+  }
+
+  function updateCounts() {
+    const rows = [...document.querySelectorAll("tr[data-file]")];
+    const done = rows.filter((tr) => tr.querySelector(".status").classList.contains("done")).length;
+    document.getElementById("counts").textContent = `${done} / ${rows.length} done`;
+  }
+
+  async function render() {
+    renderFilters();
+    renderTable();
+    await refreshStatuses();
+  }
+
+  document.body.addEventListener("click", async (e) => {
+    const btn = e.target.closest("[data-copy]");
+    if (!btn) return;
+    const item = ITEMS.find((i) => i.id === btn.dataset.id);
+    if (!item) return;
+    const text = btn.dataset.copy === "full" ? fullPrompt(item) : item.subject;
+    await copyText(text, btn);
+  });
+
+  document.getElementById("refresh").addEventListener("click", () => refreshStatuses());
+  render();
+  </script>
+</body>
+</html>

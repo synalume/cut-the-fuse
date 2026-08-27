@@ -1,0 +1,76 @@
+{
+  "oneShotSuffix": "A short isolated sound effect, dry, no reverb, no background, no music, no voice, no hum, no drone.",
+  "loopSuffix": "A short seamless ambient loop texture, no music, no voice, no hum, no drone.",
+  "cues": [
+    {
+      "id": "ignite",
+      "kind": "one-shot",
+      "soundType": "sound_effect",
+      "durationSec": 1.2,
+      "playSec": 0.8,
+      "role": "Matchstick striking at ignition — plays the moment a spark starts burning",
+      "prompts": [
+        "A single wooden match being struck against a rough striker strip, sharp fricative scratch then a tiny hiss, close microphone, short."
+      ]
+    },
+    {
+      "id": "snip",
+      "kind": "one-shot",
+      "soundType": "sound_effect",
+      "durationSec": 1,
+      "playSec": 0.15,
+      "role": "Razor shears cutting a fuse — the core feedback for every snip",
+      "prompts": [
+        "One sharp snip of steel garden shears cutting a thin string, crisp metallic click, close microphone, very short and percussive."
+      ]
+    },
+    {
+      "id": "dud",
+      "kind": "one-shot",
+      "soundType": "sound_effect",
+      "durationSec": 1,
+      "playSec": 0.6,
+      "role": "Spark snuffed out in a cut gap — a sad fizzle",
+      "prompts": [
+        "A small spark fizzling out and going dark, wet descending hiss, close microphone, short."
+      ]
+    },
+    {
+      "id": "blast",
+      "kind": "one-shot",
+      "soundType": "sound_effect",
+      "durationSec": 2,
+      "playSec": 1.2,
+      "role": "Bomb detonation on failure — big but cartoonish",
+      "notes": "Prompt encodes the 3-layer explosion recipe: sharp crack attack → punchy mid-low body thump → short debris crackle tail, near perspective, tight and dry so it reads on phone speakers and doesn't stall the retry flow.",
+      "prompts": [
+        "A big cartoon bomb detonation: first a very sharp fast crack attack, then a deep punchy boom body that hits low and round, ending with a short crackle of falling debris. Close microphone, tight and dry, compact, medium length, satisfying and chunky. No music, no voice, no reverb, no echoes, no long rumble tail.",
+        "A chunky cartoon explosion sound effect: snappy bright crack at the start, then a solid round bass boom with weight, and a quick gravelly debris rattle at the end. Dry close-mic, punchy and full, short tail, no music, no voice, no reverb."
+      ]
+    },
+    {
+      "id": "win_star",
+      "kind": "one-shot",
+      "soundType": "sound_effect",
+      "durationSec": 1,
+      "playSec": 0.16,
+      "role": "Coin ping as each star lights in the win modal — ascending pitch per star",
+      "source": "reuse-wobble-run",
+      "notes": "Reuses Wobble Run's coin count sound (samples/coin.wav); game plays it at rate 1.0/1.3/1.6 per star.",
+      "prompts": [
+        "A crisp game-coin collect ping, short and bright."
+      ]
+    },
+    {
+      "id": "wick_crackle",
+      "kind": "loop",
+      "soundType": "sound_effect",
+      "durationSec": 3,
+      "playSec": 3,
+      "role": "Fuse wick burning bed — plays while any spark is travelling",
+      "prompts": [
+        "A small fuse wick burning and crackling, fast dry sparks popping like static on a thin string, close microphone, seamless loop texture."
+      ]
+    }
+  ]
+}

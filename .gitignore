@@ -1,0 +1,7 @@
+# Generated Playables / portal stage + zip copies
+cert/out/
+playgama/out/stage/
+dist/out/stage/
+*.zip
+.DS_Store
+node_modules/

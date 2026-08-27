@@ -1,0 +1,34 @@
+{
+  "hosting": {
+    "site": "cut-the-fuse",
+    "public": ".",
+    "ignore": [
+      "firebase.json",
+      ".firebaserc",
+      "**/.*",
+      "**/*.md",
+      "deploy.sh",
+      "server.js",
+      "package.json",
+      "tools/**",
+      "cert/**",
+      "dist/**",
+      "playgama/**",
+      "locked-branding/**",
+      "assets/ui-*.png",
+      "**/*-LOCKED.png",
+      "**/*-LOCKED.ico"
+    ],
+    "headers": [
+      {
+        "source": "**",
+        "headers": [
+          {
+            "key": "Cache-Control",
+            "value": "no-cache, max-age=0, must-revalidate"
+          }
+        ]
+      }
+    ]
+  }
+}
