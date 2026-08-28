@@ -754,9 +754,11 @@ export class Renderer {
     }
 
     /** Level-1 onboarding: a red cut line across the wick shows where to snip,
-     *  and a hand slides back and forth ALONG that line — the same direction as
-     *  the red line, i.e. across the wick — to demonstrate the cut motion. Runs
-     *  while the tutorial is up and stops after the player's first cut. */
+     *  and a hand slides back and forth along an INVISIBLE line parallel to the
+     *  red line (offset toward the matchstick), with the finger rotated 90° so
+     *  it points straight at the red line — the cut motion reads as a finger
+     *  tracing the slice. Runs while the tutorial is up and stops after the
+     *  player's first cut. */
     _drawTutorialDemo(game) {
         if (!game.tutorialActive) return;
         if (game.level?.level_id !== 1 || game.fuses.length < 1) return;
@@ -768,7 +770,7 @@ export class Renderer {
         const ctx = this.ctx;
         const t = game.frameCount;
 
-        // Red cut line: a pulsing slash across the wick where the snip goes.
+        // Red cut line (visible): a pulsing slash across the wick where the snip goes.
         const cutU = 0.42;
         const C = getBezierXY(cutU, p0, fuse.cp1, fuse.cp2, p3);
         const tanT = getBezierTangent(cutU, p0, fuse.cp1, fuse.cp2, p3);
@@ -784,37 +786,30 @@ export class Renderer {
         ctx.stroke();
         ctx.restore();
 
-        // Hand: slide along the cut line, across the wick, then back. The finger
-        // points in the direction of travel the whole way (the snip motion).
-        const swipe = 24;   // fingertip travel distance along the line
-        const travel = 70;  // frames across the wick
+        // Hand: slide along the invisible parallel line, offset from the red line
+        // toward the spawn/matchstick. The finger points at the red line the whole
+        // time (perp to the travel), so it never runs along the line itself.
+        const offset = 58;  // world units from the red line, along the wick
+        const swipe = 24;   // travel distance along the parallel line
+        const travel = 70;  // frames across
         const pause = 50;   // hold at each end
         const halfCycle = travel + pause;
         const phase = t % (2 * halfCycle);
 
-        let off, tanDir;
-        if (phase < travel) {
-            const u = phase / travel;
-            off = -swipe + 2 * swipe * u;
-            tanDir = perp;
-        } else if (phase < halfCycle) {
-            off = swipe;             // hold the far side
-            tanDir = perp;
-        } else if (phase < halfCycle + travel) {
-            const u = (phase - halfCycle) / travel;
-            off = swipe - 2 * swipe * u;
-            tanDir = { x: -perp.x, y: -perp.y };
-        } else {
-            off = -swipe;            // hold the near side
-            tanDir = { x: -perp.x, y: -perp.y };
-        }
-        const pos = { x: C.x + perp.x * off, y: C.y + perp.y * off };
+        let off;
+        if (phase < travel) off = -swipe + 2 * swipe * (phase / travel);
+        else if (phase < halfCycle) off = swipe; // hold the far side
+        else if (phase < halfCycle + travel) off = swipe - 2 * swipe * ((phase - halfCycle) / travel);
+        else off = -swipe; // hold the near side
+
+        const pos = { x: C.x + perp.x * off - tanT.x * offset, y: C.y + perp.y * off - tanT.y * offset };
+        const fingerDir = { x: tanT.x, y: tanT.y }; // straight at the red line
 
         // Fade in as it appears and fade out just before looping back.
         let alpha = 1;
         if (t < 14) alpha = t / 14;
         if (t % (2 * halfCycle) > 2 * halfCycle - 16) alpha = Math.max(0, (2 * halfCycle - (t % (2 * halfCycle))) / 16);
-        this._drawHandPointer(ctx, pos.x, pos.y, tanDir, alpha);
+        this._drawHandPointer(ctx, pos.x, pos.y, fingerDir, alpha);
     }
 
     /** Draw the pointer hand rotated so its finger points along `tan`, with its
