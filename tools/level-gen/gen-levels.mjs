@@ -56,9 +56,17 @@ function knobsForLevel(n) {
     if (act === 1) {
         // Teaching phases, one skill at a time. Gentle pace — reading the lines
         // comes before racing them.
-        if (n <= 3) {
+        if (n === 1) {
             // Swipe-to-cut. Single direct fuse, generous snips.
             Object.assign(k, { spawns: 1, chokepoints: 0, share: true, delay: "burst", speed: 0.0006 });
+        } else if (n === 2) {
+            // Two fuses burn at once: watch both lines and cut each before the
+            // fire lands. Still slow — the lesson is split attention, not speed.
+            Object.assign(k, { spawns: 2, chokepoints: 0, share: true, delay: "burst", speed: 0.0006 });
+        } else if (n === 3) {
+            // Speed: one wick that burns 2x the tutorial's pace, so the player
+            // learns to cut on sight instead of waiting for the last moment.
+            Object.assign(k, { spawns: 1, chokepoints: 0, share: true, delay: "burst", speed: 0.0012 });
         } else if (n <= 6) {
             // Staggered delays.
             Object.assign(k, {
@@ -234,7 +242,10 @@ function lookForLevel(n, k, seedOffset = 0, salt = 0) {
     // single-fuse levels — from L4 on the maze ARRANGEMENT (distribution,
     // radius tiers, curve shape) varies so no two levels read the same.
     const teaching = n <= 7;
-    const visualTeaching = n <= 3;
+    // L1-L2 stay on the plain sunburst (straight wicks, even radii). From L3 the
+    // maze ARRANGEMENT varies — L3 is deliberately given an arced wick so the
+    // "fast fuse" reads as a new shape, and from L4 on the full recipe varies.
+    const visualTeaching = n <= 2;
     const sharedSingle = k.share && k.chokepoints === 1;
     // Narrow fan for single-shared-chokepoint levels (spawns must stay on one
     // side of the bomb for the shared cut to stay fold-free); wide otherwise.
@@ -251,7 +262,9 @@ function lookForLevel(n, k, seedOffset = 0, salt = 0) {
         speedPattern: teaching ? "even" : pick(rng, LOOK_SPEED),
         // Curve shape: flat (classic parabola) is weighted so most arcs stay
         // subtle; arc bows every wick one way; weave alternates per wick.
-        curvePattern: visualTeaching ? "flat" : pick(rng, ["flat", "flat", "arc", "weave"]),
+        // L3 is pinned to "arc" — the speed lesson doubles as the player's
+        // first curved wick, so the fast fuse never looks like L1's straight one.
+        curvePattern: visualTeaching ? "flat" : n === 3 ? "arc" : pick(rng, ["flat", "flat", "arc", "weave"]),
     };
 }
 
@@ -345,7 +358,10 @@ function circularMean(degArray) {
  * approach from all sides of the bomb.
  */
 function spawnAnglesFull(count, look, rng) {
-    const n = Math.max(1, count - 1);
+    // Equally-spaced baseline around the full circle. `n = count`, not
+    // count-1: the last spawn lands just under 360°, so spawn 0 and the last
+    // spawn never collide at the same angle (0° == 360° after wrapping).
+    const n = Math.max(1, count);
     let u = Array.from({ length: count }, (_, i) => i / n);
     switch (look.distPattern) {
         case "clustered": {
@@ -373,8 +389,16 @@ function spawnAnglesFull(count, look, rng) {
         case "paired": {
             const gap = 0.035 + rng() * 0.03;
             u = [];
+            if (count === 2) {
+                // A single "pair" of twins degenerates into coincident angles
+                // (both at 0°) — spread a 2-matchstick board to opposite sides.
+                u = [0, 0.5];
+                break;
+            }
             for (let i = 0; i < count; i++) {
-                const base = Math.floor(i / 2) / Math.max(1, Math.ceil((count - 1) / 2));
+                // Pairs sit on a ladder that stays under 1.0, so the last pair
+                // never wraps back onto the first.
+                const base = Math.floor(i / 2) / Math.max(1, Math.ceil(count / 2));
                 u.push(Math.min(1, base + (i % 2 === 0 ? 0 : gap)));
             }
             break;
@@ -926,9 +950,9 @@ const BRANCH_CUT_CLEARANCE = 26;
 function styleForLevel(n, k) {
     if (n <= 1) return "hub"; // the swipe tutorial keeps the familiar sunburst
     const act = Math.ceil(n / 20);
-    // Single-fuse practice (L2-L3) and single-shared-chokepoint levels keep the
-    // one-sided pools (spawns must sit on one side of the bomb); everything else
-    // draws from the full archetype set.
+    // Single-fuse practice (L3), two-fuse intro (L2), and single-shared-chokepoint
+    // levels keep the one-sided pools (spawns must sit on one side of the bomb);
+    // everything else draws from the full archetype set.
     const simple = n <= 3;
     const sharedSingle = k.share && k.chokepoints === 1;
     const pool = simple || sharedSingle
@@ -1153,7 +1177,11 @@ function placeLevel(n, k, seedOffset = 0, salt = 0) {
         // near the bomb stays tight — big bows made the last legs swirl and
         // drift off past the banana.
         const curve = look.curvePattern || "flat";
-        f.bulge = curve === "flat" ? 0 : curve === "arc" ? Math.round((0.06 + rng() * 0.05) * 1000) / 1000 : i % 2 === 0 ? 0.1 : -0.1;
+        // L3's speed lesson doubles as the player's first curved wick — pin a
+        // pronounced bow so the fast fuse never reads as L1's straight one.
+        f.bulge = n === 3
+            ? Math.round((0.15 + rng() * 0.02) * 1000) / 1000
+            : curve === "flat" ? 0 : curve === "arc" ? Math.round((0.06 + rng() * 0.05) * 1000) / 1000 : i % 2 === 0 ? 0.1 : -0.1;
         return f;
     });
 
@@ -1367,6 +1395,18 @@ function buildLevels() {
             level.tutorial = {
                 text: "Swipe across a fuse to snip it! You have a limited number of snips, so make each cut count.",
                 focus: "swipe",
+                highlight: "s1",
+            };
+        } else if (n === 2) {
+            level.tutorial = {
+                text: "Two fuses burn at the same time! Watch both — snip each before the fire reaches the bomb.",
+                focus: "spawn",
+                highlight: "s1",
+            };
+        } else if (n === 3) {
+            level.tutorial = {
+                text: "This fuse burns FAST! The moment the spark appears, cut it — don't wait.",
+                focus: "spawn",
                 highlight: "s1",
             };
         } else if (n === 4) {
