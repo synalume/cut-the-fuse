@@ -109,22 +109,6 @@ export function buildLevel(config, viewport, assets = null) {
         nodeMap[node.id] = node;
     }
 
-    // Entry anchors (bomb-side landing points). Each wick ends at its OWN
-    // anchor on a ring around the bomb art, so wicks enter from different
-    // sides instead of funneling into the center. Type "entry": reaching one
-    // triggers the explosion (GameLoop), but nothing is DRAWN here — the bomb
-    // art lives at the real payload node only.
-    for (const e of config.entries || []) {
-        const node = {
-            id: e.id,
-            type: "entry",
-            x: cx + (e.x ?? 0),
-            y: cy + (e.y ?? 0),
-        };
-        nodes.push(node);
-        nodeMap[node.id] = node;
-    }
-
     // Intersections (chokepoints the fuses route through).
     for (const it of config.intersections || []) {
         intersectionMap[it.id] = { id: it.id, x: cx + (it.x ?? 0), y: cy + (it.y ?? 0) };
@@ -298,14 +282,6 @@ export function validateLevel(config) {
 
     const allIds = new Set(ids);
     if (config.payload?.id) allIds.add(config.payload.id);
-    for (const e of config.entries || []) {
-        if (!e.id) warnings.push(`level ${config.level_id}: entry missing id`);
-        else if (ids.has(e.id)) warnings.push(`level ${config.level_id}: duplicate entry id '${e.id}'`);
-        else {
-            allIds.add(e.id);
-            ids.add(e.id);
-        }
-    }
     const fuseIds = new Set((config.fuses || []).map((f, i) => f.id || `f${i}`));
 
     for (const f of config.fuses || []) {
@@ -317,8 +293,8 @@ export function validateLevel(config) {
             if (typeof f.at !== "number" || f.at <= 0 || f.at >= 1) {
                 warnings.push(`level ${config.level_id}: fuse '${f.id}' branch at must be in (0,1) (got ${f.at})`);
             }
-            if (!allIds.has(f.end)) {
-                warnings.push(`level ${config.level_id}: fuse '${f.id}' end '${f.end}' unknown`);
+            if (f.end !== config.payload?.id) {
+                warnings.push(`level ${config.level_id}: fuse '${f.id}' does not end at the payload`);
             }
             if (typeof f.speed !== "number" || f.speed <= 0) {
                 warnings.push(`level ${config.level_id}: fuse speed must be > 0 (got ${f.speed})`);
@@ -332,6 +308,9 @@ export function validateLevel(config) {
         if (!allIds.has(f.end)) warnings.push(`level ${config.level_id}: fuse end '${f.end}' unknown`);
         if (f.routeThrough && !ids.has(f.routeThrough)) {
             warnings.push(`level ${config.level_id}: fuse routeThrough '${f.routeThrough}' unknown`);
+        }
+        if (f.end !== config.payload?.id) {
+            warnings.push(`level ${config.level_id}: fuse '${f.start}->${f.end}' does not end at the payload`);
         }
         if (typeof f.speed !== "number" || f.speed <= 0) {
             warnings.push(`level ${config.level_id}: fuse speed must be > 0 (got ${f.speed})`);
@@ -347,15 +326,14 @@ export function validateLevel(config) {
     // segment, the wick folds back on itself and the spark reverses mid-path
     // (looks like the wick ends early / turns around).
     const nodeMap = {};
-    [...(config.spawns || []), config.payload, ...(config.intersections || []), ...(config.entries || [])].forEach((n) => n && (nodeMap[n.id] = n));
+    [...(config.spawns || []), config.payload, ...(config.intersections || [])].forEach((n) => n && (nodeMap[n.id] = n));
     for (const f of config.fuses || []) {
         const start = nodeMap[f.start];
         if (!start) continue;
-        const end = nodeMap[f.end] || config.payload;
-        const I = nodeMap[f.routeThrough] || { x: (start.x + end.x) / 2, y: (start.y + end.y) / 2 };
-        const wx = end.x - start.x, wy = end.y - start.y;
+        const I = nodeMap[f.routeThrough] || { x: (start.x + config.payload.x) / 2, y: (start.y + config.payload.y) / 2 };
+        const wx = config.payload.x - start.x, wy = config.payload.y - start.y;
         const L2 = wx * wx + wy * wy;
-        const cp = { x: (I.x - 0.125 * (start.x + end.x)) / 0.75, y: (I.y - 0.125 * (start.y + end.y)) / 0.75 };
+        const cp = { x: (I.x - 0.125 * (start.x + config.payload.x)) / 0.75, y: (I.y - 0.125 * (start.y + config.payload.y)) / 0.75 };
         const u = ((cp.x - start.x) * wx + (cp.y - start.y) * wy) / L2;
         if (u < 0.02 || u > 0.98) {
             warnings.push(
