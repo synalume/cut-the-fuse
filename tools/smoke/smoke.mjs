@@ -121,6 +121,8 @@ check(swept === levels.length, `winnability sweep: all ${levels.length} levels w
 
     check(swipe() === true && g.cuts.length === 1 && g.snipsRemaining === 1,
         "L4: first snip at shared chokepoint lands (1 snip left)");
+    check(g.cutFlashes.length === 1 && g.cutFlashes[0].life === 1,
+        "L4: snip spawns a cut flash (vivid slash burst)");
     check(swipe() === true && g.cuts.length === 2 && g.snipsRemaining === 0,
         "L4: 2nd snip in the same area hits the other fuse (2 cuts placed)");
     check(g.cuts[0].fuseId !== g.cuts[1].fuseId,

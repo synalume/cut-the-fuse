@@ -45,6 +45,11 @@ export class Renderer {
         this.ctx.imageSmoothingEnabled = true;
         this.ctx.imageSmoothingQuality = "high";
         this.images = {};
+        // Sliding-hand demo pointer (level-1 onboarding) — same asset the UFO
+        // puzzle animates along its hint path. Content bbox is computed lazily.
+        this._handImg = new Image();
+        this._handImg.src = ASSET_PREFIX + "ui/ui-hand-pointer.png";
+        this._handBBox = null;
         this._pending = new Set();
         this._onAssetsReady = null;
         this._assetOk = new Map(); // src -> boolean (exists), cached per session
@@ -132,6 +137,7 @@ export class Renderer {
         this._drawHint(game);
         this._drawFuses(game);
         this._drawCuts(game);
+        this._drawCutFlash(game);
         // Spark effects draw before the assets so the burning head passes
         // behind the matchstick and banana, not over them.
         if (game.gameState === "playing") this._drawSparkEffects(game);
@@ -139,6 +145,8 @@ export class Renderer {
         if (game.gameState === "lost") this._drawComicText(game, "KABOOM!", "#ef4444", game.lostAt);
         if (game.gameState === "won") this._drawComicText(game, "PHEW!", "#22c55e", game.wonAt);
         this._drawSwipePreview(game);
+        // Onboarding demo hand rides on top of everything while the tutorial is up.
+        this._drawTutorialDemo(game);
 
         ctx.restore();
     }
@@ -316,6 +324,49 @@ export class Renderer {
         // so a leftover gradient fillStyle (e.g. the ember glow) can't zero it out.
         ctx.fillStyle = "#000";
         ctx.fill();
+    }
+
+    /** Vivid "snip" burst right when a cut lands: a red slash along the cut angle
+     *  with an expanding shock ring. The destination-out gap stays as white
+     *  spacing, but the instant of the cut reads clearly even on the cream paper. */
+    _drawCutFlash(game) {
+        const ctx = this.ctx;
+        for (const f of game.cutFlashes) {
+            const t = 1 - f.life; // 0 → 1 over the flash lifetime
+            const alpha = Math.max(0, f.life);
+            ctx.save();
+            ctx.translate(f.x, f.y);
+            ctx.rotate(f.angle);
+            ctx.lineCap = "round";
+            // Wide red slash — the "snip" moment.
+            ctx.strokeStyle = `rgba(239, 68, 68, ${(0.8 * alpha).toFixed(3)})`;
+            ctx.lineWidth = 13 * (1 - t * 0.4);
+            ctx.beginPath();
+            ctx.moveTo(-24 - t * 10, 0);
+            ctx.lineTo(24 + t * 10, 0);
+            ctx.stroke();
+            // Amber mid band + white-hot core.
+            ctx.strokeStyle = `rgba(251, 191, 36, ${(0.9 * alpha).toFixed(3)})`;
+            ctx.lineWidth = 7;
+            ctx.beginPath();
+            ctx.moveTo(-19 - t * 10, 0);
+            ctx.lineTo(19 + t * 10, 0);
+            ctx.stroke();
+            ctx.strokeStyle = `rgba(255, 255, 255, ${(0.95 * alpha).toFixed(3)})`;
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.moveTo(-14 - t * 10, 0);
+            ctx.lineTo(14 + t * 10, 0);
+            ctx.stroke();
+            // Expanding shock ring.
+            ctx.globalAlpha = alpha * 0.6;
+            ctx.strokeStyle = "#ef4444";
+            ctx.lineWidth = 4 * (1 - t);
+            ctx.beginPath();
+            ctx.arc(0, 0, 10 + t * 32, 0, Math.PI * 2);
+            ctx.stroke();
+            ctx.restore();
+        }
     }
 
     _drawAssets(game) {
@@ -680,10 +731,12 @@ export class Renderer {
 
         ctx.lineCap = "round";
         ctx.lineJoin = "round";
+        // A red pass under the warm mid + white core so the slice is visible on
+        // the cream paper; the alpha rides on `life` so it fades with the slash.
         const passes = [
-            { width: 13, style: `rgba(255, 255, 255, ${(0.2 * life).toFixed(3)})` },
-            { width: 7, style: `rgba(255, 214, 165, ${(0.4 * life).toFixed(3)})` },
-            { width: 3, style: `rgba(255, 255, 255, ${(0.95 * life).toFixed(3)})` },
+            { width: 15, style: `rgba(239, 68, 68, ${(0.34 * life).toFixed(3)})` },
+            { width: 9, style: `rgba(255, 214, 165, ${(0.55 * life).toFixed(3)})` },
+            { width: 4, style: `rgba(255, 255, 255, ${(0.95 * life).toFixed(3)})` },
         ];
         const n = pts.length;
         for (const pass of passes) {
@@ -698,6 +751,165 @@ export class Renderer {
                 ctx.stroke();
             }
         }
+    }
+
+    /** Level-1 onboarding: a sliding hand swipes across the wick to show the
+     *  snip gesture. Reuses the UFO puzzle's pointer hand, animated along a
+     *  dashed guide path — travel along the wick, then slice across it. Runs
+     *  while the tutorial is up and stops after the player makes their first cut. */
+    _drawTutorialDemo(game) {
+        if (!game.tutorialActive) return;
+        if (game.level?.level_id !== 1 || game.fuses.length < 1) return;
+        if (game.snipsUsed > 0) return; // player got it — stop the demo
+
+        const fuse = game.fuses[0];
+        const path = this._tutorialPath(game, fuse);
+        if (!path || path.length < 2) return;
+
+        const ctx = this.ctx;
+        const t = game.frameCount;
+
+        // Dashed guide route with a slow alpha pulse.
+        ctx.save();
+        ctx.globalAlpha = 0.45 + Math.sin(t * 0.05) * 0.12;
+        ctx.setLineDash([7, 9]);
+        ctx.lineWidth = 3;
+        ctx.lineCap = "round";
+        ctx.strokeStyle = "#ef4444";
+        ctx.beginPath();
+        ctx.moveTo(path[0].x, path[0].y);
+        for (let i = 1; i < path.length; i++) ctx.lineTo(path[i].x, path[i].y);
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        // Slide along the path; hold at the end (the swipe finish) before looping.
+        const total = this._polylineLength(path);
+        const speed = 6; // world units per frame (~360/s)
+        const pause = 110;
+        const cycle = total + pause;
+        let along = (t * speed) % cycle;
+        if (along > total) along = total;
+
+        const pos = this._pointAtLength(path, along);
+        const ahead = this._pointAtLength(path, Math.min(total, along + 26));
+        let tan = { x: ahead.x - pos.x, y: ahead.y - pos.y };
+        const len = Math.hypot(tan.x, tan.y);
+        if (len < 2) {
+            const prev = this._pointAtLength(path, Math.max(0, along - 26));
+            tan = { x: pos.x - prev.x, y: pos.y - prev.y };
+        } else {
+            tan = { x: tan.x / len, y: tan.y / len };
+        }
+        this._drawHandPointer(ctx, pos.x, pos.y, tan);
+        ctx.restore();
+    }
+
+    /** Build the demo route for a single wick: follow the fuse from its spawn
+     *  toward the cut point, then slice perpendicular across it (the snip). */
+    _tutorialPath(game, fuse) {
+        const p0 = fuse.startNode;
+        const p3 = fuse.endNode;
+        const cutU = 0.42;
+        const pts = [];
+        for (let i = 0; i <= 16; i++) {
+            const u = (i / 16) * cutU;
+            pts.push(getBezierXY(u, p0, fuse.cp1, fuse.cp2, p3));
+        }
+        const C = getBezierXY(cutU, p0, fuse.cp1, fuse.cp2, p3);
+        const tan = getBezierTangent(cutU, p0, fuse.cp1, fuse.cp2, p3);
+        const perp = { x: -tan.y, y: tan.x };
+        const sw = 34;
+        pts.push({ x: C.x - perp.x * sw, y: C.y - perp.y * sw });
+        pts.push({ x: C.x + perp.x * sw, y: C.y + perp.y * sw });
+        return pts;
+    }
+
+    /** Draw the pointer hand rotated so its finger points along `tan`, with its
+     *  fingertip landing on (x, y). Same asset + offsets as the UFO puzzle. */
+    _drawHandPointer(ctx, x, y, tan) {
+        const img = this._handImg;
+        if (!img || !img.complete || img.height === 0) return;
+        const box = this._handBBox || (this._handBBox = this._opaqueBBox(img));
+        const bbox = box || { x: 0, y: 0, w: img.width, h: img.height };
+
+        const ang = Math.atan2(tan.y, tan.x);
+        const finger = Math.atan2(1, -1); // intrinsic finger direction in the sprite
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.rotate(ang - finger);
+        const size = 104;
+        const s = Math.min(size / bbox.w, size / bbox.h);
+        const w = bbox.w * s;
+        const h = bbox.h * s;
+        ctx.drawImage(img, bbox.x, bbox.y, bbox.w, bbox.h, 16 - w / 2, -6 - h / 2, w, h);
+        ctx.restore();
+    }
+
+    /** Tight opaque bounding box of a transparent PNG (downscaled for speed).
+     *  iOS getImageData can be flaky, so any failure falls back to full-image. */
+    _opaqueBBox(img) {
+        const nw = img.naturalWidth || img.width || 0;
+        const nh = img.naturalHeight || img.height || 0;
+        if (!nw || !nh) return null;
+        const scale = Math.min(1, 360 / Math.max(nw, nh));
+        const w = Math.max(1, Math.round(nw * scale));
+        const h = Math.max(1, Math.round(nh * scale));
+        try {
+            const c = document.createElement("canvas");
+            c.width = w;
+            c.height = h;
+            const cctx = c.getContext("2d");
+            cctx.drawImage(img, 0, 0, w, h);
+            const data = cctx.getImageData(0, 0, w, h).data;
+            let minX = w, minY = h, maxX = 0, maxY = 0;
+            for (let y = 0; y < h; y++) {
+                for (let x = 0; x < w; x++) {
+                    if (data[(y * w + x) * 4 + 3] > 12) {
+                        if (x < minX) minX = x;
+                        if (x > maxX) maxX = x;
+                        if (y < minY) minY = y;
+                        if (y > maxY) maxY = y;
+                    }
+                }
+            }
+            if (maxX >= minX) {
+                return {
+                    x: minX / scale,
+                    y: minY / scale,
+                    w: (maxX - minX + 1) / scale,
+                    h: (maxY - minY + 1) / scale,
+                };
+            }
+        } catch {
+            /* fall through to null → full-image draw */
+        }
+        return null;
+    }
+
+    _polylineLength(pts) {
+        let n = 0;
+        for (let i = 1; i < pts.length; i++) {
+            n += Math.hypot(pts[i].x - pts[i - 1].x, pts[i].y - pts[i - 1].y);
+        }
+        return n;
+    }
+
+    _pointAtLength(pts, length) {
+        if (!pts.length) return { x: 0, y: 0 };
+        if (length <= 0) return { x: pts[0].x, y: pts[0].y };
+        let acc = 0;
+        for (let i = 1; i < pts.length; i++) {
+            const d = Math.hypot(pts[i].x - pts[i - 1].x, pts[i].y - pts[i - 1].y);
+            if (acc + d >= length) {
+                const u = (length - acc) / (d || 1);
+                return {
+                    x: pts[i - 1].x + (pts[i].x - pts[i - 1].x) * u,
+                    y: pts[i - 1].y + (pts[i].y - pts[i - 1].y) * u,
+                };
+            }
+            acc += d;
+        }
+        return { x: pts[pts.length - 1].x, y: pts[pts.length - 1].y };
     }
 
     /** Smooth a raw pointer trail into `count` evenly-spaced points (quadratic

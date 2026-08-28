@@ -22,6 +22,7 @@ export class GameLoop {
         this.fuses = [];
         this.sparks = [];
         this.cuts = [];
+        this.cutFlashes = []; // { x, y, angle, life } — vivid slash burst on snip
         this.particles = [];
         this.fadingSlashes = [];
         this.hintActive = false;
@@ -59,6 +60,7 @@ export class GameLoop {
         this.gameState = STATE.PLAYING;
         this.frameCount = 0;
         this.cuts = [];
+        this.cutFlashes = [];
         this.particles = [];
         this.fadingSlashes = [];
         this.snipsUsed = 0;
@@ -163,6 +165,7 @@ export class GameLoop {
         {
             const swipeAngle = Math.atan2(swipeEnd.y - swipeStart.y, swipeEnd.x - swipeStart.x);
             this.cuts.push({ x: snipPoint.x, y: snipPoint.y, radius: 15, angle: swipeAngle, fuseId: snipFuse.id, snipT });
+            this.cutFlashes.push({ x: snipPoint.x, y: snipPoint.y, angle: swipeAngle, life: 1 });
 
             // The fading blade-trail slash follows the finger path (Cut-the-Rope
             // style), falling back to a straight swipe if no trail was recorded.
@@ -379,6 +382,12 @@ export class GameLoop {
         for (let i = this.fadingSlashes.length - 1; i >= 0; i--) {
             this.fadingSlashes[i].life -= 0.11;
             if (this.fadingSlashes[i].life <= 0) this.fadingSlashes.splice(i, 1);
+        }
+
+        // Cut flashes: the vivid snip burst fades out almost as fast as the slash.
+        for (let i = this.cutFlashes.length - 1; i >= 0; i--) {
+            this.cutFlashes[i].life -= 0.1;
+            if (this.cutFlashes[i].life <= 0) this.cutFlashes.splice(i, 1);
         }
 
         // Win condition: all sparks snuffed (or all delays not yet fired is still playable).
