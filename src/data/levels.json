@@ -22,7 +22,7 @@
         "id": "f0",
         "start": "s1",
         "end": "bomb",
-        "speed": 0.0008,
+        "speed": 0.0006,
         "delayFrames": 0,
         "bulge": 0
       }
@@ -56,7 +56,7 @@
         "id": "f0",
         "start": "s1",
         "end": "bomb",
-        "speed": 0.0008,
+        "speed": 0.0006,
         "delayFrames": 0,
         "bulge": 0
       }
@@ -85,7 +85,7 @@
         "id": "f0",
         "start": "s1",
         "end": "bomb",
-        "speed": 0.0008,
+        "speed": 0.0006,
         "delayFrames": 0,
         "bulge": 0
       }
@@ -95,7 +95,7 @@
     "level_id": 4,
     "layout": "offset",
     "snipsAllowed": 2,
-    "par": 10,
+    "par": 12,
     "payload": {
       "id": "bomb",
       "x": 90,
@@ -126,7 +126,7 @@
         "start": "s1",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.0011,
+        "speed": 0.0008,
         "delayFrames": 2,
         "bulge": 0.081
       },
@@ -135,7 +135,7 @@
         "start": "s2",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.001,
+        "speed": 0.0008,
         "delayFrames": 97,
         "bulge": 0.11
       }
@@ -150,7 +150,7 @@
     "level_id": 5,
     "layout": "train",
     "snipsAllowed": 2,
-    "par": 11.8,
+    "par": 15.3,
     "payload": {
       "id": "bomb",
       "x": -203,
@@ -186,7 +186,7 @@
         "start": "s1",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.0011,
+        "speed": 0.0008,
         "delayFrames": 0,
         "bulge": 0.1
       },
@@ -195,7 +195,7 @@
         "start": "s2",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.001,
+        "speed": 0.0007,
         "delayFrames": 115,
         "bulge": -0.1
       },
@@ -204,7 +204,7 @@
         "start": "s3",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.001,
+        "speed": 0.0007,
         "delayFrames": 205,
         "bulge": 0.1
       }
@@ -214,7 +214,7 @@
     "level_id": 6,
     "layout": "hub",
     "snipsAllowed": 2,
-    "par": 9.6,
+    "par": 13.1,
     "payload": {
       "id": "bomb",
       "x": 0,
@@ -245,7 +245,7 @@
         "start": "s1",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.001,
+        "speed": 0.0007,
         "delayFrames": 3,
         "bulge": 0
       },
@@ -254,7 +254,7 @@
         "start": "s2",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.001,
+        "speed": 0.0007,
         "delayFrames": 74,
         "bulge": 0
       }
@@ -264,7 +264,7 @@
     "level_id": 7,
     "layout": "offset",
     "snipsAllowed": 2,
-    "par": 8.1,
+    "par": 11.2,
     "payload": {
       "id": "bomb",
       "x": 54,
@@ -305,7 +305,7 @@
         "start": "s1",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.0013,
+        "speed": 0.0009,
         "delayFrames": 6,
         "bulge": 0.1
       },
@@ -314,7 +314,7 @@
         "start": "s2",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.0012,
+        "speed": 0.0008,
         "delayFrames": 45,
         "bulge": -0.1
       },
@@ -323,7 +323,7 @@
         "start": "s3",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.0012,
+        "speed": 0.0009,
         "delayFrames": 71,
         "bulge": 0.1
       },
@@ -332,7 +332,7 @@
         "start": "s4",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.0013,
+        "speed": 0.0009,
         "delayFrames": 92,
         "bulge": -0.1
       }
@@ -347,7 +347,7 @@
     "level_id": 8,
     "layout": "hub",
     "snipsAllowed": 3,
-    "par": 14,
+    "par": 19.4,
     "payload": {
       "id": "bomb",
       "x": 0,
@@ -383,7 +383,7 @@
         "start": "s1",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.0011,
+        "speed": 0.0008,
         "delayFrames": 46,
         "bulge": 0.1
       },
@@ -392,7 +392,7 @@
         "start": "s2",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.001,
+        "speed": 0.0007,
         "delayFrames": 36,
         "bulge": -0.1
       },
@@ -401,7 +401,7 @@
         "branchOf": "f1",
         "at": 0.352,
         "end": "bomb",
-        "speed": 0.0011,
+        "speed": 0.0008,
         "delayFrames": 99999,
         "branchPoint": {
           "x": -168,
@@ -421,7 +421,7 @@
     "level_id": 9,
     "layout": "offset",
     "snipsAllowed": 3,
-    "par": 10.8,
+    "par": 15.7,
     "payload": {
       "id": "bomb",
       "x": 139,
@@ -467,7 +467,7 @@
         "start": "s1",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.0012,
+        "speed": 0.0008,
         "delayFrames": 3,
         "bulge": 0.074
       },
@@ -476,7 +476,7 @@
         "start": "s2",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.0013,
+        "speed": 0.0009,
         "delayFrames": 67,
         "bulge": 0.098
       },
@@ -485,7 +485,7 @@
         "start": "s3",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.0013,
+        "speed": 0.0009,
         "delayFrames": 59,
         "bulge": 0.077
       },
@@ -494,7 +494,7 @@
         "start": "s4",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.0012,
+        "speed": 0.0008,
         "delayFrames": 131,
         "bulge": 0.062
       },
@@ -503,7 +503,7 @@
         "branchOf": "f0",
         "at": 0.309,
         "end": "bomb",
-        "speed": 0.0013,
+        "speed": 0.0009,
         "delayFrames": 99999,
         "branchPoint": {
           "x": -163,
@@ -518,7 +518,7 @@
     "level_id": 10,
     "layout": "hub",
     "snipsAllowed": 3,
-    "par": 10.6,
+    "par": 15,
     "payload": {
       "id": "bomb",
       "x": 0,
@@ -559,7 +559,7 @@
         "start": "s1",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.0013,
+        "speed": 0.0009,
         "delayFrames": 4,
         "bulge": 0
       },
@@ -568,7 +568,7 @@
         "start": "s2",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.0011,
+        "speed": 0.0007,
         "delayFrames": 17,
         "bulge": 0
       },
@@ -577,7 +577,7 @@
         "start": "s3",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.0013,
+        "speed": 0.0009,
         "delayFrames": 83,
         "bulge": 0
       },
@@ -586,7 +586,7 @@
         "branchOf": "f0",
         "at": 0.359,
         "end": "bomb",
-        "speed": 0.0014,
+        "speed": 0.001,
         "delayFrames": 99999,
         "branchPoint": {
           "x": -209,
@@ -601,7 +601,7 @@
     "level_id": 11,
     "layout": "split",
     "snipsAllowed": 4,
-    "par": 11.2,
+    "par": 15.8,
     "payload": {
       "id": "bomb",
       "x": 0,
@@ -647,7 +647,7 @@
         "start": "s1",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.0015,
+        "speed": 0.001,
         "delayFrames": 1,
         "bulge": 0
       },
@@ -656,7 +656,7 @@
         "start": "s2",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.001,
+        "speed": 0.0007,
         "delayFrames": 68,
         "bulge": 0
       },
@@ -665,7 +665,7 @@
         "start": "s3",
         "routeThrough": "cut2",
         "end": "bomb",
-        "speed": 0.0015,
+        "speed": 0.001,
         "delayFrames": 56,
         "bulge": 0
       },
@@ -674,7 +674,7 @@
         "start": "s4",
         "routeThrough": "cut2",
         "end": "bomb",
-        "speed": 0.0009,
+        "speed": 0.0006,
         "delayFrames": 114,
         "bulge": 0
       },
@@ -683,7 +683,7 @@
         "branchOf": "f0",
         "at": 0.148,
         "end": "bomb",
-        "speed": 0.0015,
+        "speed": 0.001,
         "delayFrames": 99999,
         "branchPoint": {
           "x": 79,
@@ -697,7 +697,7 @@
     "level_id": 12,
     "layout": "offset",
     "snipsAllowed": 3,
-    "par": 7.9,
+    "par": 10.7,
     "payload": {
       "id": "bomb",
       "x": 108,
@@ -743,7 +743,7 @@
         "start": "s1",
         "routeThrough": "cut2",
         "end": "bomb",
-        "speed": 0.0014,
+        "speed": 0.0009,
         "delayFrames": 0,
         "bulge": 0.1
       },
@@ -752,7 +752,7 @@
         "start": "s2",
         "routeThrough": "cut2",
         "end": "bomb",
-        "speed": 0.0014,
+        "speed": 0.0009,
         "delayFrames": 64,
         "bulge": -0.1
       },
@@ -761,7 +761,7 @@
         "start": "s3",
         "routeThrough": "cut2",
         "end": "bomb",
-        "speed": 0.0014,
+        "speed": 0.0009,
         "delayFrames": 89,
         "bulge": 0.1
       },
@@ -770,7 +770,7 @@
         "start": "s4",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.0015,
+        "speed": 0.001,
         "delayFrames": 141,
         "bulge": -0.1
       }
@@ -780,7 +780,7 @@
     "level_id": 13,
     "layout": "hub",
     "snipsAllowed": 4,
-    "par": 12.3,
+    "par": 18.5,
     "payload": {
       "id": "bomb",
       "x": 0,
@@ -831,7 +831,7 @@
         "start": "s1",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.0015,
+        "speed": 0.001,
         "delayFrames": 5,
         "bulge": 0.072
       },
@@ -840,7 +840,7 @@
         "start": "s2",
         "routeThrough": "cut2",
         "end": "bomb",
-        "speed": 0.0011,
+        "speed": 0.0007,
         "delayFrames": 31,
         "bulge": 0.075
       },
@@ -849,7 +849,7 @@
         "start": "s3",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.0009,
+        "speed": 0.0006,
         "delayFrames": 93,
         "bulge": 0.064
       },
@@ -858,7 +858,7 @@
         "start": "s4",
         "routeThrough": "cut2",
         "end": "bomb",
-        "speed": 0.0008,
+        "speed": 0.0005,
         "delayFrames": 110,
         "bulge": 0.087
       },
@@ -867,7 +867,7 @@
         "branchOf": "f0",
         "at": 0.369,
         "end": "bomb",
-        "speed": 0.0017,
+        "speed": 0.0011,
         "delayFrames": 99999,
         "branchPoint": {
           "x": -339,
@@ -882,7 +882,7 @@
     "level_id": 14,
     "layout": "train",
     "snipsAllowed": 5,
-    "par": 11.3,
+    "par": 17.5,
     "payload": {
       "id": "bomb",
       "x": 0,
@@ -928,7 +928,7 @@
         "start": "s1",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.0015,
+        "speed": 0.001,
         "delayFrames": 3,
         "bulge": 0.085
       },
@@ -937,7 +937,7 @@
         "start": "s2",
         "routeThrough": "cut2",
         "end": "bomb",
-        "speed": 0.0008,
+        "speed": 0.0005,
         "delayFrames": 51,
         "bulge": 0.089
       },
@@ -945,7 +945,7 @@
         "id": "f2",
         "start": "s3",
         "end": "bomb",
-        "speed": 0.0012,
+        "speed": 0.0008,
         "delayFrames": 90,
         "bulge": 0.076
       },
@@ -954,7 +954,7 @@
         "start": "s4",
         "routeThrough": "cut2",
         "end": "bomb",
-        "speed": 0.0011,
+        "speed": 0.0008,
         "delayFrames": 139,
         "bulge": 0.098
       },
@@ -963,7 +963,7 @@
         "branchOf": "f0",
         "at": 0.322,
         "end": "bomb",
-        "speed": 0.0016,
+        "speed": 0.0011,
         "delayFrames": 99999,
         "branchPoint": {
           "x": -124,
@@ -982,7 +982,7 @@
     "level_id": 15,
     "layout": "offset",
     "snipsAllowed": 5,
-    "par": 7.1,
+    "par": 11.3,
     "payload": {
       "id": "bomb",
       "x": 74,
@@ -1038,7 +1038,7 @@
         "start": "s1",
         "routeThrough": "cut2",
         "end": "bomb",
-        "speed": 0.0019,
+        "speed": 0.0012,
         "delayFrames": 5,
         "bulge": 0
       },
@@ -1047,7 +1047,7 @@
         "start": "s2",
         "routeThrough": "cut2",
         "end": "bomb",
-        "speed": 0.0013,
+        "speed": 0.0008,
         "delayFrames": 9,
         "bulge": 0
       },
@@ -1055,7 +1055,7 @@
         "id": "f2",
         "start": "s3",
         "end": "bomb",
-        "speed": 0.0019,
+        "speed": 0.0012,
         "delayFrames": 108,
         "bulge": 0
       },
@@ -1064,7 +1064,7 @@
         "start": "s4",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.0016,
+        "speed": 0.001,
         "delayFrames": 102,
         "bulge": 0
       },
@@ -1073,7 +1073,7 @@
         "start": "s5",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.0019,
+        "speed": 0.0012,
         "delayFrames": 155,
         "bulge": 0
       },
@@ -1082,7 +1082,7 @@
         "branchOf": "f0",
         "at": 0.348,
         "end": "bomb",
-        "speed": 0.0021,
+        "speed": 0.0013,
         "delayFrames": 99999,
         "branchPoint": {
           "x": -61,
@@ -1097,7 +1097,7 @@
     "level_id": 16,
     "layout": "split",
     "snipsAllowed": 5,
-    "par": 9.3,
+    "par": 14.9,
     "payload": {
       "id": "bomb",
       "x": 0,
@@ -1148,7 +1148,7 @@
         "start": "s1",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.002,
+        "speed": 0.0013,
         "delayFrames": 10,
         "bulge": 0
       },
@@ -1157,7 +1157,7 @@
         "start": "s2",
         "routeThrough": "cut2",
         "end": "bomb",
-        "speed": 0.001,
+        "speed": 0.0006,
         "delayFrames": 60,
         "bulge": 0
       },
@@ -1165,7 +1165,7 @@
         "id": "f2",
         "start": "s3",
         "end": "bomb",
-        "speed": 0.0013,
+        "speed": 0.0008,
         "delayFrames": 79,
         "bulge": 0
       },
@@ -1174,7 +1174,7 @@
         "start": "s4",
         "routeThrough": "cut2",
         "end": "bomb",
-        "speed": 0.0016,
+        "speed": 0.001,
         "delayFrames": 100,
         "bulge": 0
       },
@@ -1183,7 +1183,7 @@
         "branchOf": "f0",
         "at": 0.14,
         "end": "bomb",
-        "speed": 0.0022,
+        "speed": 0.0014,
         "delayFrames": 99999,
         "branchPoint": {
           "x": -141,
@@ -1198,7 +1198,7 @@
     "level_id": 17,
     "layout": "offset",
     "snipsAllowed": 5,
-    "par": 7,
+    "par": 11.6,
     "payload": {
       "id": "bomb",
       "x": 33,
@@ -1249,7 +1249,7 @@
         "start": "s1",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.0018,
+        "speed": 0.0011,
         "delayFrames": 0,
         "bulge": 0.1
       },
@@ -1258,7 +1258,7 @@
         "start": "s2",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.0019,
+        "speed": 0.0012,
         "delayFrames": 35,
         "bulge": -0.1
       },
@@ -1266,7 +1266,7 @@
         "id": "f2",
         "start": "s3",
         "end": "bomb",
-        "speed": 0.0018,
+        "speed": 0.0011,
         "delayFrames": 59,
         "bulge": 0.1
       },
@@ -1275,7 +1275,7 @@
         "start": "s4",
         "routeThrough": "cut2",
         "end": "bomb",
-        "speed": 0.0018,
+        "speed": 0.0011,
         "delayFrames": 85,
         "bulge": -0.1
       },
@@ -1284,7 +1284,7 @@
         "start": "s5",
         "routeThrough": "cut2",
         "end": "bomb",
-        "speed": 0.0019,
+        "speed": 0.0012,
         "delayFrames": 108,
         "bulge": 0.1
       },
@@ -1293,7 +1293,7 @@
         "branchOf": "f0",
         "at": 0.304,
         "end": "bomb",
-        "speed": 0.002,
+        "speed": 0.0012,
         "delayFrames": 99999,
         "branchPoint": {
           "x": 195,
@@ -1307,7 +1307,7 @@
     "level_id": 18,
     "layout": "split",
     "snipsAllowed": 5,
-    "par": 7.3,
+    "par": 11.3,
     "payload": {
       "id": "bomb",
       "x": 0,
@@ -1353,7 +1353,7 @@
         "start": "s1",
         "routeThrough": "cut2",
         "end": "bomb",
-        "speed": 0.002,
+        "speed": 0.0013,
         "delayFrames": 4,
         "bulge": 0
       },
@@ -1362,7 +1362,7 @@
         "start": "s2",
         "routeThrough": "cut2",
         "end": "bomb",
-        "speed": 0.0013,
+        "speed": 0.0008,
         "delayFrames": 12,
         "bulge": 0
       },
@@ -1370,7 +1370,7 @@
         "id": "f2",
         "start": "s3",
         "end": "bomb",
-        "speed": 0.0017,
+        "speed": 0.0011,
         "delayFrames": 55,
         "bulge": 0
       },
@@ -1379,7 +1379,7 @@
         "start": "s4",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.0013,
+        "speed": 0.0008,
         "delayFrames": 55,
         "bulge": 0
       },
@@ -1388,7 +1388,7 @@
         "branchOf": "f0",
         "at": 0.156,
         "end": "bomb",
-        "speed": 0.0022,
+        "speed": 0.0014,
         "delayFrames": 99999,
         "branchPoint": {
           "x": 165,
@@ -1402,7 +1402,7 @@
     "level_id": 19,
     "layout": "offset",
     "snipsAllowed": 5,
-    "par": 6.9,
+    "par": 10.9,
     "payload": {
       "id": "bomb",
       "x": -20,
@@ -1453,7 +1453,7 @@
         "start": "s1",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.0019,
+        "speed": 0.0012,
         "delayFrames": 4,
         "bulge": 0
       },
@@ -1462,7 +1462,7 @@
         "start": "s2",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.0019,
+        "speed": 0.0012,
         "delayFrames": 27,
         "bulge": 0
       },
@@ -1470,7 +1470,7 @@
         "id": "f2",
         "start": "s3",
         "end": "bomb",
-        "speed": 0.0019,
+        "speed": 0.0012,
         "delayFrames": 58,
         "bulge": 0
       },
@@ -1479,7 +1479,7 @@
         "start": "s4",
         "routeThrough": "cut2",
         "end": "bomb",
-        "speed": 0.0019,
+        "speed": 0.0012,
         "delayFrames": 88,
         "bulge": 0
       },
@@ -1488,7 +1488,7 @@
         "start": "s5",
         "routeThrough": "cut2",
         "end": "bomb",
-        "speed": 0.002,
+        "speed": 0.0012,
         "delayFrames": 113,
         "bulge": 0
       },
@@ -1497,7 +1497,7 @@
         "branchOf": "f0",
         "at": 0.28,
         "end": "bomb",
-        "speed": 0.0019,
+        "speed": 0.0012,
         "delayFrames": 99999,
         "branchPoint": {
           "x": -206,
@@ -1511,7 +1511,7 @@
     "level_id": 20,
     "layout": "split",
     "snipsAllowed": 5,
-    "par": 6.5,
+    "par": 9.4,
     "payload": {
       "id": "bomb",
       "x": 0,
@@ -1562,7 +1562,7 @@
         "start": "s1",
         "routeThrough": "cut2",
         "end": "bomb",
-        "speed": 0.0019,
+        "speed": 0.0012,
         "delayFrames": 7,
         "bulge": 0
       },
@@ -1571,7 +1571,7 @@
         "start": "s2",
         "routeThrough": "cut2",
         "end": "bomb",
-        "speed": 0.0019,
+        "speed": 0.0012,
         "delayFrames": 62,
         "bulge": 0
       },
@@ -1579,7 +1579,7 @@
         "id": "f2",
         "start": "s3",
         "end": "bomb",
-        "speed": 0.002,
+        "speed": 0.0012,
         "delayFrames": 94,
         "bulge": 0
       },
@@ -1588,7 +1588,7 @@
         "start": "s4",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.0018,
+        "speed": 0.0011,
         "delayFrames": 111,
         "bulge": 0
       },
@@ -1597,7 +1597,7 @@
         "branchOf": "f0",
         "at": 0.14,
         "end": "bomb",
-        "speed": 0.0021,
+        "speed": 0.0013,
         "delayFrames": 99999,
         "branchPoint": {
           "x": 177,
@@ -1612,7 +1612,7 @@
     "level_id": 21,
     "layout": "rings",
     "snipsAllowed": 5,
-    "par": 9.3,
+    "par": 12.2,
     "payload": {
       "id": "bomb",
       "x": 0,
@@ -1668,7 +1668,7 @@
         "start": "s1",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.0018,
+        "speed": 0.0012,
         "delayFrames": 8,
         "bulge": 0
       },
@@ -1677,7 +1677,7 @@
         "start": "s2",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.0015,
+        "speed": 0.001,
         "delayFrames": 29,
         "bulge": 0
       },
@@ -1685,7 +1685,7 @@
         "id": "f2",
         "start": "s3",
         "end": "bomb",
-        "speed": 0.0012,
+        "speed": 0.0008,
         "delayFrames": 60,
         "bulge": 0
       },
@@ -1694,7 +1694,7 @@
         "start": "s4",
         "routeThrough": "cut2",
         "end": "bomb",
-        "speed": 0.0011,
+        "speed": 0.0008,
         "delayFrames": 106,
         "bulge": 0
       },
@@ -1703,7 +1703,7 @@
         "start": "s5",
         "routeThrough": "cut2",
         "end": "bomb",
-        "speed": 0.0015,
+        "speed": 0.001,
         "delayFrames": 206,
         "bulge": 0
       },
@@ -1712,7 +1712,7 @@
         "branchOf": "f0",
         "at": 0.226,
         "end": "bomb",
-        "speed": 0.0018,
+        "speed": 0.0012,
         "delayFrames": 99999,
         "branchPoint": {
           "x": 162,
@@ -1727,7 +1727,7 @@
     "level_id": 22,
     "layout": "split",
     "snipsAllowed": 5,
-    "par": 5.9,
+    "par": 8.2,
     "payload": {
       "id": "bomb",
       "x": 0,
@@ -1778,7 +1778,7 @@
         "start": "s1",
         "routeThrough": "cut2",
         "end": "bomb",
-        "speed": 0.0018,
+        "speed": 0.0013,
         "delayFrames": 8,
         "bulge": 0.1
       },
@@ -1787,7 +1787,7 @@
         "start": "s2",
         "routeThrough": "cut2",
         "end": "bomb",
-        "speed": 0.0018,
+        "speed": 0.0013,
         "delayFrames": 7,
         "bulge": -0.1
       },
@@ -1795,7 +1795,7 @@
         "id": "f2",
         "start": "s3",
         "end": "bomb",
-        "speed": 0.0019,
+        "speed": 0.0013,
         "delayFrames": 77,
         "bulge": 0.1
       },
@@ -1804,7 +1804,7 @@
         "start": "s4",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.0018,
+        "speed": 0.0012,
         "delayFrames": 76,
         "bulge": -0.1
       },
@@ -1813,7 +1813,7 @@
         "branchOf": "f1",
         "at": 0.14,
         "end": "bomb",
-        "speed": 0.0019,
+        "speed": 0.0014,
         "delayFrames": 99999,
         "branchPoint": {
           "x": -108,
@@ -1828,7 +1828,7 @@
     "level_id": 23,
     "layout": "train",
     "snipsAllowed": 5,
-    "par": 8.3,
+    "par": 10.6,
     "payload": {
       "id": "bomb",
       "x": 0,
@@ -1884,7 +1884,7 @@
         "start": "s1",
         "routeThrough": "cut2",
         "end": "bomb",
-        "speed": 0.002,
+        "speed": 0.0014,
         "delayFrames": 6,
         "bulge": 0.096
       },
@@ -1893,7 +1893,7 @@
         "start": "s2",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.0014,
+        "speed": 0.001,
         "delayFrames": 17,
         "bulge": 0.065
       },
@@ -1901,7 +1901,7 @@
         "id": "f2",
         "start": "s3",
         "end": "bomb",
-        "speed": 0.002,
+        "speed": 0.0014,
         "delayFrames": 99,
         "bulge": 0.098
       },
@@ -1910,7 +1910,7 @@
         "start": "s4",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.0012,
+        "speed": 0.0009,
         "delayFrames": 81,
         "bulge": 0.08
       },
@@ -1919,7 +1919,7 @@
         "start": "s5",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.002,
+        "speed": 0.0014,
         "delayFrames": 178,
         "bulge": 0.061
       },
@@ -1928,7 +1928,7 @@
         "branchOf": "f0",
         "at": 0.297,
         "end": "bomb",
-        "speed": 0.0021,
+        "speed": 0.0015,
         "delayFrames": 99999,
         "branchPoint": {
           "x": -17,
@@ -1943,7 +1943,7 @@
     "level_id": 24,
     "layout": "hub",
     "snipsAllowed": 5,
-    "par": 8.5,
+    "par": 14,
     "payload": {
       "id": "bomb",
       "x": 0,
@@ -1989,7 +1989,7 @@
         "start": "s1",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.0018,
+        "speed": 0.0012,
         "delayFrames": 1,
         "bulge": 0.064
       },
@@ -1998,7 +1998,7 @@
         "start": "s2",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.001,
+        "speed": 0.0006,
         "delayFrames": 8,
         "bulge": 0.072
       },
@@ -2006,7 +2006,7 @@
         "id": "f2",
         "start": "s3",
         "end": "bomb",
-        "speed": 0.0013,
+        "speed": 0.0009,
         "delayFrames": 63,
         "bulge": 0.067
       },
@@ -2015,7 +2015,7 @@
         "start": "s4",
         "routeThrough": "cut2",
         "end": "bomb",
-        "speed": 0.0013,
+        "speed": 0.0009,
         "delayFrames": 57,
         "bulge": 0.08
       },
@@ -2024,7 +2024,7 @@
         "branchOf": "f0",
         "at": 0.14,
         "end": "bomb",
-        "speed": 0.002,
+        "speed": 0.0013,
         "delayFrames": 99999,
         "branchPoint": {
           "x": -123,
@@ -2038,7 +2038,7 @@
     "level_id": 25,
     "layout": "weave",
     "snipsAllowed": 5,
-    "par": 8.1,
+    "par": 10.7,
     "payload": {
       "id": "bomb",
       "x": 0,
@@ -2104,7 +2104,7 @@
         "start": "s1",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.0016,
+        "speed": 0.0011,
         "delayFrames": 40,
         "bulge": 0.1
       },
@@ -2113,7 +2113,7 @@
         "start": "s2",
         "routeThrough": "cut2",
         "end": "bomb",
-        "speed": 0.0017,
+        "speed": 0.0011,
         "delayFrames": 126,
         "bulge": -0.1
       },
@@ -2122,7 +2122,7 @@
         "start": "s3",
         "routeThrough": "cut3",
         "end": "bomb",
-        "speed": 0.0017,
+        "speed": 0.0012,
         "delayFrames": 77,
         "bulge": 0.1
       },
@@ -2131,7 +2131,7 @@
         "start": "s4",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.0017,
+        "speed": 0.0011,
         "delayFrames": 190,
         "bulge": -0.1
       },
@@ -2140,7 +2140,7 @@
         "start": "s5",
         "routeThrough": "cut2",
         "end": "bomb",
-        "speed": 0.0017,
+        "speed": 0.0011,
         "delayFrames": 151,
         "bulge": 0.1
       },
@@ -2149,7 +2149,7 @@
         "start": "s6",
         "routeThrough": "cut3",
         "end": "bomb",
-        "speed": 0.0017,
+        "speed": 0.0011,
         "delayFrames": 8,
         "bulge": -0.1
       },
@@ -2158,7 +2158,7 @@
         "branchOf": "f5",
         "at": 0.174,
         "end": "bomb",
-        "speed": 0.0017,
+        "speed": 0.0011,
         "delayFrames": 99999,
         "branchPoint": {
           "x": -45,
@@ -2178,7 +2178,7 @@
     "level_id": 26,
     "layout": "split",
     "snipsAllowed": 6,
-    "par": 12.4,
+    "par": 16.6,
     "payload": {
       "id": "bomb",
       "x": 0,
@@ -2249,7 +2249,7 @@
         "start": "s1",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.002,
+        "speed": 0.0013,
         "delayFrames": 5,
         "bulge": 0.068
       },
@@ -2258,7 +2258,7 @@
         "start": "s2",
         "routeThrough": "cut2",
         "end": "bomb",
-        "speed": 0.0013,
+        "speed": 0.0009,
         "delayFrames": 72,
         "bulge": 0.102
       },
@@ -2267,7 +2267,7 @@
         "start": "s3",
         "routeThrough": "cut3",
         "end": "bomb",
-        "speed": 0.002,
+        "speed": 0.0013,
         "delayFrames": 89,
         "bulge": 0.074
       },
@@ -2276,7 +2276,7 @@
         "start": "s4",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.0012,
+        "speed": 0.0008,
         "delayFrames": 150,
         "bulge": 0.07
       },
@@ -2285,7 +2285,7 @@
         "start": "s5",
         "routeThrough": "cut2",
         "end": "bomb",
-        "speed": 0.002,
+        "speed": 0.0013,
         "delayFrames": 128,
         "bulge": 0.109
       },
@@ -2294,7 +2294,7 @@
         "start": "s6",
         "routeThrough": "cut3",
         "end": "bomb",
-        "speed": 0.0015,
+        "speed": 0.001,
         "delayFrames": 172,
         "bulge": 0.097
       },
@@ -2303,7 +2303,7 @@
         "branchOf": "f0",
         "at": 0.169,
         "end": "bomb",
-        "speed": 0.0018,
+        "speed": 0.0012,
         "delayFrames": 99999,
         "branchPoint": {
           "x": 169,
@@ -2317,7 +2317,7 @@
         "branchOf": "f1",
         "at": 0.331,
         "end": "bomb",
-        "speed": 0.0012,
+        "speed": 0.0009,
         "delayFrames": 99999,
         "branchPoint": {
           "x": 201,
@@ -2332,7 +2332,7 @@
     "level_id": 27,
     "layout": "hub",
     "snipsAllowed": 6,
-    "par": 11.3,
+    "par": 17.7,
     "payload": {
       "id": "bomb",
       "x": 0,
@@ -2403,7 +2403,7 @@
         "start": "s1",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.002,
+        "speed": 0.0013,
         "delayFrames": 10,
         "bulge": 0
       },
@@ -2412,7 +2412,7 @@
         "start": "s2",
         "routeThrough": "cut2",
         "end": "bomb",
-        "speed": 0.0013,
+        "speed": 0.0008,
         "delayFrames": 62,
         "bulge": 0
       },
@@ -2421,7 +2421,7 @@
         "start": "s3",
         "routeThrough": "cut3",
         "end": "bomb",
-        "speed": 0.0018,
+        "speed": 0.0012,
         "delayFrames": 64,
         "bulge": 0
       },
@@ -2430,7 +2430,7 @@
         "start": "s4",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.0014,
+        "speed": 0.0009,
         "delayFrames": 145,
         "bulge": 0
       },
@@ -2439,7 +2439,7 @@
         "start": "s5",
         "routeThrough": "cut2",
         "end": "bomb",
-        "speed": 0.0016,
+        "speed": 0.0011,
         "delayFrames": 118,
         "bulge": 0
       },
@@ -2448,7 +2448,7 @@
         "start": "s6",
         "routeThrough": "cut3",
         "end": "bomb",
-        "speed": 0.0016,
+        "speed": 0.0011,
         "delayFrames": 206,
         "bulge": 0
       },
@@ -2457,7 +2457,7 @@
         "branchOf": "f0",
         "at": 0.273,
         "end": "bomb",
-        "speed": 0.002,
+        "speed": 0.0013,
         "delayFrames": 99999,
         "branchPoint": {
           "x": -53,
@@ -2471,7 +2471,7 @@
         "branchOf": "f1",
         "at": 0.3,
         "end": "bomb",
-        "speed": 0.0013,
+        "speed": 0.0008,
         "delayFrames": 99999,
         "branchPoint": {
           "x": -197,
@@ -2486,7 +2486,7 @@
     "level_id": 28,
     "layout": "rings",
     "snipsAllowed": 5,
-    "par": 8.4,
+    "par": 12.1,
     "payload": {
       "id": "bomb",
       "x": 0,
@@ -2552,7 +2552,7 @@
         "start": "s1",
         "routeThrough": "cut3",
         "end": "bomb",
-        "speed": 0.002,
+        "speed": 0.0013,
         "delayFrames": 142,
         "bulge": 0
       },
@@ -2561,7 +2561,7 @@
         "start": "s2",
         "routeThrough": "cut3",
         "end": "bomb",
-        "speed": 0.0017,
+        "speed": 0.0011,
         "delayFrames": 47,
         "bulge": 0
       },
@@ -2570,7 +2570,7 @@
         "start": "s3",
         "routeThrough": "cut3",
         "end": "bomb",
-        "speed": 0.002,
+        "speed": 0.0013,
         "delayFrames": 92,
         "bulge": 0
       },
@@ -2579,7 +2579,7 @@
         "start": "s4",
         "routeThrough": "cut3",
         "end": "bomb",
-        "speed": 0.0015,
+        "speed": 0.001,
         "delayFrames": 48,
         "bulge": 0
       },
@@ -2588,7 +2588,7 @@
         "start": "s5",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.002,
+        "speed": 0.0013,
         "delayFrames": 164,
         "bulge": 0
       },
@@ -2597,7 +2597,7 @@
         "start": "s6",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.0014,
+        "speed": 0.0009,
         "delayFrames": 148,
         "bulge": 0
       },
@@ -2606,7 +2606,7 @@
         "branchOf": "f1",
         "at": 0.187,
         "end": "bomb",
-        "speed": 0.0017,
+        "speed": 0.0011,
         "delayFrames": 99999,
         "branchPoint": {
           "x": -113,
@@ -2620,7 +2620,7 @@
         "branchOf": "f3",
         "at": 0.179,
         "end": "bomb",
-        "speed": 0.0015,
+        "speed": 0.001,
         "delayFrames": 99999,
         "branchPoint": {
           "x": -155,
@@ -2634,7 +2634,7 @@
     "level_id": 29,
     "layout": "offset",
     "snipsAllowed": 5,
-    "par": 8.3,
+    "par": 12.6,
     "payload": {
       "id": "bomb",
       "x": -118,
@@ -2695,7 +2695,7 @@
         "start": "s1",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.0018,
+        "speed": 0.0012,
         "delayFrames": 9,
         "bulge": 0.105
       },
@@ -2704,7 +2704,7 @@
         "start": "s2",
         "routeThrough": "cut2",
         "end": "bomb",
-        "speed": 0.0019,
+        "speed": 0.0013,
         "delayFrames": 33,
         "bulge": 0.095
       },
@@ -2713,7 +2713,7 @@
         "start": "s3",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.0019,
+        "speed": 0.0013,
         "delayFrames": 49,
         "bulge": 0.063
       },
@@ -2722,7 +2722,7 @@
         "start": "s4",
         "routeThrough": "cut2",
         "end": "bomb",
-        "speed": 0.002,
+        "speed": 0.0013,
         "delayFrames": 74,
         "bulge": 0.105
       },
@@ -2731,7 +2731,7 @@
         "start": "s5",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.0019,
+        "speed": 0.0013,
         "delayFrames": 101,
         "bulge": 0.07
       },
@@ -2740,7 +2740,7 @@
         "start": "s6",
         "routeThrough": "cut2",
         "end": "bomb",
-        "speed": 0.0019,
+        "speed": 0.0012,
         "delayFrames": 121,
         "bulge": 0.086
       },
@@ -2749,7 +2749,7 @@
         "branchOf": "f0",
         "at": 0.35,
         "end": "bomb",
-        "speed": 0.0017,
+        "speed": 0.0011,
         "delayFrames": 99999,
         "branchPoint": {
           "x": 25,
@@ -2762,7 +2762,7 @@
         "branchOf": "f1",
         "at": 0.148,
         "end": "bomb",
-        "speed": 0.0018,
+        "speed": 0.0012,
         "delayFrames": 99999,
         "branchPoint": {
           "x": 2,
@@ -2777,7 +2777,7 @@
     "level_id": 30,
     "layout": "train",
     "snipsAllowed": 5,
-    "par": 13.5,
+    "par": 18.4,
     "payload": {
       "id": "bomb",
       "x": 0,
@@ -2843,7 +2843,7 @@
         "start": "s1",
         "routeThrough": "cut2",
         "end": "bomb",
-        "speed": 0.002,
+        "speed": 0.0013,
         "delayFrames": 9,
         "bulge": 0
       },
@@ -2852,7 +2852,7 @@
         "start": "s2",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.0011,
+        "speed": 0.0008,
         "delayFrames": 28,
         "bulge": 0
       },
@@ -2861,7 +2861,7 @@
         "start": "s3",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.002,
+        "speed": 0.0013,
         "delayFrames": 53,
         "bulge": 0
       },
@@ -2870,7 +2870,7 @@
         "start": "s4",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.0012,
+        "speed": 0.0008,
         "delayFrames": 79,
         "bulge": 0
       },
@@ -2879,7 +2879,7 @@
         "start": "s5",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.002,
+        "speed": 0.0013,
         "delayFrames": 104,
         "bulge": 0
       },
@@ -2888,7 +2888,7 @@
         "start": "s6",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.0012,
+        "speed": 0.0008,
         "delayFrames": 122,
         "bulge": 0
       },
@@ -2897,7 +2897,7 @@
         "branchOf": "f0",
         "at": 0.353,
         "end": "bomb",
-        "speed": 0.0019,
+        "speed": 0.0012,
         "delayFrames": 99999,
         "branchPoint": {
           "x": -21,
@@ -2911,7 +2911,7 @@
         "branchOf": "f1",
         "at": 0.359,
         "end": "bomb",
-        "speed": 0.0011,
+        "speed": 0.0008,
         "delayFrames": 99999,
         "branchPoint": {
           "x": -178,
@@ -2926,7 +2926,7 @@
     "level_id": 31,
     "layout": "offset",
     "snipsAllowed": 5,
-    "par": 10,
+    "par": 14.4,
     "payload": {
       "id": "bomb",
       "x": 3,
@@ -2987,7 +2987,7 @@
         "start": "s1",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.0022,
+        "speed": 0.0015,
         "delayFrames": 9,
         "bulge": 0
       },
@@ -2996,7 +2996,7 @@
         "start": "s2",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.0016,
+        "speed": 0.0011,
         "delayFrames": 56,
         "bulge": 0
       },
@@ -3005,7 +3005,7 @@
         "start": "s3",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.0013,
+        "speed": 0.0009,
         "delayFrames": 80,
         "bulge": 0
       },
@@ -3014,7 +3014,7 @@
         "start": "s4",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.0012,
+        "speed": 0.0008,
         "delayFrames": 92,
         "bulge": 0
       },
@@ -3023,7 +3023,7 @@
         "start": "s5",
         "routeThrough": "cut2",
         "end": "bomb",
-        "speed": 0.0014,
+        "speed": 0.001,
         "delayFrames": 108,
         "bulge": 0
       },
@@ -3032,7 +3032,7 @@
         "start": "s6",
         "routeThrough": "cut2",
         "end": "bomb",
-        "speed": 0.0018,
+        "speed": 0.0012,
         "delayFrames": 128,
         "bulge": 0
       },
@@ -3041,7 +3041,7 @@
         "branchOf": "f0",
         "at": 0.321,
         "end": "bomb",
-        "speed": 0.0021,
+        "speed": 0.0014,
         "delayFrames": 99999,
         "branchPoint": {
           "x": -223,
@@ -3054,7 +3054,7 @@
         "branchOf": "f1",
         "at": 0.336,
         "end": "bomb",
-        "speed": 0.0015,
+        "speed": 0.001,
         "delayFrames": 99999,
         "branchPoint": {
           "x": -246,
@@ -3069,7 +3069,7 @@
     "level_id": 32,
     "layout": "weave",
     "snipsAllowed": 4,
-    "par": 11.3,
+    "par": 17.1,
     "payload": {
       "id": "bomb",
       "x": 0,
@@ -3130,7 +3130,7 @@
         "start": "s1",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.0022,
+        "speed": 0.0015,
         "delayFrames": 3,
         "bulge": 0
       },
@@ -3139,7 +3139,7 @@
         "start": "s2",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.0012,
+        "speed": 0.0008,
         "delayFrames": 59,
         "bulge": 0
       },
@@ -3148,7 +3148,7 @@
         "start": "s3",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.0022,
+        "speed": 0.0015,
         "delayFrames": 78,
         "bulge": 0
       },
@@ -3157,7 +3157,7 @@
         "start": "s4",
         "routeThrough": "cut2",
         "end": "bomb",
-        "speed": 0.0016,
+        "speed": 0.0011,
         "delayFrames": 92,
         "bulge": 0
       },
@@ -3166,7 +3166,7 @@
         "start": "s5",
         "routeThrough": "cut2",
         "end": "bomb",
-        "speed": 0.0022,
+        "speed": 0.0015,
         "delayFrames": 113,
         "bulge": 0
       },
@@ -3175,7 +3175,7 @@
         "start": "s6",
         "routeThrough": "cut2",
         "end": "bomb",
-        "speed": 0.0014,
+        "speed": 0.001,
         "delayFrames": 120,
         "bulge": 0
       },
@@ -3184,7 +3184,7 @@
         "branchOf": "f1",
         "at": 0.2,
         "end": "bomb",
-        "speed": 0.0011,
+        "speed": 0.0007,
         "delayFrames": 99999,
         "branchPoint": {
           "x": 70,
@@ -3199,7 +3199,7 @@
     "level_id": 33,
     "layout": "hub",
     "snipsAllowed": 5,
-    "par": 8.7,
+    "par": 13.2,
     "payload": {
       "id": "bomb",
       "x": 0,
@@ -3265,7 +3265,7 @@
         "start": "s1",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.0022,
+        "speed": 0.0015,
         "delayFrames": 1,
         "bulge": 0
       },
@@ -3274,7 +3274,7 @@
         "start": "s2",
         "routeThrough": "cut2",
         "end": "bomb",
-        "speed": 0.0017,
+        "speed": 0.0011,
         "delayFrames": 28,
         "bulge": 0
       },
@@ -3283,7 +3283,7 @@
         "start": "s3",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.0022,
+        "speed": 0.0015,
         "delayFrames": 55,
         "bulge": 0
       },
@@ -3292,7 +3292,7 @@
         "start": "s4",
         "routeThrough": "cut2",
         "end": "bomb",
-        "speed": 0.0015,
+        "speed": 0.001,
         "delayFrames": 76,
         "bulge": 0
       },
@@ -3301,7 +3301,7 @@
         "start": "s5",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.0022,
+        "speed": 0.0015,
         "delayFrames": 101,
         "bulge": 0
       },
@@ -3310,7 +3310,7 @@
         "start": "s6",
         "routeThrough": "cut2",
         "end": "bomb",
-        "speed": 0.0015,
+        "speed": 0.001,
         "delayFrames": 127,
         "bulge": 0
       },
@@ -3319,7 +3319,7 @@
         "branchOf": "f0",
         "at": 0.307,
         "end": "bomb",
-        "speed": 0.002,
+        "speed": 0.0014,
         "delayFrames": 99999,
         "branchPoint": {
           "x": -205,
@@ -3333,7 +3333,7 @@
         "branchOf": "f1",
         "at": 0.343,
         "end": "bomb",
-        "speed": 0.0017,
+        "speed": 0.0011,
         "delayFrames": 99999,
         "branchPoint": {
           "x": -55,
@@ -3348,7 +3348,7 @@
     "level_id": 34,
     "layout": "train",
     "snipsAllowed": 7,
-    "par": 6.6,
+    "par": 9.7,
     "payload": {
       "id": "bomb",
       "x": 0,
@@ -3414,7 +3414,7 @@
         "start": "s1",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.0022,
+        "speed": 0.0015,
         "delayFrames": 1,
         "bulge": 0.1
       },
@@ -3423,7 +3423,7 @@
         "start": "s2",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.0021,
+        "speed": 0.0014,
         "delayFrames": 5,
         "bulge": -0.1
       },
@@ -3431,7 +3431,7 @@
         "id": "f2",
         "start": "s3",
         "end": "bomb",
-        "speed": 0.0021,
+        "speed": 0.0014,
         "delayFrames": 45,
         "bulge": 0.1
       },
@@ -3440,7 +3440,7 @@
         "start": "s4",
         "routeThrough": "cut2",
         "end": "bomb",
-        "speed": 0.0021,
+        "speed": 0.0015,
         "delayFrames": 46,
         "bulge": -0.1
       },
@@ -3449,7 +3449,7 @@
         "start": "s5",
         "routeThrough": "cut2",
         "end": "bomb",
-        "speed": 0.002,
+        "speed": 0.0014,
         "delayFrames": 90,
         "bulge": 0.1
       },
@@ -3457,7 +3457,7 @@
         "id": "f5",
         "start": "s6",
         "end": "bomb",
-        "speed": 0.002,
+        "speed": 0.0014,
         "delayFrames": 86,
         "bulge": -0.1
       },
@@ -3466,7 +3466,7 @@
         "branchOf": "f0",
         "at": 0.28,
         "end": "bomb",
-        "speed": 0.002,
+        "speed": 0.0014,
         "delayFrames": 99999,
         "branchPoint": {
           "x": -223,
@@ -3480,7 +3480,7 @@
         "branchOf": "f1",
         "at": 0.271,
         "end": "bomb",
-        "speed": 0.0019,
+        "speed": 0.0013,
         "delayFrames": 99999,
         "branchPoint": {
           "x": -225,
@@ -3495,7 +3495,7 @@
     "level_id": 35,
     "layout": "rings",
     "snipsAllowed": 7,
-    "par": 8.9,
+    "par": 13.3,
     "payload": {
       "id": "bomb",
       "x": 0,
@@ -3566,7 +3566,7 @@
         "start": "s1",
         "routeThrough": "cut2",
         "end": "bomb",
-        "speed": 0.0022,
+        "speed": 0.0015,
         "delayFrames": 136,
         "bulge": 0
       },
@@ -3575,7 +3575,7 @@
         "start": "s2",
         "routeThrough": "cut2",
         "end": "bomb",
-        "speed": 0.0018,
+        "speed": 0.0013,
         "delayFrames": 51,
         "bulge": 0
       },
@@ -3583,7 +3583,7 @@
         "id": "f2",
         "start": "s3",
         "end": "bomb",
-        "speed": 0.0022,
+        "speed": 0.0015,
         "delayFrames": 70,
         "bulge": 0
       },
@@ -3592,7 +3592,7 @@
         "start": "s4",
         "routeThrough": "cut2",
         "end": "bomb",
-        "speed": 0.0016,
+        "speed": 0.0011,
         "delayFrames": 70,
         "bulge": 0
       },
@@ -3601,7 +3601,7 @@
         "start": "s5",
         "routeThrough": "cut2",
         "end": "bomb",
-        "speed": 0.0022,
+        "speed": 0.0015,
         "delayFrames": 6,
         "bulge": 0
       },
@@ -3609,7 +3609,7 @@
         "id": "f5",
         "start": "s6",
         "end": "bomb",
-        "speed": 0.0014,
+        "speed": 0.0009,
         "delayFrames": 50,
         "bulge": 0
       },
@@ -3618,7 +3618,7 @@
         "start": "s7",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.0022,
+        "speed": 0.0015,
         "delayFrames": 91,
         "bulge": 0
       },
@@ -3627,7 +3627,7 @@
         "branchOf": "f4",
         "at": 0.187,
         "end": "bomb",
-        "speed": 0.0021,
+        "speed": 0.0014,
         "delayFrames": 99999,
         "branchPoint": {
           "x": -199,
@@ -3641,7 +3641,7 @@
         "branchOf": "f5",
         "at": 0.175,
         "end": "bomb",
-        "speed": 0.0014,
+        "speed": 0.0009,
         "delayFrames": 99999,
         "branchPoint": {
           "x": -106,
@@ -3656,7 +3656,7 @@
     "level_id": 36,
     "layout": "offset",
     "snipsAllowed": 7,
-    "par": 8.5,
+    "par": 12.8,
     "payload": {
       "id": "bomb",
       "x": -103,
@@ -3717,7 +3717,7 @@
         "start": "s1",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.0024,
+        "speed": 0.0017,
         "delayFrames": 5,
         "bulge": 0.092
       },
@@ -3726,7 +3726,7 @@
         "start": "s2",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.0018,
+        "speed": 0.0012,
         "delayFrames": 19,
         "bulge": 0.091
       },
@@ -3734,7 +3734,7 @@
         "id": "f2",
         "start": "s3",
         "end": "bomb",
-        "speed": 0.0018,
+        "speed": 0.0012,
         "delayFrames": 33,
         "bulge": 0.09
       },
@@ -3743,7 +3743,7 @@
         "start": "s4",
         "routeThrough": "cut2",
         "end": "bomb",
-        "speed": 0.0021,
+        "speed": 0.0014,
         "delayFrames": 54,
         "bulge": 0.083
       },
@@ -3752,7 +3752,7 @@
         "start": "s5",
         "routeThrough": "cut2",
         "end": "bomb",
-        "speed": 0.0018,
+        "speed": 0.0013,
         "delayFrames": 91,
         "bulge": 0.061
       },
@@ -3760,7 +3760,7 @@
         "id": "f5",
         "start": "s6",
         "end": "bomb",
-        "speed": 0.0013,
+        "speed": 0.0009,
         "delayFrames": 126,
         "bulge": 0.063
       },
@@ -3769,7 +3769,7 @@
         "branchOf": "f0",
         "at": 0.368,
         "end": "bomb",
-        "speed": 0.0022,
+        "speed": 0.0015,
         "delayFrames": 99999,
         "branchPoint": {
           "x": 8,
@@ -3782,7 +3782,7 @@
         "branchOf": "f1",
         "at": 0.353,
         "end": "bomb",
-        "speed": 0.0017,
+        "speed": 0.0011,
         "delayFrames": 99999,
         "branchPoint": {
           "x": 26,
@@ -3797,7 +3797,7 @@
     "level_id": 37,
     "layout": "split",
     "snipsAllowed": 7,
-    "par": 7.8,
+    "par": 11,
     "payload": {
       "id": "bomb",
       "x": 0,
@@ -3868,7 +3868,7 @@
         "start": "s1",
         "routeThrough": "cut2",
         "end": "bomb",
-        "speed": 0.0024,
+        "speed": 0.0017,
         "delayFrames": 5,
         "bulge": 0
       },
@@ -3877,7 +3877,7 @@
         "start": "s2",
         "routeThrough": "cut2",
         "end": "bomb",
-        "speed": 0.0017,
+        "speed": 0.0011,
         "delayFrames": 8,
         "bulge": 0
       },
@@ -3885,7 +3885,7 @@
         "id": "f2",
         "start": "s3",
         "end": "bomb",
-        "speed": 0.0014,
+        "speed": 0.001,
         "delayFrames": 45,
         "bulge": 0
       },
@@ -3894,7 +3894,7 @@
         "start": "s4",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.0021,
+        "speed": 0.0014,
         "delayFrames": 55,
         "bulge": 0
       },
@@ -3903,7 +3903,7 @@
         "start": "s5",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.0021,
+        "speed": 0.0014,
         "delayFrames": 94,
         "bulge": 0
       },
@@ -3911,7 +3911,7 @@
         "id": "f5",
         "start": "s6",
         "end": "bomb",
-        "speed": 0.0018,
+        "speed": 0.0012,
         "delayFrames": 99,
         "bulge": 0
       },
@@ -3920,7 +3920,7 @@
         "start": "s7",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.0015,
+        "speed": 0.001,
         "delayFrames": 137,
         "bulge": 0
       },
@@ -3929,7 +3929,7 @@
         "branchOf": "f0",
         "at": 0.175,
         "end": "bomb",
-        "speed": 0.0022,
+        "speed": 0.0016,
         "delayFrames": 99999,
         "branchPoint": {
           "x": 111,
@@ -3943,7 +3943,7 @@
         "branchOf": "f1",
         "at": 0.215,
         "end": "bomb",
-        "speed": 0.0017,
+        "speed": 0.0011,
         "delayFrames": 99999,
         "branchPoint": {
           "x": 62,
@@ -3958,7 +3958,7 @@
     "level_id": 38,
     "layout": "weave",
     "snipsAllowed": 6,
-    "par": 7.1,
+    "par": 9.9,
     "payload": {
       "id": "bomb",
       "x": 0,
@@ -4028,7 +4028,7 @@
         "id": "f0",
         "start": "s1",
         "end": "bomb",
-        "speed": 0.0025,
+        "speed": 0.0017,
         "delayFrames": 1,
         "bulge": 0.089
       },
@@ -4037,7 +4037,7 @@
         "start": "s2",
         "routeThrough": "cut3",
         "end": "bomb",
-        "speed": 0.0021,
+        "speed": 0.0014,
         "delayFrames": 12,
         "bulge": 0.065
       },
@@ -4046,7 +4046,7 @@
         "start": "s3",
         "routeThrough": "cut3",
         "end": "bomb",
-        "speed": 0.0019,
+        "speed": 0.0013,
         "delayFrames": 49,
         "bulge": 0.084
       },
@@ -4055,7 +4055,7 @@
         "start": "s4",
         "routeThrough": "cut3",
         "end": "bomb",
-        "speed": 0.0017,
+        "speed": 0.0011,
         "delayFrames": 51,
         "bulge": 0.069
       },
@@ -4064,7 +4064,7 @@
         "start": "s5",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.0017,
+        "speed": 0.0012,
         "delayFrames": 84,
         "bulge": 0.085
       },
@@ -4073,7 +4073,7 @@
         "start": "s6",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.0015,
+        "speed": 0.001,
         "delayFrames": 92,
         "bulge": 0.084
       },
@@ -4082,7 +4082,7 @@
         "branchOf": "f0",
         "at": 0.315,
         "end": "bomb",
-        "speed": 0.0025,
+        "speed": 0.0017,
         "delayFrames": 99999,
         "branchPoint": {
           "x": 13,
@@ -4096,7 +4096,7 @@
         "branchOf": "f1",
         "at": 0.164,
         "end": "bomb",
-        "speed": 0.0021,
+        "speed": 0.0014,
         "delayFrames": 99999,
         "branchPoint": {
           "x": -182,
@@ -4111,7 +4111,7 @@
     "level_id": 39,
     "layout": "offset",
     "snipsAllowed": 5,
-    "par": 7,
+    "par": 9.6,
     "payload": {
       "id": "bomb",
       "x": 141,
@@ -4172,7 +4172,7 @@
         "start": "s1",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.0025,
+        "speed": 0.0017,
         "delayFrames": 6,
         "bulge": 0.1
       },
@@ -4181,7 +4181,7 @@
         "start": "s2",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.002,
+        "speed": 0.0014,
         "delayFrames": 57,
         "bulge": -0.1
       },
@@ -4190,7 +4190,7 @@
         "start": "s3",
         "routeThrough": "cut2",
         "end": "bomb",
-        "speed": 0.0025,
+        "speed": 0.0017,
         "delayFrames": 76,
         "bulge": 0.1
       },
@@ -4199,7 +4199,7 @@
         "start": "s4",
         "routeThrough": "cut2",
         "end": "bomb",
-        "speed": 0.0019,
+        "speed": 0.0013,
         "delayFrames": 97,
         "bulge": -0.1
       },
@@ -4208,7 +4208,7 @@
         "start": "s5",
         "routeThrough": "cut3",
         "end": "bomb",
-        "speed": 0.0025,
+        "speed": 0.0017,
         "delayFrames": 110,
         "bulge": 0.1
       },
@@ -4217,7 +4217,7 @@
         "start": "s6",
         "routeThrough": "cut3",
         "end": "bomb",
-        "speed": 0.0017,
+        "speed": 0.0011,
         "delayFrames": 124,
         "bulge": -0.1
       },
@@ -4226,7 +4226,7 @@
         "branchOf": "f1",
         "at": 0.14,
         "end": "bomb",
-        "speed": 0.0019,
+        "speed": 0.0013,
         "delayFrames": 99999,
         "branchPoint": {
           "x": 20,
@@ -4240,7 +4240,7 @@
     "level_id": 40,
     "layout": "hub",
     "snipsAllowed": 6,
-    "par": 6.9,
+    "par": 10,
     "payload": {
       "id": "bomb",
       "x": 0,
@@ -4311,7 +4311,7 @@
         "start": "s1",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.0024,
+        "speed": 0.0016,
         "delayFrames": 1,
         "bulge": 0.1
       },
@@ -4320,7 +4320,7 @@
         "start": "s2",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.0023,
+        "speed": 0.0016,
         "delayFrames": 11,
         "bulge": -0.1
       },
@@ -4329,7 +4329,7 @@
         "start": "s3",
         "routeThrough": "cut2",
         "end": "bomb",
-        "speed": 0.0024,
+        "speed": 0.0016,
         "delayFrames": 43,
         "bulge": 0.1
       },
@@ -4338,7 +4338,7 @@
         "start": "s4",
         "routeThrough": "cut2",
         "end": "bomb",
-        "speed": 0.0024,
+        "speed": 0.0016,
         "delayFrames": 50,
         "bulge": -0.1
       },
@@ -4347,7 +4347,7 @@
         "start": "s5",
         "routeThrough": "cut3",
         "end": "bomb",
-        "speed": 0.0023,
+        "speed": 0.0016,
         "delayFrames": 81,
         "bulge": 0.1
       },
@@ -4356,7 +4356,7 @@
         "start": "s6",
         "routeThrough": "cut3",
         "end": "bomb",
-        "speed": 0.0025,
+        "speed": 0.0017,
         "delayFrames": 89,
         "bulge": -0.1
       },
@@ -4365,7 +4365,7 @@
         "branchOf": "f0",
         "at": 0.345,
         "end": "bomb",
-        "speed": 0.002,
+        "speed": 0.0013,
         "delayFrames": 99999,
         "branchPoint": {
           "x": 147,
@@ -4379,7 +4379,7 @@
         "branchOf": "f1",
         "at": 0.32,
         "end": "bomb",
-        "speed": 0.0019,
+        "speed": 0.0013,
         "delayFrames": 99999,
         "branchPoint": {
           "x": 98,
@@ -4394,54 +4394,54 @@
     "level_id": 41,
     "layout": "train",
     "snipsAllowed": 4,
-    "par": 9.6,
+    "par": 23,
     "payload": {
       "id": "bomb",
       "x": 0,
-      "y": -223
+      "y": -232
     },
     "spawns": [
       {
         "id": "s1",
         "x": -181,
-        "y": 227
+        "y": 230
       },
       {
         "id": "s2",
-        "x": -114,
-        "y": 227
+        "x": -156,
+        "y": 234
       },
       {
         "id": "s3",
-        "x": -38,
-        "y": 227
+        "x": -84,
+        "y": 229
       },
       {
         "id": "s4",
-        "x": 31,
-        "y": 224
+        "x": -15,
+        "y": 225
       },
       {
         "id": "s5",
-        "x": 104,
-        "y": 212
+        "x": 73,
+        "y": 229
       },
       {
         "id": "s6",
-        "x": 178,
-        "y": 221
+        "x": 181,
+        "y": 229
       }
     ],
     "intersections": [
       {
         "id": "cut1",
-        "x": -254,
-        "y": 84
+        "x": -257,
+        "y": 83
       },
       {
         "id": "b1",
-        "x": -142,
-        "y": -82
+        "x": -143,
+        "y": -80
       }
     ],
     "fuses": [
@@ -4450,78 +4450,78 @@
         "start": "s1",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.0024,
-        "delayFrames": 57,
-        "bulge": 0.1
+        "speed": 0.0014,
+        "delayFrames": 492,
+        "bulge": 0
       },
       {
         "id": "f1",
         "start": "s2",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.002,
-        "delayFrames": 57,
-        "bulge": -0.1
+        "speed": 0.0009,
+        "delayFrames": 822,
+        "bulge": 0
       },
       {
         "id": "f2",
         "start": "s3",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.0012,
-        "delayFrames": 121,
-        "bulge": 0.1
+        "speed": 0.0009,
+        "delayFrames": 5,
+        "bulge": 0
       },
       {
         "id": "f3",
         "start": "s4",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.0017,
-        "delayFrames": 56,
-        "bulge": -0.1
+        "speed": 0.0013,
+        "delayFrames": 134,
+        "bulge": 0
       },
       {
         "id": "f4",
         "start": "s5",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.0019,
-        "delayFrames": 79,
-        "bulge": 0.1
+        "speed": 0.0011,
+        "delayFrames": 0,
+        "bulge": 0
       },
       {
         "id": "f5",
         "start": "s6",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.0021,
-        "delayFrames": 26,
-        "bulge": -0.1
+        "speed": 0.001,
+        "delayFrames": 483,
+        "bulge": 0
       },
       {
         "id": "f6",
-        "branchOf": "f5",
-        "at": 0.265,
+        "branchOf": "f4",
+        "at": 0.268,
         "end": "bomb",
-        "speed": 0.0019,
+        "speed": 0.001,
         "delayFrames": 99999,
         "branchPoint": {
-          "x": -157,
-          "y": 154
+          "x": -180,
+          "y": 151
         },
         "bulge": 0.272
       },
       {
         "id": "f7",
-        "branchOf": "f3",
-        "at": 0.319,
+        "branchOf": "f2",
+        "at": 0.334,
         "end": "bomb",
-        "speed": 0.0015,
+        "speed": 0.0007,
         "delayFrames": 99999,
         "branchPoint": {
-          "x": -225,
-          "y": 137
+          "x": -244,
+          "y": 133
         },
         "routeThrough": "b1",
         "bulge": 0.15
@@ -4532,7 +4532,7 @@
     "level_id": 42,
     "layout": "hub",
     "snipsAllowed": 4,
-    "par": 6.7,
+    "par": 16.7,
     "payload": {
       "id": "bomb",
       "x": 0,
@@ -4578,8 +4578,8 @@
       },
       {
         "id": "b0",
-        "x": 55,
-        "y": 155
+        "x": 48,
+        "y": 157
       }
     ],
     "fuses": [
@@ -4588,81 +4588,81 @@
         "start": "s1",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.0023,
-        "delayFrames": 10,
-        "bulge": 0.087
+        "speed": 0.0014,
+        "delayFrames": 5,
+        "bulge": 0.063
       },
       {
         "id": "f1",
         "start": "s2",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.0022,
-        "delayFrames": 7,
-        "bulge": 0.08
+        "speed": 0.0013,
+        "delayFrames": 35,
+        "bulge": 0.075
       },
       {
         "id": "f2",
         "start": "s3",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.0024,
-        "delayFrames": 43,
-        "bulge": 0.102
+        "speed": 0.0014,
+        "delayFrames": 249,
+        "bulge": 0.069
       },
       {
         "id": "f3",
         "start": "s4",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.0022,
-        "delayFrames": 52,
-        "bulge": 0.069
+        "speed": 0.0014,
+        "delayFrames": 276,
+        "bulge": 0.108
       },
       {
         "id": "f4",
         "start": "s5",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.0024,
-        "delayFrames": 84,
-        "bulge": 0.076
+        "speed": 0.0013,
+        "delayFrames": 448,
+        "bulge": 0.092
       },
       {
         "id": "f5",
         "start": "s6",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.0024,
-        "delayFrames": 87,
-        "bulge": 0.064
+        "speed": 0.0013,
+        "delayFrames": 616,
+        "bulge": 0.085
       },
       {
         "id": "f6",
-        "branchOf": "f1",
-        "at": 0.288,
-        "end": "bomb",
-        "speed": 0.0019,
-        "delayFrames": 99999,
-        "branchPoint": {
-          "x": 0,
-          "y": 211
-        },
-        "routeThrough": "b0",
-        "bulge": 0.153
-      },
-      {
-        "id": "f7",
         "branchOf": "f0",
         "at": 0.14,
         "end": "bomb",
-        "speed": 0.0021,
+        "speed": 0.0013,
         "delayFrames": 99999,
         "branchPoint": {
           "x": 82,
-          "y": 147
+          "y": 148
         },
         "bulge": 0.279
+      },
+      {
+        "id": "f7",
+        "branchOf": "f1",
+        "at": 0.311,
+        "end": "bomb",
+        "speed": 0.0011,
+        "delayFrames": 99999,
+        "branchPoint": {
+          "x": -9,
+          "y": 208
+        },
+        "routeThrough": "b0",
+        "bulge": 0.153
       }
     ]
   },
@@ -4670,7 +4670,7 @@
     "level_id": 43,
     "layout": "offset",
     "snipsAllowed": 4,
-    "par": 6.8,
+    "par": 16.3,
     "payload": {
       "id": "bomb",
       "x": 106,
@@ -4716,13 +4716,13 @@
       },
       {
         "id": "b0",
-        "x": 66,
-        "y": 150
+        "x": 68,
+        "y": 149
       },
       {
         "id": "b1",
-        "x": -163,
-        "y": -22
+        "x": -162,
+        "y": -28
       }
     ],
     "fuses": [
@@ -4731,65 +4731,65 @@
         "start": "s1",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.0023,
-        "delayFrames": 7,
-        "bulge": 0.063
+        "speed": 0.0013,
+        "delayFrames": 1,
+        "bulge": 0.097
       },
       {
         "id": "f1",
         "start": "s2",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.0023,
-        "delayFrames": 8,
-        "bulge": 0.104
+        "speed": 0.0013,
+        "delayFrames": 35,
+        "bulge": 0.088
       },
       {
         "id": "f2",
         "start": "s3",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.0023,
-        "delayFrames": 46,
-        "bulge": 0.07
+        "speed": 0.0013,
+        "delayFrames": 258,
+        "bulge": 0.075
       },
       {
         "id": "f3",
         "start": "s4",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.0023,
-        "delayFrames": 47,
-        "bulge": 0.075
+        "speed": 0.0014,
+        "delayFrames": 276,
+        "bulge": 0.063
       },
       {
         "id": "f4",
         "start": "s5",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.0024,
-        "delayFrames": 84,
-        "bulge": 0.073
+        "speed": 0.0013,
+        "delayFrames": 456,
+        "bulge": 0.089
       },
       {
         "id": "f5",
         "start": "s6",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.0022,
-        "delayFrames": 90,
-        "bulge": 0.065
+        "speed": 0.0013,
+        "delayFrames": 595,
+        "bulge": 0.077
       },
       {
         "id": "f6",
         "branchOf": "f0",
-        "at": 0.35,
+        "at": 0.351,
         "end": "bomb",
-        "speed": 0.002,
+        "speed": 0.0012,
         "delayFrames": 99999,
         "branchPoint": {
-          "x": -134,
-          "y": 103
+          "x": -132,
+          "y": 104
         },
         "routeThrough": "b0",
         "bulge": 0.157
@@ -4797,13 +4797,13 @@
       {
         "id": "f7",
         "branchOf": "f1",
-        "at": 0.271,
+        "at": 0.276,
         "end": "bomb",
-        "speed": 0.002,
+        "speed": 0.0011,
         "delayFrames": 99999,
         "branchPoint": {
-          "x": -132,
-          "y": 167
+          "x": -135,
+          "y": 163
         },
         "routeThrough": "b1",
         "bulge": -0.157
@@ -4814,7 +4814,7 @@
     "level_id": 44,
     "layout": "hub",
     "snipsAllowed": 4,
-    "par": 7.7,
+    "par": 20.8,
     "payload": {
       "id": "bomb",
       "x": 0,
@@ -4860,8 +4860,8 @@
       },
       {
         "id": "b0",
-        "x": -109,
-        "y": -122
+        "x": -107,
+        "y": -124
       }
     ],
     "fuses": [
@@ -4870,8 +4870,8 @@
         "start": "s1",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.0024,
-        "delayFrames": 4,
+        "speed": 0.0014,
+        "delayFrames": 9,
         "bulge": 0
       },
       {
@@ -4879,8 +4879,8 @@
         "start": "s2",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.0021,
-        "delayFrames": 11,
+        "speed": 0.0008,
+        "delayFrames": 76,
         "bulge": 0
       },
       {
@@ -4888,8 +4888,8 @@
         "start": "s3",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.0024,
-        "delayFrames": 37,
+        "speed": 0.0014,
+        "delayFrames": 156,
         "bulge": 0
       },
       {
@@ -4897,8 +4897,8 @@
         "start": "s4",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.0021,
-        "delayFrames": 53,
+        "speed": 0.0009,
+        "delayFrames": 381,
         "bulge": 0
       },
       {
@@ -4906,8 +4906,8 @@
         "start": "s5",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.0024,
-        "delayFrames": 90,
+        "speed": 0.0014,
+        "delayFrames": 528,
         "bulge": 0
       },
       {
@@ -4915,8 +4915,8 @@
         "start": "s6",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.0015,
-        "delayFrames": 128,
+        "speed": 0.0012,
+        "delayFrames": 830,
         "bulge": 0
       },
       {
@@ -4924,7 +4924,7 @@
         "branchOf": "f0",
         "at": 0.14,
         "end": "bomb",
-        "speed": 0.002,
+        "speed": 0.0012,
         "delayFrames": 99999,
         "branchPoint": {
           "x": -138,
@@ -4935,12 +4935,12 @@
       {
         "id": "f7",
         "branchOf": "f1",
-        "at": 0.317,
+        "at": 0.326,
         "end": "bomb",
-        "speed": 0.0019,
+        "speed": 0.0007,
         "delayFrames": 99999,
         "branchPoint": {
-          "x": -76,
+          "x": -72,
           "y": -187
         },
         "routeThrough": "b0",
@@ -4952,7 +4952,7 @@
     "level_id": 45,
     "layout": "weave",
     "snipsAllowed": 8,
-    "par": 8.2,
+    "par": 23.7,
     "payload": {
       "id": "bomb",
       "x": 0,
@@ -5018,7 +5018,7 @@
       },
       {
         "id": "b1",
-        "x": 50,
+        "x": 51,
         "y": 156
       }
     ],
@@ -5028,72 +5028,72 @@
         "start": "s1",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.0022,
-        "delayFrames": 9,
-        "bulge": 0.09
+        "speed": 0.0013,
+        "delayFrames": 6,
+        "bulge": 0.102
       },
       {
         "id": "f1",
         "start": "s2",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.0019,
-        "delayFrames": 15,
-        "bulge": 0.073
+        "speed": 0.001,
+        "delayFrames": 49,
+        "bulge": 0.084
       },
       {
         "id": "f2",
         "start": "s3",
         "end": "bomb",
-        "speed": 0.0022,
-        "delayFrames": 23,
-        "bulge": 0.084
+        "speed": 0.0013,
+        "delayFrames": 190,
+        "bulge": 0.064
       },
       {
         "id": "f3",
         "start": "s4",
         "routeThrough": "cut2",
         "end": "bomb",
-        "speed": 0.002,
-        "delayFrames": 48,
-        "bulge": 0.064
+        "speed": 0.0009,
+        "delayFrames": 316,
+        "bulge": 0.091
       },
       {
         "id": "f4",
         "start": "s5",
         "routeThrough": "cut2",
         "end": "bomb",
-        "speed": 0.0022,
-        "delayFrames": 74,
-        "bulge": 0.089
+        "speed": 0.0013,
+        "delayFrames": 563,
+        "bulge": 0.066
       },
       {
         "id": "f5",
         "start": "s6",
         "end": "bomb",
-        "speed": 0.0013,
-        "delayFrames": 105,
-        "bulge": 0.107
+        "speed": 0.0009,
+        "delayFrames": 764,
+        "bulge": 0.104
       },
       {
         "id": "f6",
         "start": "s7",
         "routeThrough": "cut3",
         "end": "bomb",
-        "speed": 0.0022,
-        "delayFrames": 141,
-        "bulge": 0.066
+        "speed": 0.0013,
+        "delayFrames": 1039,
+        "bulge": 0.063
       },
       {
         "id": "f7",
         "branchOf": "f0",
-        "at": 0.146,
+        "at": 0.148,
         "end": "bomb",
-        "speed": 0.002,
+        "speed": 0.0012,
         "delayFrames": 99999,
         "branchPoint": {
-          "x": 125,
-          "y": 169
+          "x": 124,
+          "y": 168
         },
         "routeThrough": "b0",
         "bulge": 0.165
@@ -5101,13 +5101,13 @@
       {
         "id": "f8",
         "branchOf": "f1",
-        "at": 0.247,
+        "at": 0.245,
         "end": "bomb",
-        "speed": 0.0017,
+        "speed": 0.0009,
         "delayFrames": 99999,
         "branchPoint": {
-          "x": -6,
-          "y": 204
+          "x": -5,
+          "y": 205
         },
         "routeThrough": "b1",
         "bulge": 0.165
@@ -5118,7 +5118,7 @@
     "level_id": 46,
     "layout": "train",
     "snipsAllowed": 6,
-    "par": 7.2,
+    "par": 14.6,
     "payload": {
       "id": "bomb",
       "x": 0,
@@ -5175,7 +5175,7 @@
       {
         "id": "b0",
         "x": -162,
-        "y": -23
+        "y": -27
       }
     ],
     "fuses": [
@@ -5184,65 +5184,65 @@
         "start": "s1",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.0022,
-        "delayFrames": 4,
-        "bulge": 0.074
+        "speed": 0.0013,
+        "delayFrames": 3,
+        "bulge": 0.107
       },
       {
         "id": "f1",
         "start": "s2",
         "routeThrough": "cut2",
         "end": "bomb",
-        "speed": 0.0023,
-        "delayFrames": 6,
-        "bulge": 0.06
+        "speed": 0.0013,
+        "delayFrames": 22,
+        "bulge": 0.074
       },
       {
         "id": "f2",
         "start": "s3",
         "routeThrough": "cut2",
         "end": "bomb",
-        "speed": 0.0021,
-        "delayFrames": 43,
-        "bulge": 0.06
+        "speed": 0.0013,
+        "delayFrames": 230,
+        "bulge": 0.072
       },
       {
         "id": "f3",
         "start": "s4",
         "routeThrough": "cut3",
         "end": "bomb",
-        "speed": 0.0021,
-        "delayFrames": 52,
-        "bulge": 0.072
+        "speed": 0.0014,
+        "delayFrames": 283,
+        "bulge": 0.09
       },
       {
         "id": "f4",
         "start": "s5",
         "routeThrough": "cut3",
         "end": "bomb",
-        "speed": 0.0023,
-        "delayFrames": 85,
-        "bulge": 0.061
+        "speed": 0.0014,
+        "delayFrames": 464,
+        "bulge": 0.064
       },
       {
         "id": "f5",
         "start": "s6",
         "routeThrough": "cut3",
         "end": "bomb",
-        "speed": 0.0022,
-        "delayFrames": 93,
-        "bulge": 0.067
+        "speed": 0.0013,
+        "delayFrames": 494,
+        "bulge": 0.08
       },
       {
         "id": "f6",
         "branchOf": "f0",
-        "at": 0.334,
+        "at": 0.349,
         "end": "bomb",
-        "speed": 0.0018,
+        "speed": 0.0011,
         "delayFrames": 99999,
         "branchPoint": {
-          "x": -249,
-          "y": 154
+          "x": -247,
+          "y": 151
         },
         "routeThrough": "b0",
         "bulge": 0.169
@@ -5250,13 +5250,13 @@
       {
         "id": "f7",
         "branchOf": "f1",
-        "at": 0.29,
+        "at": 0.331,
         "end": "bomb",
-        "speed": 0.0019,
+        "speed": 0.0011,
         "delayFrames": 99999,
         "branchPoint": {
-          "x": -93,
-          "y": 162
+          "x": -90,
+          "y": 155
         },
         "bulge": 0.307
       }
@@ -5266,7 +5266,7 @@
     "level_id": 47,
     "layout": "split",
     "snipsAllowed": 6,
-    "par": 11.7,
+    "par": 23.3,
     "payload": {
       "id": "bomb",
       "x": 0,
@@ -5327,13 +5327,13 @@
       },
       {
         "id": "b0",
-        "x": 149,
-        "y": 69
+        "x": 147,
+        "y": 72
       },
       {
         "id": "b1",
-        "x": 113,
-        "y": 119
+        "x": 111,
+        "y": 121
       }
     ],
     "fuses": [
@@ -5342,74 +5342,74 @@
         "start": "s1",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.0024,
-        "delayFrames": 4,
-        "bulge": 0.11
+        "speed": 0.0015,
+        "delayFrames": 10,
+        "bulge": 0.065
       },
       {
         "id": "f1",
         "start": "s2",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.0013,
-        "delayFrames": 38,
-        "bulge": 0.103
+        "speed": 0.0012,
+        "delayFrames": 249,
+        "bulge": 0.085
       },
       {
         "id": "f2",
         "start": "s3",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.0015,
-        "delayFrames": 45,
-        "bulge": 0.079
+        "speed": 0.001,
+        "delayFrames": 272,
+        "bulge": 0.076
       },
       {
         "id": "f3",
         "start": "s4",
         "routeThrough": "cut2",
         "end": "bomb",
-        "speed": 0.0016,
-        "delayFrames": 72,
-        "bulge": 0.076
+        "speed": 0.0012,
+        "delayFrames": 470,
+        "bulge": 0.063
       },
       {
         "id": "f4",
         "start": "s5",
         "routeThrough": "cut2",
         "end": "bomb",
-        "speed": 0.0019,
-        "delayFrames": 83,
-        "bulge": 0.071
+        "speed": 0.0009,
+        "delayFrames": 547,
+        "bulge": 0.099
       },
       {
         "id": "f5",
         "start": "s6",
         "routeThrough": "cut3",
         "end": "bomb",
-        "speed": 0.0013,
-        "delayFrames": 115,
-        "bulge": 0.078
+        "speed": 0.0009,
+        "delayFrames": 840,
+        "bulge": 0.064
       },
       {
         "id": "f6",
         "start": "s7",
         "routeThrough": "cut3",
         "end": "bomb",
-        "speed": 0.0016,
-        "delayFrames": 129,
-        "bulge": 0.074
+        "speed": 0.0011,
+        "delayFrames": 938,
+        "bulge": 0.094
       },
       {
         "id": "f7",
         "branchOf": "f0",
-        "at": 0.194,
+        "at": 0.195,
         "end": "bomb",
-        "speed": 0.0019,
+        "speed": 0.0012,
         "delayFrames": 99999,
         "branchPoint": {
-          "x": 148,
-          "y": 145
+          "x": 146,
+          "y": 149
         },
         "routeThrough": "b0",
         "bulge": 0.173
@@ -5417,13 +5417,13 @@
       {
         "id": "f8",
         "branchOf": "f1",
-        "at": 0.271,
+        "at": 0.278,
         "end": "bomb",
-        "speed": 0.0011,
+        "speed": 0.001,
         "delayFrames": 99999,
         "branchPoint": {
-          "x": 83,
-          "y": 185
+          "x": 79,
+          "y": 186
         },
         "routeThrough": "b1",
         "bulge": 0.173
@@ -5434,7 +5434,7 @@
     "level_id": 48,
     "layout": "train",
     "snipsAllowed": 6,
-    "par": 10.5,
+    "par": 21.8,
     "payload": {
       "id": "bomb",
       "x": -219,
@@ -5487,11 +5487,6 @@
         "id": "cut3",
         "x": 91,
         "y": 82
-      },
-      {
-        "id": "b1",
-        "x": -88,
-        "y": -138
       }
     ],
     "fuses": [
@@ -5500,8 +5495,8 @@
         "start": "s1",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.0022,
-        "delayFrames": 105,
+        "speed": 0.0013,
+        "delayFrames": 698,
         "bulge": 0
       },
       {
@@ -5509,8 +5504,8 @@
         "start": "s2",
         "routeThrough": "cut2",
         "end": "bomb",
-        "speed": 0.0015,
-        "delayFrames": 0,
+        "speed": 0.0012,
+        "delayFrames": 578,
         "bulge": 0
       },
       {
@@ -5518,8 +5513,8 @@
         "start": "s3",
         "routeThrough": "cut3",
         "end": "bomb",
-        "speed": 0.0022,
-        "delayFrames": 129,
+        "speed": 0.0013,
+        "delayFrames": 561,
         "bulge": 0
       },
       {
@@ -5527,8 +5522,8 @@
         "start": "s4",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.0017,
-        "delayFrames": 72,
+        "speed": 0.0011,
+        "delayFrames": 825,
         "bulge": 0
       },
       {
@@ -5536,8 +5531,8 @@
         "start": "s5",
         "routeThrough": "cut2",
         "end": "bomb",
-        "speed": 0.0022,
-        "delayFrames": 80,
+        "speed": 0.0013,
+        "delayFrames": 410,
         "bulge": 0
       },
       {
@@ -5545,36 +5540,35 @@
         "start": "s6",
         "routeThrough": "cut3",
         "end": "bomb",
-        "speed": 0.002,
-        "delayFrames": 130,
+        "speed": 0.0011,
+        "delayFrames": 854,
         "bulge": 0
       },
       {
         "id": "f6",
-        "branchOf": "f1",
-        "at": 0.305,
+        "branchOf": "f4",
+        "at": 0.279,
         "end": "bomb",
-        "speed": 0.0012,
+        "speed": 0.0011,
         "delayFrames": 99999,
         "branchPoint": {
-          "x": 146,
-          "y": -95
+          "x": 152,
+          "y": -37
         },
         "bulge": -0.321
       },
       {
         "id": "f7",
-        "branchOf": "f3",
-        "at": 0.34,
+        "branchOf": "f2",
+        "at": 0.309,
         "end": "bomb",
-        "speed": 0.0014,
+        "speed": 0.0011,
         "delayFrames": 99999,
         "branchPoint": {
-          "x": 134,
-          "y": -215
+          "x": 141,
+          "y": 64
         },
-        "routeThrough": "b1",
-        "bulge": -0.177
+        "bulge": 0.321
       }
     ]
   },
@@ -5582,7 +5576,7 @@
     "level_id": 49,
     "layout": "split",
     "snipsAllowed": 6,
-    "par": 12.4,
+    "par": 23.8,
     "payload": {
       "id": "bomb",
       "x": 0,
@@ -5643,13 +5637,13 @@
       },
       {
         "id": "b0",
-        "x": 151,
-        "y": -63
+        "x": 150,
+        "y": -67
       },
       {
         "id": "b1",
-        "x": 81,
-        "y": 143
+        "x": 62,
+        "y": 152
       }
     ],
     "fuses": [
@@ -5658,8 +5652,8 @@
         "start": "s1",
         "routeThrough": "cut3",
         "end": "bomb",
-        "speed": 0.0023,
-        "delayFrames": 2,
+        "speed": 0.0014,
+        "delayFrames": 1,
         "bulge": 0.1
       },
       {
@@ -5667,8 +5661,8 @@
         "start": "s2",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.0013,
-        "delayFrames": 9,
+        "speed": 0.001,
+        "delayFrames": 28,
         "bulge": -0.1
       },
       {
@@ -5676,8 +5670,8 @@
         "start": "s3",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.0023,
-        "delayFrames": 46,
+        "speed": 0.0014,
+        "delayFrames": 352,
         "bulge": 0.1
       },
       {
@@ -5685,8 +5679,8 @@
         "start": "s4",
         "routeThrough": "cut2",
         "end": "bomb",
-        "speed": 0.0013,
-        "delayFrames": 57,
+        "speed": 0.0009,
+        "delayFrames": 358,
         "bulge": -0.1
       },
       {
@@ -5694,8 +5688,8 @@
         "start": "s5",
         "routeThrough": "cut2",
         "end": "bomb",
-        "speed": 0.0023,
-        "delayFrames": 92,
+        "speed": 0.0014,
+        "delayFrames": 674,
         "bulge": 0.1
       },
       {
@@ -5703,8 +5697,8 @@
         "start": "s6",
         "routeThrough": "cut3",
         "end": "bomb",
-        "speed": 0.0014,
-        "delayFrames": 98,
+        "speed": 0.001,
+        "delayFrames": 560,
         "bulge": -0.1
       },
       {
@@ -5712,20 +5706,20 @@
         "start": "s7",
         "routeThrough": "cut3",
         "end": "bomb",
-        "speed": 0.0023,
-        "delayFrames": 138,
+        "speed": 0.0014,
+        "delayFrames": 1068,
         "bulge": 0.1
       },
       {
         "id": "f7",
         "branchOf": "f0",
-        "at": 0.227,
+        "at": 0.236,
         "end": "bomb",
-        "speed": 0.0019,
+        "speed": 0.0012,
         "delayFrames": 99999,
         "branchPoint": {
-          "x": 152,
-          "y": -138
+          "x": 147,
+          "y": -141
         },
         "routeThrough": "b0",
         "bulge": -0.18
@@ -5733,13 +5727,13 @@
       {
         "id": "f8",
         "branchOf": "f1",
-        "at": 0.305,
+        "at": 0.362,
         "end": "bomb",
-        "speed": 0.001,
+        "speed": 0.0009,
         "delayFrames": 99999,
         "branchPoint": {
-          "x": 35,
-          "y": 199
+          "x": 10,
+          "y": 200
         },
         "routeThrough": "b1",
         "bulge": 0.18
@@ -5750,7 +5744,7 @@
     "level_id": 50,
     "layout": "rings",
     "snipsAllowed": 8,
-    "par": 10.7,
+    "par": 22.4,
     "payload": {
       "id": "bomb",
       "x": 0,
@@ -5806,8 +5800,8 @@
       },
       {
         "id": "b0",
-        "x": 110,
-        "y": 121
+        "x": 111,
+        "y": 120
       }
     ],
     "fuses": [
@@ -5816,8 +5810,8 @@
         "start": "s1",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.0024,
-        "delayFrames": 9,
+        "speed": 0.0015,
+        "delayFrames": 2,
         "bulge": 0
       },
       {
@@ -5825,8 +5819,8 @@
         "start": "s2",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.0014,
-        "delayFrames": 35,
+        "speed": 0.0008,
+        "delayFrames": 196,
         "bulge": 0
       },
       {
@@ -5834,7 +5828,7 @@
         "start": "s3",
         "end": "bomb",
         "speed": 0.0013,
-        "delayFrames": 47,
+        "delayFrames": 243,
         "bulge": 0
       },
       {
@@ -5842,8 +5836,8 @@
         "start": "s4",
         "routeThrough": "cut2",
         "end": "bomb",
-        "speed": 0.0021,
-        "delayFrames": 77,
+        "speed": 0.001,
+        "delayFrames": 551,
         "bulge": 0
       },
       {
@@ -5851,28 +5845,28 @@
         "start": "s5",
         "routeThrough": "cut3",
         "end": "bomb",
-        "speed": 0.0017,
-        "delayFrames": 90,
+        "speed": 0.0012,
+        "delayFrames": 607,
         "bulge": 0
       },
       {
         "id": "f5",
         "start": "s6",
         "end": "bomb",
-        "speed": 0.002,
-        "delayFrames": 123,
+        "speed": 0.0008,
+        "delayFrames": 718,
         "bulge": 0
       },
       {
         "id": "f6",
         "branchOf": "f0",
-        "at": 0.299,
+        "at": 0.291,
         "end": "bomb",
-        "speed": 0.0021,
+        "speed": 0.0012,
         "delayFrames": 99999,
         "branchPoint": {
-          "x": 78,
-          "y": 186
+          "x": 80,
+          "y": 187
         },
         "routeThrough": "b0",
         "bulge": 0.184
@@ -5880,13 +5874,13 @@
       {
         "id": "f7",
         "branchOf": "f1",
-        "at": 0.21,
+        "at": 0.216,
         "end": "bomb",
-        "speed": 0.0011,
+        "speed": 0.0007,
         "delayFrames": 99999,
         "branchPoint": {
-          "x": 63,
-          "y": 192
+          "x": 62,
+          "y": 191
         },
         "bulge": 0.335
       }
@@ -5896,7 +5890,7 @@
     "level_id": 51,
     "layout": "split",
     "snipsAllowed": 6,
-    "par": 10.6,
+    "par": 25.5,
     "payload": {
       "id": "bomb",
       "x": 0,
@@ -5962,13 +5956,8 @@
       },
       {
         "id": "b0",
-        "x": 87,
-        "y": 139
-      },
-      {
-        "id": "b1",
-        "x": -109,
-        "y": -123
+        "x": -111,
+        "y": -121
       }
     ],
     "fuses": [
@@ -5977,8 +5966,8 @@
         "start": "s1",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.002,
-        "delayFrames": 145,
+        "speed": 0.0012,
+        "delayFrames": 953,
         "bulge": 0
       },
       {
@@ -5986,8 +5975,8 @@
         "start": "s2",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.0012,
-        "delayFrames": 131,
+        "speed": 0.0008,
+        "delayFrames": 676,
         "bulge": 0
       },
       {
@@ -5995,8 +5984,8 @@
         "start": "s3",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.002,
-        "delayFrames": 150,
+        "speed": 0.0012,
+        "delayFrames": 890,
         "bulge": 0
       },
       {
@@ -6004,8 +5993,8 @@
         "start": "s4",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.0014,
-        "delayFrames": 1,
+        "speed": 0.0011,
+        "delayFrames": 1074,
         "bulge": 0
       },
       {
@@ -6013,8 +6002,8 @@
         "start": "s5",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.002,
-        "delayFrames": 88,
+        "speed": 0.0012,
+        "delayFrames": 866,
         "bulge": 0
       },
       {
@@ -6022,8 +6011,8 @@
         "start": "s6",
         "routeThrough": "cut2",
         "end": "bomb",
-        "speed": 0.0017,
-        "delayFrames": 112,
+        "speed": 0.001,
+        "delayFrames": 742,
         "bulge": 0
       },
       {
@@ -6031,8 +6020,8 @@
         "start": "s7",
         "routeThrough": "cut2",
         "end": "bomb",
-        "speed": 0.002,
-        "delayFrames": 66,
+        "speed": 0.0012,
+        "delayFrames": 542,
         "bulge": 0
       },
       {
@@ -6040,37 +6029,36 @@
         "start": "s8",
         "routeThrough": "cut3",
         "end": "bomb",
-        "speed": 0.0017,
-        "delayFrames": 46,
+        "speed": 0.0007,
+        "delayFrames": 425,
         "bulge": 0
       },
       {
         "id": "f8",
-        "branchOf": "f3",
-        "at": 0.306,
+        "branchOf": "f7",
+        "at": 0.269,
         "end": "bomb",
-        "speed": 0.0012,
+        "speed": 0.0007,
         "delayFrames": 99999,
         "branchPoint": {
-          "x": 45,
-          "y": 204
+          "x": -93,
+          "y": -221
         },
         "routeThrough": "b0",
         "bulge": 0.187
       },
       {
         "id": "f9",
-        "branchOf": "f7",
-        "at": 0.307,
+        "branchOf": "f6",
+        "at": 0.14,
         "end": "bomb",
-        "speed": 0.0014,
+        "speed": 0.0011,
         "delayFrames": 99999,
         "branchPoint": {
-          "x": -85,
-          "y": -210
+          "x": -181,
+          "y": -84
         },
-        "routeThrough": "b1",
-        "bulge": 0.187
+        "bulge": -0.34
       }
     ]
   },
@@ -6078,7 +6066,7 @@
     "level_id": 52,
     "layout": "weave",
     "snipsAllowed": 8,
-    "par": 9.7,
+    "par": 24.5,
     "payload": {
       "id": "bomb",
       "x": 0,
@@ -6139,13 +6127,13 @@
       },
       {
         "id": "b0",
-        "x": 83,
-        "y": 141
+        "x": 163,
+        "y": -20
       },
       {
         "id": "b1",
-        "x": 163,
-        "y": -19
+        "x": 84,
+        "y": 141
       }
     ],
     "fuses": [
@@ -6153,87 +6141,87 @@
         "id": "f0",
         "start": "s1",
         "end": "bomb",
-        "speed": 0.002,
-        "delayFrames": 9,
-        "bulge": 0.065
+        "speed": 0.0012,
+        "delayFrames": 1,
+        "bulge": 0.074
       },
       {
         "id": "f1",
         "start": "s2",
         "routeThrough": "cut2",
         "end": "bomb",
-        "speed": 0.0013,
-        "delayFrames": 5,
-        "bulge": 0.1
+        "speed": 0.0007,
+        "delayFrames": 39,
+        "bulge": 0.101
       },
       {
         "id": "f2",
         "start": "s3",
         "routeThrough": "cut3",
         "end": "bomb",
-        "speed": 0.002,
-        "delayFrames": 49,
-        "bulge": 0.101
+        "speed": 0.0012,
+        "delayFrames": 344,
+        "bulge": 0.073
       },
       {
         "id": "f3",
         "start": "s4",
         "end": "bomb",
-        "speed": 0.0016,
-        "delayFrames": 56,
-        "bulge": 0.073
+        "speed": 0.001,
+        "delayFrames": 352,
+        "bulge": 0.07
       },
       {
         "id": "f4",
         "start": "s5",
         "routeThrough": "cut2",
         "end": "bomb",
-        "speed": 0.002,
-        "delayFrames": 96,
-        "bulge": 0.087
+        "speed": 0.0012,
+        "delayFrames": 647,
+        "bulge": 0.099
       },
       {
         "id": "f5",
         "start": "s6",
         "routeThrough": "cut3",
         "end": "bomb",
-        "speed": 0.0017,
-        "delayFrames": 94,
-        "bulge": 0.091
+        "speed": 0.0007,
+        "delayFrames": 753,
+        "bulge": 0.099
       },
       {
         "id": "f6",
         "start": "s7",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.002,
-        "delayFrames": 137,
+        "speed": 0.0012,
+        "delayFrames": 862,
         "bulge": 0.099
       },
       {
         "id": "f7",
-        "branchOf": "f1",
-        "at": 0.207,
+        "branchOf": "f0",
+        "at": 0.301,
         "end": "bomb",
-        "speed": 0.0012,
+        "speed": 0.001,
         "delayFrames": 99999,
         "branchPoint": {
-          "x": 39,
-          "y": 205
+          "x": 213,
+          "y": 47
         },
         "routeThrough": "b0",
         "bulge": 0.187
       },
       {
         "id": "f8",
-        "branchOf": "f0",
-        "at": 0.342,
+        "branchOf": "f1",
+        "at": 0.204,
         "end": "bomb",
-        "speed": 0.0018,
+        "speed": 0.0007,
         "delayFrames": 99999,
         "branchPoint": {
-          "x": 202,
-          "y": 46
+          "x": 41,
+          "y": 206
         },
         "routeThrough": "b1",
         "bulge": 0.187
@@ -6244,7 +6232,7 @@
     "level_id": 53,
     "layout": "rings",
     "snipsAllowed": 6,
-    "par": 7.9,
+    "par": 27,
     "payload": {
       "id": "bomb",
       "x": 0,
@@ -6311,7 +6299,7 @@
       {
         "id": "b0",
         "x": 132,
-        "y": 98
+        "y": 97
       },
       {
         "id": "b1",
@@ -6325,8 +6313,8 @@
         "start": "s1",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.0018,
-        "delayFrames": 8,
+        "speed": 0.0011,
+        "delayFrames": 5,
         "bulge": 0
       },
       {
@@ -6334,8 +6322,8 @@
         "start": "s2",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.0019,
-        "delayFrames": 14,
+        "speed": 0.0012,
+        "delayFrames": 41,
         "bulge": 0
       },
       {
@@ -6343,8 +6331,8 @@
         "start": "s3",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.0018,
-        "delayFrames": 20,
+        "speed": 0.0011,
+        "delayFrames": 152,
         "bulge": 0
       },
       {
@@ -6352,8 +6340,8 @@
         "start": "s4",
         "routeThrough": "cut2",
         "end": "bomb",
-        "speed": 0.0019,
-        "delayFrames": 42,
+        "speed": 0.0011,
+        "delayFrames": 276,
         "bulge": 0
       },
       {
@@ -6361,8 +6349,8 @@
         "start": "s5",
         "routeThrough": "cut2",
         "end": "bomb",
-        "speed": 0.002,
-        "delayFrames": 61,
+        "speed": 0.0012,
+        "delayFrames": 422,
         "bulge": 0
       },
       {
@@ -6370,8 +6358,8 @@
         "start": "s6",
         "routeThrough": "cut3",
         "end": "bomb",
-        "speed": 0.0019,
-        "delayFrames": 93,
+        "speed": 0.0011,
+        "delayFrames": 581,
         "bulge": 0
       },
       {
@@ -6379,8 +6367,8 @@
         "start": "s7",
         "routeThrough": "cut3",
         "end": "bomb",
-        "speed": 0.002,
-        "delayFrames": 115,
+        "speed": 0.0012,
+        "delayFrames": 986,
         "bulge": 0
       },
       {
@@ -6388,19 +6376,19 @@
         "start": "s8",
         "routeThrough": "cut3",
         "end": "bomb",
-        "speed": 0.002,
-        "delayFrames": 144,
+        "speed": 0.0011,
+        "delayFrames": 1168,
         "bulge": 0
       },
       {
         "id": "f8",
         "branchOf": "f0",
-        "at": 0.238,
+        "at": 0.235,
         "end": "bomb",
-        "speed": 0.0015,
+        "speed": 0.0009,
         "delayFrames": 99999,
         "branchPoint": {
-          "x": 114,
+          "x": 116,
           "y": 171
         },
         "routeThrough": "b0",
@@ -6409,13 +6397,13 @@
       {
         "id": "f9",
         "branchOf": "f1",
-        "at": 0.151,
+        "at": 0.145,
         "end": "bomb",
-        "speed": 0.0017,
+        "speed": 0.001,
         "delayFrames": 99999,
         "branchPoint": {
-          "x": 48,
-          "y": 197
+          "x": 49,
+          "y": 198
         },
         "routeThrough": "b1",
         "bulge": 0.187
@@ -6426,7 +6414,7 @@
     "level_id": 54,
     "layout": "split",
     "snipsAllowed": 6,
-    "par": 8.8,
+    "par": 22.4,
     "payload": {
       "id": "bomb",
       "x": 0,
@@ -6487,13 +6475,13 @@
       },
       {
         "id": "b0",
-        "x": 90,
-        "y": -137
+        "x": 92,
+        "y": -136
       },
       {
         "id": "b1",
         "x": 164,
-        "y": -1
+        "y": 3
       }
     ],
     "fuses": [
@@ -6502,8 +6490,8 @@
         "start": "s1",
         "routeThrough": "cut3",
         "end": "bomb",
-        "speed": 0.002,
-        "delayFrames": 1,
+        "speed": 0.0012,
+        "delayFrames": 6,
         "bulge": 0
       },
       {
@@ -6511,8 +6499,8 @@
         "start": "s2",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.0015,
-        "delayFrames": 12,
+        "speed": 0.001,
+        "delayFrames": 41,
         "bulge": 0
       },
       {
@@ -6520,8 +6508,8 @@
         "start": "s3",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.002,
-        "delayFrames": 52,
+        "speed": 0.0012,
+        "delayFrames": 295,
         "bulge": 0
       },
       {
@@ -6529,8 +6517,8 @@
         "start": "s4",
         "routeThrough": "cut2",
         "end": "bomb",
-        "speed": 0.0016,
-        "delayFrames": 51,
+        "speed": 0.0009,
+        "delayFrames": 364,
         "bulge": 0
       },
       {
@@ -6538,8 +6526,8 @@
         "start": "s5",
         "routeThrough": "cut2",
         "end": "bomb",
-        "speed": 0.002,
-        "delayFrames": 97,
+        "speed": 0.0012,
+        "delayFrames": 547,
         "bulge": 0
       },
       {
@@ -6547,8 +6535,8 @@
         "start": "s6",
         "routeThrough": "cut3",
         "end": "bomb",
-        "speed": 0.0015,
-        "delayFrames": 99,
+        "speed": 0.0008,
+        "delayFrames": 718,
         "bulge": 0
       },
       {
@@ -6556,20 +6544,20 @@
         "start": "s7",
         "routeThrough": "cut3",
         "end": "bomb",
-        "speed": 0.002,
-        "delayFrames": 137,
+        "speed": 0.0012,
+        "delayFrames": 840,
         "bulge": 0
       },
       {
         "id": "f7",
         "branchOf": "f0",
-        "at": 0.173,
+        "at": 0.167,
         "end": "bomb",
-        "speed": 0.0017,
+        "speed": 0.001,
         "delayFrames": 99999,
         "branchPoint": {
-          "x": 47,
-          "y": -196
+          "x": 52,
+          "y": -197
         },
         "routeThrough": "b0",
         "bulge": -0.187
@@ -6577,13 +6565,13 @@
       {
         "id": "f8",
         "branchOf": "f1",
-        "at": 0.193,
+        "at": 0.201,
         "end": "bomb",
-        "speed": 0.0013,
+        "speed": 0.0008,
         "delayFrames": 99999,
         "branchPoint": {
-          "x": 194,
-          "y": 68
+          "x": 190,
+          "y": 72
         },
         "routeThrough": "b1",
         "bulge": 0.187
@@ -6594,106 +6582,101 @@
     "level_id": 55,
     "layout": "train",
     "snipsAllowed": 7,
-    "par": 8.2,
+    "par": 22.7,
     "payload": {
       "id": "bomb",
-      "x": -206,
+      "x": -223,
       "y": 0
     },
     "spawns": [
       {
         "id": "s1",
-        "x": 204,
-        "y": -217
+        "x": 150,
+        "y": -234
       },
       {
         "id": "s2",
-        "x": 209,
-        "y": -159
+        "x": 177,
+        "y": -173
       },
       {
         "id": "s3",
-        "x": 214,
-        "y": -91
+        "x": 198,
+        "y": -108
       },
       {
         "id": "s4",
-        "x": 199,
-        "y": -31
+        "x": 224,
+        "y": -37
       },
       {
         "id": "s5",
-        "x": 216,
-        "y": 36
+        "x": 211,
+        "y": 37
       },
       {
         "id": "s6",
-        "x": 200,
+        "x": 203,
         "y": 99
       },
       {
         "id": "s7",
-        "x": 203,
-        "y": 156
+        "x": 186,
+        "y": 167
       },
       {
         "id": "s8",
-        "x": 200,
-        "y": 227
+        "x": 172,
+        "y": 237
       }
     ],
     "intersections": [
       {
         "id": "cut1",
-        "x": 69.51868520231051,
-        "y": -287.63306021683263
+        "x": 84,
+        "y": -335
       },
       {
         "id": "cut2",
-        "x": 103,
-        "y": -103
+        "x": 90,
+        "y": -112
       },
       {
         "id": "cut3",
-        "x": 102,
-        "y": 103
-      },
-      {
-        "id": "b0",
-        "x": -30,
-        "y": -161
+        "x": 84,
+        "y": 112
       },
       {
         "id": "b1",
-        "x": -88.08900588730027,
-        "y": 121.44863666947015
+        "x": -99,
+        "y": 131
       }
     ],
     "fuses": [
       {
         "id": "f0",
         "start": "s1",
-        "routeThrough": "cut1",
+        "routeThrough": "cut3",
         "end": "bomb",
-        "speed": 0.0019,
-        "delayFrames": 4,
+        "speed": 0.0012,
+        "delayFrames": 5,
         "bulge": 0
       },
       {
         "id": "f1",
         "start": "s2",
-        "routeThrough": "cut2",
+        "routeThrough": "cut3",
         "end": "bomb",
-        "speed": 0.0019,
-        "delayFrames": 14,
+        "speed": 0.0009,
+        "delayFrames": 35,
         "bulge": 0
       },
       {
         "id": "f2",
         "start": "s3",
         "end": "bomb",
-        "speed": 0.0018,
-        "delayFrames": 27,
+        "speed": 0.0012,
+        "delayFrames": 254,
         "bulge": 0
       },
       {
@@ -6701,25 +6684,25 @@
         "start": "s4",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.0019,
-        "delayFrames": 42,
+        "speed": 0.0007,
+        "delayFrames": 325,
         "bulge": 0
       },
       {
         "id": "f4",
         "start": "s5",
-        "routeThrough": "cut2",
+        "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.0019,
-        "delayFrames": 68,
+        "speed": 0.0012,
+        "delayFrames": 545,
         "bulge": 0
       },
       {
         "id": "f5",
         "start": "s6",
         "end": "bomb",
-        "speed": 0.0019,
-        "delayFrames": 94,
+        "speed": 0.0007,
+        "delayFrames": 597,
         "bulge": 0
       },
       {
@@ -6727,43 +6710,42 @@
         "start": "s7",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.0019,
-        "delayFrames": 116,
+        "speed": 0.0012,
+        "delayFrames": 787,
         "bulge": 0
       },
       {
         "id": "f7",
         "start": "s8",
-        "routeThrough": "cut2",
+        "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.0019,
-        "delayFrames": 147,
+        "speed": 0.0008,
+        "delayFrames": 736,
         "bulge": 0
       },
       {
         "id": "f8",
         "branchOf": "f0",
-        "at": 0.346,
+        "at": 0.286,
         "end": "bomb",
-        "speed": 0.0017,
+        "speed": 0.001,
         "delayFrames": 99999,
         "branchPoint": {
-          "x": 112,
-          "y": -296
+          "x": 125,
+          "y": 30
         },
-        "routeThrough": "b0",
-        "bulge": -0.187
+        "bulge": 0.34
       },
       {
         "id": "f9",
         "branchOf": "f1",
-        "at": 0.272,
+        "at": 0.284,
         "end": "bomb",
-        "speed": 0.0015,
+        "speed": 0.0008,
         "delayFrames": 99999,
         "branchPoint": {
-          "x": 158,
-          "y": -127
+          "x": 133,
+          "y": 45
         },
         "routeThrough": "b1",
         "bulge": -0.187
@@ -6774,7 +6756,7 @@
     "level_id": 56,
     "layout": "rings",
     "snipsAllowed": 7,
-    "par": 8.4,
+    "par": 25,
     "payload": {
       "id": "bomb",
       "x": 0,
@@ -6846,7 +6828,7 @@
       {
         "id": "b0",
         "x": 162,
-        "y": 28
+        "y": 25
       },
       {
         "id": "b1",
@@ -6860,8 +6842,8 @@
         "start": "s1",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.0017,
-        "delayFrames": 5,
+        "speed": 0.001,
+        "delayFrames": 7,
         "bulge": 0
       },
       {
@@ -6869,8 +6851,8 @@
         "start": "s2",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.0018,
-        "delayFrames": 8,
+        "speed": 0.001,
+        "delayFrames": 59,
         "bulge": 0
       },
       {
@@ -6878,8 +6860,8 @@
         "start": "s3",
         "routeThrough": "cut2",
         "end": "bomb",
-        "speed": 0.0018,
-        "delayFrames": 25,
+        "speed": 0.001,
+        "delayFrames": 149,
         "bulge": 0
       },
       {
@@ -6887,8 +6869,8 @@
         "start": "s4",
         "routeThrough": "cut2",
         "end": "bomb",
-        "speed": 0.0016,
-        "delayFrames": 41,
+        "speed": 0.0011,
+        "delayFrames": 245,
         "bulge": 0
       },
       {
@@ -6896,8 +6878,8 @@
         "start": "s5",
         "routeThrough": "cut3",
         "end": "bomb",
-        "speed": 0.0017,
-        "delayFrames": 65,
+        "speed": 0.0011,
+        "delayFrames": 438,
         "bulge": 0
       },
       {
@@ -6905,8 +6887,8 @@
         "start": "s6",
         "routeThrough": "cut3",
         "end": "bomb",
-        "speed": 0.0016,
-        "delayFrames": 85,
+        "speed": 0.0011,
+        "delayFrames": 676,
         "bulge": 0
       },
       {
@@ -6914,8 +6896,8 @@
         "start": "s7",
         "routeThrough": "cut4",
         "end": "bomb",
-        "speed": 0.0018,
-        "delayFrames": 117,
+        "speed": 0.001,
+        "delayFrames": 972,
         "bulge": 0
       },
       {
@@ -6923,20 +6905,20 @@
         "start": "s8",
         "routeThrough": "cut4",
         "end": "bomb",
-        "speed": 0.0018,
-        "delayFrames": 152,
+        "speed": 0.001,
+        "delayFrames": 999,
         "bulge": 0
       },
       {
         "id": "f8",
         "branchOf": "f0",
-        "at": 0.314,
+        "at": 0.303,
         "end": "bomb",
-        "speed": 0.0016,
+        "speed": 0.0009,
         "delayFrames": 99999,
         "branchPoint": {
-          "x": 175,
-          "y": 98
+          "x": 179,
+          "y": 97
         },
         "routeThrough": "b0",
         "bulge": 0.187
@@ -6946,7 +6928,7 @@
         "branchOf": "f1",
         "at": 0.204,
         "end": "bomb",
-        "speed": 0.0016,
+        "speed": 0.0008,
         "delayFrames": 99999,
         "branchPoint": {
           "x": 114,
@@ -6961,7 +6943,7 @@
     "level_id": 57,
     "layout": "hub",
     "snipsAllowed": 7,
-    "par": 14,
+    "par": 30,
     "payload": {
       "id": "bomb",
       "x": 0,
@@ -6970,75 +6952,75 @@
     "spawns": [
       {
         "id": "s1",
-        "x": 211,
-        "y": 50
+        "x": -28,
+        "y": 251
       },
       {
         "id": "s2",
-        "x": 21,
-        "y": 285
+        "x": -179,
+        "y": 205
       },
       {
         "id": "s3",
-        "x": -135,
-        "y": 159
+        "x": -236,
+        "y": 111
       },
       {
         "id": "s4",
-        "x": -322,
-        "y": 103
+        "x": -243,
+        "y": -41
       },
       {
         "id": "s5",
-        "x": -219,
-        "y": -56
+        "x": -241,
+        "y": -159
       },
       {
         "id": "s6",
-        "x": -195,
-        "y": -246
+        "x": -119,
+        "y": -296
       },
       {
         "id": "s7",
-        "x": 23,
-        "y": -241
+        "x": 9,
+        "y": -269
       },
       {
         "id": "s8",
-        "x": 227,
-        "y": -258
+        "x": 159,
+        "y": -214
       }
     ],
     "intersections": [
       {
         "id": "cut1",
-        "x": 124,
-        "y": 151
+        "x": -100,
+        "y": 140
       },
       {
         "id": "cut2",
-        "x": -86,
-        "y": 123
+        "x": -173,
+        "y": -13
       },
       {
         "id": "cut3",
-        "x": -141.374352253478,
-        "y": -50.13274902605603
+        "x": -76,
+        "y": -146
       },
       {
         "id": "cut4",
-        "x": 12,
-        "y": -169
+        "x": 84,
+        "y": -139
       },
       {
         "id": "b0",
-        "x": 150,
-        "y": 66
+        "x": -11,
+        "y": 164
       },
       {
         "id": "b1",
-        "x": 38,
-        "y": 160
+        "x": -139,
+        "y": 87
       }
     ],
     "fuses": [
@@ -7047,83 +7029,83 @@
         "start": "s1",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.0018,
-        "delayFrames": 5,
-        "bulge": 0.07
+        "speed": 0.0011,
+        "delayFrames": 9,
+        "bulge": 0.1
       },
       {
         "id": "f1",
         "start": "s2",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.0012,
-        "delayFrames": 57,
-        "bulge": 0.073
+        "speed": 0.0008,
+        "delayFrames": 200,
+        "bulge": -0.1
       },
       {
         "id": "f2",
         "start": "s3",
         "routeThrough": "cut2",
         "end": "bomb",
-        "speed": 0.0013,
-        "delayFrames": 80,
-        "bulge": 0.074
+        "speed": 0.001,
+        "delayFrames": 266,
+        "bulge": 0.1
       },
       {
         "id": "f3",
         "start": "s4",
         "routeThrough": "cut2",
         "end": "bomb",
-        "speed": 0.0011,
-        "delayFrames": 97,
-        "bulge": 0.062
+        "speed": 0.0006,
+        "delayFrames": 568,
+        "bulge": -0.1
       },
       {
         "id": "f4",
         "start": "s5",
         "routeThrough": "cut3",
         "end": "bomb",
-        "speed": 0.0015,
-        "delayFrames": 113,
-        "bulge": 0.071
+        "speed": 0.0007,
+        "delayFrames": 622,
+        "bulge": 0.1
       },
       {
         "id": "f5",
         "start": "s6",
         "routeThrough": "cut3",
         "end": "bomb",
-        "speed": 0.0012,
-        "delayFrames": 126,
-        "bulge": 0.103
+        "speed": 0.001,
+        "delayFrames": 929,
+        "bulge": -0.1
       },
       {
         "id": "f6",
         "start": "s7",
         "routeThrough": "cut4",
         "end": "bomb",
-        "speed": 0.0016,
-        "delayFrames": 135,
-        "bulge": 0.094
+        "speed": 0.0006,
+        "delayFrames": 968,
+        "bulge": 0.1
       },
       {
         "id": "f7",
         "start": "s8",
         "routeThrough": "cut4",
         "end": "bomb",
-        "speed": 0.0011,
-        "delayFrames": 145,
-        "bulge": 0.064
+        "speed": 0.0008,
+        "delayFrames": 1085,
+        "bulge": -0.1
       },
       {
         "id": "f8",
         "branchOf": "f0",
-        "at": 0.335,
+        "at": 0.266,
         "end": "bomb",
-        "speed": 0.0015,
+        "speed": 0.001,
         "delayFrames": 99999,
         "branchPoint": {
-          "x": 150,
-          "y": 140
+          "x": -80,
+          "y": 185
         },
         "routeThrough": "b0",
         "bulge": 0.187
@@ -7131,13 +7113,13 @@
       {
         "id": "f9",
         "branchOf": "f1",
-        "at": 0.342,
+        "at": 0.349,
         "end": "bomb",
-        "speed": 0.001,
+        "speed": 0.0007,
         "delayFrames": 99999,
         "branchPoint": {
-          "x": 120,
-          "y": 185
+          "x": -124,
+          "y": 157
         },
         "routeThrough": "b1",
         "bulge": -0.187
@@ -7147,8 +7129,8 @@
   {
     "level_id": 58,
     "layout": "weave",
-    "snipsAllowed": 5,
-    "par": 12.8,
+    "snipsAllowed": 7,
+    "par": 28.5,
     "payload": {
       "id": "bomb",
       "x": 0,
@@ -7157,80 +7139,85 @@
     "spawns": [
       {
         "id": "s1",
-        "x": -29,
-        "y": 193
+        "x": 309,
+        "y": 83
       },
       {
         "id": "s2",
-        "x": -234,
-        "y": 248
+        "x": 214,
+        "y": 229
       },
       {
         "id": "s3",
-        "x": -244,
-        "y": 52
+        "x": 51,
+        "y": 263
       },
       {
         "id": "s4",
-        "x": -277,
-        "y": -116
+        "x": -79,
+        "y": 205
       },
       {
         "id": "s5",
-        "x": -175,
-        "y": -274
+        "x": -223,
+        "y": 169
       },
       {
         "id": "s6",
-        "x": 210,
-        "y": -70
+        "x": -291,
+        "y": 26
       },
       {
         "id": "s7",
-        "x": 314,
-        "y": -105
+        "x": -166,
+        "y": -85
       },
       {
         "id": "s8",
-        "x": 217,
-        "y": -72
+        "x": -127,
+        "y": -212
       }
     ],
     "intersections": [
       {
         "id": "cut1",
-        "x": -192.5208962669878,
-        "y": -94.92657147772236
+        "x": 27.4985305607682,
+        "y": 147.45789506499304
       },
       {
         "id": "cut2",
-        "x": 49,
-        "y": -205
+        "x": -170.6377323394176,
+        "y": 83.57404695555246
       },
       {
         "id": "cut3",
-        "x": 177,
-        "y": -156
+        "x": -192.46995721037172,
+        "y": -168.26716247285734
       },
       {
         "id": "cut4",
-        "x": 204.14817931215543,
-        "y": 67.18625492255185
+        "x": 0,
+        "y": -229
       },
       {
         "id": "b0",
-        "x": -164,
-        "y": 11
+        "x": -82,
+        "y": -142
+      },
+      {
+        "id": "b1",
+        "x": 122,
+        "y": 109
       }
     ],
     "fuses": [
       {
         "id": "f0",
         "start": "s1",
-        "routeThrough": "cut4",
+        "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.0018,
-        "delayFrames": 0,
+        "speed": 0.0011,
+        "delayFrames": 602,
         "bulge": 0
       },
       {
@@ -7238,44 +7225,44 @@
         "start": "s2",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.0013,
-        "delayFrames": 58,
+        "speed": 0.0009,
+        "delayFrames": 319,
         "bulge": 0
       },
       {
         "id": "f2",
         "start": "s3",
-        "routeThrough": "cut1",
+        "routeThrough": "cut2",
         "end": "bomb",
-        "speed": 0.0016,
-        "delayFrames": 75,
+        "speed": 0.0009,
+        "delayFrames": 712,
         "bulge": 0
       },
       {
         "id": "f3",
         "start": "s4",
-        "routeThrough": "cut1",
+        "routeThrough": "cut2",
         "end": "bomb",
-        "speed": 0.001,
-        "delayFrames": 93,
+        "speed": 0.0008,
+        "delayFrames": 1082,
         "bulge": 0
       },
       {
         "id": "f4",
         "start": "s5",
-        "routeThrough": "cut1",
+        "routeThrough": "cut3",
         "end": "bomb",
-        "speed": 0.0014,
-        "delayFrames": 113,
+        "speed": 0.0006,
+        "delayFrames": 871,
         "bulge": 0
       },
       {
         "id": "f5",
         "start": "s6",
-        "routeThrough": "cut4",
+        "routeThrough": "cut3",
         "end": "bomb",
-        "speed": 0.001,
-        "delayFrames": 128,
+        "speed": 0.0009,
+        "delayFrames": 886,
         "bulge": 0
       },
       {
@@ -7283,8 +7270,8 @@
         "start": "s7",
         "routeThrough": "cut4",
         "end": "bomb",
-        "speed": 0.0015,
-        "delayFrames": 135,
+        "speed": 0.0007,
+        "delayFrames": 2,
         "bulge": 0
       },
       {
@@ -7292,35 +7279,36 @@
         "start": "s8",
         "routeThrough": "cut4",
         "end": "bomb",
-        "speed": 0.0012,
-        "delayFrames": 150,
+        "speed": 0.0008,
+        "delayFrames": 990,
         "bulge": 0
       },
       {
         "id": "f8",
-        "branchOf": "f0",
-        "at": 0.14,
+        "branchOf": "f6",
+        "at": 0.3,
         "end": "bomb",
-        "speed": 0.0015,
+        "speed": 0.0007,
         "delayFrames": 99999,
         "branchPoint": {
-          "x": 82,
-          "y": 143
+          "x": -40,
+          "y": -213
         },
-        "bulge": -0.34
+        "routeThrough": "b0",
+        "bulge": 0.187
       },
       {
         "id": "f9",
         "branchOf": "f1",
-        "at": 0.379,
+        "at": 0.225,
         "end": "bomb",
-        "speed": 0.0012,
+        "speed": 0.0007,
         "delayFrames": 99999,
         "branchPoint": {
-          "x": -210,
-          "y": -59
+          "x": 98,
+          "y": 181
         },
-        "routeThrough": "b0",
+        "routeThrough": "b1",
         "bulge": 0.187
       }
     ]
@@ -7329,7 +7317,7 @@
     "level_id": 59,
     "layout": "offset",
     "snipsAllowed": 5,
-    "par": 15.7,
+    "par": 21,
     "payload": {
       "id": "bomb",
       "x": 124,
@@ -7380,7 +7368,7 @@
         "start": "s1",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.002,
+        "speed": 0.0013,
         "delayFrames": 0,
         "bulge": 0
       },
@@ -7389,7 +7377,7 @@
         "start": "s2",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.0011,
+        "speed": 0.0007,
         "delayFrames": 104,
         "bulge": 0
       },
@@ -7398,7 +7386,7 @@
         "start": "s3",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.002,
+        "speed": 0.0013,
         "delayFrames": 170,
         "bulge": 0
       },
@@ -7407,7 +7395,7 @@
         "start": "s4",
         "routeThrough": "cut2",
         "end": "bomb",
-        "speed": 0.0014,
+        "speed": 0.0009,
         "delayFrames": 246,
         "bulge": 0
       },
@@ -7416,7 +7404,7 @@
         "start": "s5",
         "routeThrough": "cut2",
         "end": "bomb",
-        "speed": 0.002,
+        "speed": 0.0013,
         "delayFrames": 305,
         "bulge": 0
       },
@@ -7425,7 +7413,7 @@
         "branchOf": "f0",
         "at": 0.33,
         "end": "bomb",
-        "speed": 0.0016,
+        "speed": 0.0011,
         "delayFrames": 99999,
         "branchPoint": {
           "x": 22,
@@ -7438,7 +7426,7 @@
         "branchOf": "f1",
         "at": 0.309,
         "end": "bomb",
-        "speed": 0.0009,
+        "speed": 0.0007,
         "delayFrames": 99999,
         "branchPoint": {
           "x": -78,
@@ -7452,7 +7440,7 @@
     "level_id": 60,
     "layout": "rings",
     "snipsAllowed": 7,
-    "par": 11.3,
+    "par": 13.5,
     "payload": {
       "id": "bomb",
       "x": 0,
@@ -7513,7 +7501,7 @@
         "start": "s1",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.0019,
+        "speed": 0.0012,
         "delayFrames": 8,
         "bulge": 0.1
       },
@@ -7522,7 +7510,7 @@
         "start": "s2",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.002,
+        "speed": 0.0013,
         "delayFrames": 99,
         "bulge": -0.1
       },
@@ -7530,7 +7518,7 @@
         "id": "f2",
         "start": "s3",
         "end": "bomb",
-        "speed": 0.002,
+        "speed": 0.0013,
         "delayFrames": 215,
         "bulge": 0.1
       },
@@ -7539,7 +7527,7 @@
         "start": "s4",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.0019,
+        "speed": 0.0012,
         "delayFrames": 310,
         "bulge": -0.1
       },
@@ -7548,7 +7536,7 @@
         "start": "s5",
         "routeThrough": "cut2",
         "end": "bomb",
-        "speed": 0.002,
+        "speed": 0.0013,
         "delayFrames": 425,
         "bulge": 0.1
       },
@@ -7556,7 +7544,7 @@
         "id": "f5",
         "start": "s6",
         "end": "bomb",
-        "speed": 0.0019,
+        "speed": 0.0013,
         "delayFrames": 397,
         "bulge": -0.1
       },
@@ -7565,7 +7553,7 @@
         "branchOf": "f0",
         "at": 0.202,
         "end": "bomb",
-        "speed": 0.0016,
+        "speed": 0.001,
         "delayFrames": 99999,
         "branchPoint": {
           "x": -44,
@@ -7579,7 +7567,7 @@
         "branchOf": "f1",
         "at": 0.14,
         "end": "bomb",
-        "speed": 0.0018,
+        "speed": 0.0012,
         "delayFrames": 99999,
         "branchPoint": {
           "x": -88,

@@ -551,19 +551,19 @@ check(swept === levels.length, `winnability sweep: all ${levels.length} levels w
     const fastest = (id) => Math.max(...levels.find((l) => l.level_id === id).fuses.map((f) => f.speed));
     const secs = (speed) => Math.round((1 / speed / 60) * 10) / 10;
     const l8 = secs(fastest(8)), l20 = secs(fastest(20)), l40 = secs(fastest(40)), l55 = secs(fastest(55));
-    check(l8 < 16, "L8 fastest fuse burns in under 16s (gentle showcase)", `${l8}s`);
-    check(l20 < 10, "L20 fastest fuse burns in under 10s", `${l20}s`);
-    check(l40 < 7, "L40 act-2 peak burns in under 7s (fastest band)", `${l40}s`);
-    check(l55 > 6, "L55 dense maze burns SLOWER than 6s (readable, not a panic)", `${l55}s`);
+    check(l8 < 25, "L8 fastest fuse burns in under 25s (gentle showcase)", `${l8}s`);
+    check(l20 < 16, "L20 fastest fuse burns in under 16s", `${l20}s`);
+    check(l40 < 11, "L40 act-2 peak burns in under 11s (fastest band)", `${l40}s`);
+    check(l55 > 8, "L55 dense maze burns SLOWER than 8s (readable, not a panic)", `${l55}s`);
 
-    // Read-time floor: no fuse anywhere burns a full wick in under ~5.9s, or
+    // Read-time floor: no fuse anywhere burns a full wick in under ~7s, or
     // the player can't track all the sparks at once.
     let tooFast = [];
     for (const c of levels) {
         const f = Math.max(...c.fuses.map((x) => x.speed));
-        if (f > 0.0028) tooFast.push(`L${c.level_id}=${(1 / f / 60).toFixed(1)}s`);
+        if (f > 0.0024) tooFast.push(`L${c.level_id}=${(1 / f / 60).toFixed(1)}s`);
     }
-    check(tooFast.length === 0, "read-time floor: no fuse burns faster than ~5.9s/wick", tooFast.join(", "));
+    check(tooFast.length === 0, "read-time floor: no fuse burns faster than ~7s/wick", tooFast.join(", "));
 
     // Complexity-slow correlation: the densest late mazes must burn slower
     // than the act-2 peak (difficulty via geometry, not speed).
@@ -573,7 +573,21 @@ check(swept === levels.length, `winnability sweep: all ${levels.length} levels w
     };
     check(sparkCount(55) >= 9 && l55 > l40, "complexity slow-burn: L55 (10 sparks) burns slower than the L40 peak", `L55 ${l55}s @ ${sparkCount(55)} sparks vs L40 ${l40}s`);
     const boss = secs(fastest(57));
-    check(boss >= 6, "boss levels burn at or above 6s/wick (calm placement puzzles)", `${boss}s`);
+    check(boss >= 10, "boss levels burn at or above 10s/wick (calm placement puzzles)", `${boss}s`);
+
+    // Act-3 readability: the densest levels (9+ sparks) must have a real
+    // arrival spread so sparks TRICKLE in instead of bunching — the player
+    // reads and plans instead of reacting to a burst.
+    let bunched = [];
+    for (const c of levels) {
+        if (c.level_id < 41) continue; // act-2 34-37 deliberately overlap
+        const sparks = c.spawns.length + c.fuses.filter((f) => f.branchOf).length;
+        if (sparks < 9) continue;
+        const realDelays = c.fuses.filter((f) => f.delayFrames < 99999).map((f) => f.delayFrames);
+        const span = (Math.max(...realDelays) - Math.min(...realDelays)) / 60;
+        if (span < 7) bunched.push(`L${c.level_id} span=${span.toFixed(1)}s`);
+    }
+    check(bunched.length === 0, "act-3 spread: 9+ spark levels stagger arrivals over >= 7s", bunched.join(", "));
 
     const partialLvls = levels.filter((l) => l.level_id > 3 && l.fuses.some((f) => !f.routeThrough && !f.branchOf));
     const firstPartial = levels.find((l) => l.level_id > 3 && l.fuses.some((f) => !f.routeThrough && !f.branchOf));

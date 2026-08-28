@@ -54,92 +54,89 @@ function knobsForLevel(n) {
     const k = { spawns: 2, chokepoints: 1, share: true, delay: "burst", speed: 0.001 };
 
     if (act === 1) {
-        // Teaching phases, one skill at a time — but with a real speed ramp so
-        // "cut close to the spark for a fast clear" is meaningful from L4 on.
+        // Teaching phases, one skill at a time. Gentle pace — reading the lines
+        // comes before racing them.
         if (n <= 3) {
             // Swipe-to-cut. Single direct fuse, generous snips.
-            Object.assign(k, { spawns: 1, chokepoints: 0, share: true, delay: "burst", speed: 0.0008 });
+            Object.assign(k, { spawns: 1, chokepoints: 0, share: true, delay: "burst", speed: 0.0006 });
         } else if (n <= 6) {
             // Staggered delays.
             Object.assign(k, {
                 spawns: 2 + (n % 2), chokepoints: 1, share: true,
-                delay: "stagger", speed: 0.0011,
+                delay: "stagger", speed: 0.0008,
             });
         } else if (n <= 10) {
             // Shared chokepoint (L7 teaches it); the first fork arrives at L8
             // as a clean 2-wick showcase, then density returns.
             Object.assign(k, {
                 spawns: n === 8 ? 2 : 3 + (n % 2), chokepoints: 1, share: true,
-                delay: "close", speed: n === 8 ? 0.0011 : 0.0013,
+                delay: "close", speed: n === 8 ? 0.0008 : 0.0009,
             });
         } else if (n <= 14) {
             // Snip economy: split across 2 chokepoints, tighter timing.
             Object.assign(k, {
                 spawns: 4, chokepoints: 2, share: false,
-                delay: "close", speed: 0.0015,
+                delay: "close", speed: 0.001,
             });
         } else {
-            // Planning: partial direct fuses from L14, faster pace, overlap peak.
+            // Planning: partial direct fuses from L14, gentler overlap peak.
             Object.assign(k, {
                 spawns: 4 + (n % 2), chokepoints: 2, share: false, partial: true,
-                delay: relief ? "close" : "overlap", speed: 0.0017 + wave * 0.0001,
+                delay: relief ? "close" : "overlap", speed: 0.0011 + wave * 0.00005,
             });
         }
     } else if (act === 2) {
-        // Planning depth. Speed stays moderate through the act (sparks must be
-        // readable while the routing gets busier); the cap is ~0.0025 so even
-        // the act-2 peak leaves ~6.5s to react per wick.
-        Object.assign(k, { spawns: 4, chokepoints: 2, share: false, delay: "close", speed: 0.0018 });
+        // Planning depth. Speed stays moderate through the act; the cap is
+        // ~0.0017 so the act-2 peak still leaves ~9.8s per wick to read.
+        Object.assign(k, { spawns: 4, chokepoints: 2, share: false, delay: "close", speed: 0.0012 });
         k.spawns = 4 + wave + (relief ? 0 : wpos >= 2 ? 1 : 0);
         k.chokepoints = 2 + (wave >= 1 ? 1 : 0) - (relief ? 1 : 0);
         k.delay = wave >= 2 ? "overlap" : "close";
-        k.speed = 0.0018 + wave * 0.0002; // 0.0018–0.0024
+        k.speed = 0.0012 + wave * 0.00015; // 0.0012–0.00165
         // Level 21-24: speed variance focus.
-        if (n <= 24) { k.spawns = 4 + (n % 2); k.chokepoints = 2; k.speed = 0.0018 + (n % 3) * 0.0001; }
+        if (n <= 24) { k.spawns = 4 + (n % 2); k.chokepoints = 2; k.speed = 0.0012 + (n % 3) * 0.0001; }
         // 25-28: multi-chokepoint routing + the jump to two chains.
         if (n >= 25 && n <= 28) { k.spawns = 6; k.chokepoints = 3; k.delay = "close"; }
         // 29-33: overlapping timing pressure.
         if (n >= 29 && n <= 33) { k.spawns = 6; k.chokepoints = 2; k.delay = "overlap"; }
         // 34-37: partial coverage (some fuses direct).
         if (n >= 34 && n <= 37) { k.spawns = 6 + (n % 2); k.chokepoints = 2; k.partial = true; }
-        // 38-40: peak — the only act-2 band that pushes the pace.
-        if (n >= 38) { k.spawns = 6; k.chokepoints = 3; k.speed = 0.0025; k.delay = "overlap"; }
+        // 38-40: peak — the fastest band in the whole game, still calm.
+        if (n >= 38) { k.spawns = 6; k.chokepoints = 3; k.speed = 0.0017; k.delay = "overlap"; }
     } else {
         // Act 3 — mastery via COMPLEXITY, not speed. The most tangled mazes
-        // (many wicks, two forks, ten sparks) burn the SLOWEST so the player
-        // has time to read the lines and place every cut; difficulty comes from
-        // the web of routes, branches, and chokepoints, never from panic.
-        // Full-wick burn stays above ~6s everywhere, and the boss levels
-        // (L56-58, every chokepoint must be cut) get the calmest burn of all.
-        Object.assign(k, { spawns: 6, chokepoints: 2, share: false, delay: "close", speed: 0.0024 });
+        // (many wicks, two forks, up to ten sparks) burn the SLOWEST, and
+        // sparks arrive in a long trickle (spread) instead of an overlap, so
+        // the player reads the lines and plans cuts instead of reacting.
+        Object.assign(k, { spawns: 6, chokepoints: 2, share: false, delay: "spread", speed: 0.0014 });
         if (n <= 44) {
             // Minimal snips: single shared chokepoint, still brisk.
-            Object.assign(k, { spawns: 6, chokepoints: 1, share: true, delay: "overlap", speed: 0.0024 });
+            Object.assign(k, { spawns: 6, chokepoints: 1, share: true, delay: "spread", speed: 0.0014 });
         } else if (n <= 50) {
             // Full nets: many spawns funneled through a few chokepoints.
             Object.assign(k, {
                 spawns: 6 + (n % 2), chokepoints: 3, share: false,
-                delay: "overlap", speed: 0.0022 + (n % 3) * 0.0001,
+                delay: "spread", speed: 0.0013 + (n % 3) * 0.0001,
             });
         } else if (n <= 55) {
             // Wave peak escalation — but the maze is densest here, so the burn
             // SLOWS: 8 spawns + 2 forks ≈ 10 sparks to track.
             Object.assign(k, {
                 spawns: 7 + (n % 2), chokepoints: 3, share: false,
-                delay: "overlap", speed: 0.002,
+                delay: "spread", speed: 0.0012,
             });
         } else if (n <= 58) {
             // Boss levels: every chokepoint must be cut, zero slack. Calmest
             // burn in the act — the puzzle is the placement, not the race.
             Object.assign(k, {
                 spawns: 8, chokepoints: 4, share: false,
-                delay: "overlap", speed: 0.0018,
+                delay: "spread", speed: 0.0011,
             });
         } else {
             // 59-60 finale + relief.
             Object.assign(k, {
                 spawns: 6 - (n % 2), chokepoints: 2, share: false,
-                delay: "stagger", speed: 0.002,
+                delay: "stagger", speed: 0.0013,
             });
         }
     }
@@ -371,6 +368,10 @@ function delaySpan(k, count, rng) {
         case "stagger": return (count - 1) * (70 + rng() * 40);
         case "close": return (count - 1) * (30 + rng() * 20);
         case "overlap": return 60 + (count - 1) * 12;
+        // Act-3 signature: sparks trickle in over a long window (roughly
+        // count * 2s apart) so the player reads the maze and plans cuts
+        // instead of reacting to a burst of near-simultaneous sparks.
+        case "spread": return (count - 1) * (130 + rng() * 50);
         default: return 0;
     }
 }
