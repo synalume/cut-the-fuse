@@ -50,10 +50,12 @@ const modalDda = $("modal-dda");
 const modalEnd = $("modal-end");
 const modalSkins = $("modal-skins");
 const modalLevels = $("modal-levels");
+const modalMenu = $("modal-menu");
 const levelGrid = $("level-grid");
 const tutorialOverlay = $("tutorial-overlay");
 const tutorialText = $("tutorial-text");
 const btnTutorialNext = $("tutorial-next");
+const menuStars = $("menu-stars");
 const winStars = $("win-stars");
 const winTime = $("win-time");
 const winRecord = $("win-record");
@@ -116,9 +118,42 @@ function updateUi() {
     snipsCounter.classList.toggle("depleted", game.snipsRemaining <= 0);
     snipsCounter.classList.toggle("last-snip", game.snipsRemaining === 1 && allowed > 1);
 
-    starDisplay.textContent = `${save.getStarBank()}`;
+    const bank = `${save.getStarBank()}`;
+    starDisplay.textContent = bank;
+    if (menuStars) menuStars.textContent = bank;
     btnHint.classList.toggle("active", game.hintActive);
     btnMute.classList.toggle("muted", audio.muted);
+}
+
+// Modals that pause a live game (the hub, level select, armory). Opening one
+// closes every other overlay, so two modals can never stack on top of each
+// other — the level-select/armory overlap bug.
+const MENU_MODALS = () => [modalLevels, modalSkins, modalMenu];
+
+function openModal(el, display = "flex") {
+    // Hide every other overlay, then take the screen.
+    for (const m of [modalLose, modalWin, modalDda, modalEnd, modalSkins, modalLevels, modalMenu]) {
+        if (m !== el) m.style.display = "none";
+    }
+    tutorialOverlay.style.display = "none";
+    if (game.gameState === STATE.PLAYING) {
+        selectorPaused = true;
+        game.setPaused(true);
+    }
+    el.style.display = display;
+}
+
+function closeModal(el) {
+    el.style.display = "none";
+    resumeIfPausedByMenu();
+}
+
+/** Unpause a live game the moment every menu modal is gone. */
+function resumeIfPausedByMenu() {
+    if (selectorPaused && !MENU_MODALS().some((m) => m.style.display !== "none")) {
+        selectorPaused = false;
+        game.setPaused(false);
+    }
 }
 
 function closeModals() {
@@ -128,7 +163,9 @@ function closeModals() {
     modalEnd.style.display = "none";
     modalSkins.style.display = "none";
     modalLevels.style.display = "none";
+    modalMenu.style.display = "none";
     tutorialOverlay.style.display = "none";
+    resumeIfPausedByMenu();
 }
 
 // ---- level selector --------------------------------------------------------------
@@ -136,21 +173,40 @@ function closeModals() {
 function openLevelSelect() {
     renderLevelGrid();
     renderDailyRow();
-    modalLevels.style.display = "flex";
-    // Freeze a live game while the map is open; the win/lose modals stay as-is.
-    if (game.gameState === STATE.PLAYING) {
-        selectorPaused = true;
-        game.setPaused(true);
-    }
+    openModal(modalLevels, "flex");
 }
 
 function closeLevelSelect() {
-    modalLevels.style.display = "none";
-    if (selectorPaused) {
-        selectorPaused = false;
-        game.setPaused(false);
-    }
+    closeModal(modalLevels);
 }
+
+// ---- main menu hub ----------------------------------------------------------------
+
+/** The hub is the home screen: PLAY resumes or starts the current level, and
+ *  everything else (daily, level select, armory) opens its own modal. */
+function openMenu() {
+    updateUi();
+    openModal(modalMenu, "flex");
+}
+
+function closeMenu() {
+    closeModal(modalMenu);
+}
+
+$("btn-menu").addEventListener("click", openMenu);
+$("btn-menu-play").addEventListener("click", () => {
+    // A level is live → resume exactly where it was. Otherwise start playing.
+    if (game.level && game.gameState === STATE.PLAYING) {
+        closeMenu();
+    } else {
+        loadLevel(levelIndex);
+    }
+});
+$("btn-menu-daily").addEventListener("click", () => {
+    if (!save.isDailyComplete(todayStr())) openDaily();
+});
+$("btn-menu-levels").addEventListener("click", openLevelSelect);
+$("btn-menu-armory").addEventListener("click", openArmory);
 
 function renderLevelGrid() {
     levelGrid.innerHTML = "";
@@ -171,7 +227,13 @@ function renderLevelGrid() {
         const earned = save.getStars(id);
         const stars = document.createElement("div");
         stars.className = "stars";
-        stars.textContent = "★".repeat(earned) + "☆".repeat(3 - earned);
+        for (let i = 0; i < 3; i++) {
+            const img = document.createElement("img");
+            img.src = "assets/ui/ui-icon-star.png";
+            img.alt = "★";
+            if (i >= earned) img.className = "dim";
+            stars.appendChild(img);
+        }
 
         const best = save.getBestTime(id);
         const time = document.createElement("div");
@@ -190,7 +252,7 @@ function renderLevelGrid() {
 }
 
 $("level-label").addEventListener("click", openLevelSelect);
-$("btn-levels-close").addEventListener("click", closeLevelSelect);
+$("btn-levels-close").addEventListener("click", openMenu);
 
 // ---- daily challenge -------------------------------------------------------------
 
@@ -428,7 +490,9 @@ window.addEventListener("game:escape", () => {
     } else if (modalDda.style.display === "block") {
         modalDda.style.display = "none";
     } else if (modalSkins.style.display === "block") {
-        modalSkins.style.display = "none";
+        closeModal(modalSkins);
+    } else if (modalMenu.style.display === "flex") {
+        closeMenu();
     }
 });
 
@@ -451,13 +515,15 @@ starDisplay.style.cursor = "pointer";
 starDisplay.title = "Armory";
 starDisplay.addEventListener("click", () => {
     starDisplay.classList.remove("new-unlock");
-    renderArmory();
-    modalSkins.style.display = "block";
+    openArmory();
 });
 
-$("btn-skins-close").addEventListener("click", () => {
-    modalSkins.style.display = "none";
-});
+function openArmory() {
+    renderArmory();
+    openModal(modalSkins, "block");
+}
+
+$("btn-skins-close").addEventListener("click", openMenu);
 
 $("tab-payloads").addEventListener("click", () => {
     armoryTab = "payload";
@@ -584,9 +650,13 @@ async function boot() {
         return;
     }
 
-    // Respect saved progress: resume at the furthest unlocked level.
-    const startIndex = Math.min(levels.length - 1, save.getUnlockedLevel() - 1 || 0);
-    await loadLevel(startIndex);
+    // Respect saved progress: the hub resumes at the furthest unlocked level.
+    levelIndex = Math.min(levels.length - 1, save.getUnlockedLevel() - 1 || 0);
+
+    // Home screen first — the player picks PLAY to load their level. Loading
+    // happens lazily so a returning player sees their star bank before diving in.
+    updateUi();
+    openMenu();
 
     // Load baked audio cues from assets/audio/ (silently skips un-baked cues).
     audio.loadAll();

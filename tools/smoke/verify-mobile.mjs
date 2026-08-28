@@ -4,12 +4,17 @@ import { chromium } from "playwright";
 const browser = await chromium.launch();
 const report = [];
 
-/** Dismiss any tutorial overlay whenever it appears, until sparks are moving. */
+/** Dismiss the home hub, then any tutorial overlay, until sparks are moving. */
 async function dismissUntilRunning(page, timeoutMs = 15000) {
     const deadline = Date.now() + timeoutMs;
     while (Date.now() < deadline) {
         const st = await page.evaluate(() => {
             const g = window.__CTF__.game;
+            const menu = document.getElementById("modal-menu");
+            if (menu && menu.style.display === "flex") {
+                document.getElementById("btn-menu-play").click();
+                return "starting";
+            }
             const ov = document.getElementById("tutorial-overlay");
             if (ov.style.display === "flex") {
                 ov.style.display = "none";

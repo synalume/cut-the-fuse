@@ -108,6 +108,7 @@
             <div id="snips-counter">✂️ SNIPS: 2</div>
         </div>
         <div class="controls">
+            <button id="btn-menu" title="Main Menu">☰</button>
             <button id="btn-mute" title="Mute"><img src="assets/ui/ui-icon-mute.png" alt="Mute"></button>
             <button id="btn-hint" title="Toggle X-Ray Hint"><img src="assets/ui/ui-icon-hint.png" alt="Hint"></button>
             <button id="btn-zoom-out" title="Zoom Out"><img src="assets/ui/ui-icon-zoom-out.png" alt="Zoom out"></button>
@@ -176,6 +177,18 @@
         </div>
         <div id="level-grid"></div>
         <button id="btn-levels-close">BACK</button>
+    </div>
+
+    <!-- Main menu hub — the home screen: PLAY resumes, everything else opens
+         its own modal, and the armory/level-select BACK buttons route here. -->
+    <div id="modal-menu" class="message-box main-menu">
+        <h1>CUT THE FUSE</h1>
+        <p class="menu-tagline">A BOMB PUZZLE</p>
+        <div id="menu-stars" class="menu-stars">★ 0</div>
+        <button id="btn-menu-play">PLAY</button>
+        <button id="btn-menu-daily">🔥 TODAY'S CHALLENGE</button>
+        <button id="btn-menu-levels">LEVEL SELECT</button>
+        <button id="btn-menu-armory">ARMORY</button>
     </div>
 </div>
 

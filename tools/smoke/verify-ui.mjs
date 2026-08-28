@@ -25,6 +25,10 @@ await page.goto(BASE);
 await page.waitForFunction(() => window.__CTF__?.levels?.length === 60, null, { timeout: 10000 });
 console.log("[verify] game booted");
 
+// Home screen first — press PLAY to load the level.
+await page.click("#btn-menu-play");
+await page.waitForFunction(() => window.__CTF__?.game?.fuses?.length > 0, null, { timeout: 10000 });
+
 // world -> screen helper (mirrors InputHandler.screenToWorld inverse).
 const toScreen = (wx, wy) => page.evaluate(([wx, wy]) => {
     const { game, renderer } = window.__CTF__;

@@ -11,6 +11,10 @@ const page = await browser.newPage({ viewport: { width: 1280, height: 720 } });
 await page.goto(BASE);
 await page.waitForFunction(() => window.__CTF__?.levels?.length === 60, null, { timeout: 10000 });
 
+// Home screen first — press PLAY to load a level, then open the map.
+await page.click("#btn-menu-play");
+await page.waitForFunction(() => window.__CTF__?.game?.fuses?.length > 0, null, { timeout: 10000 });
+
 // Jump straight to the level via the map UI.
 await page.click("#level-label");
 await page.waitForTimeout(200);

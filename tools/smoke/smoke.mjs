@@ -1014,10 +1014,24 @@ try {
 check(!bootError, "main.js boots without exceptions", bootError ? String(bootError?.stack || bootError) : "");
 
 if (!bootError) {
-    check(elements["level-label"].textContent === "LEVEL 1", "Boot: resumes at Level 1");
+    const waitFor = async (fn, tries = 150) => {
+        for (let i = 0; i < tries && !fn(); i++) await new Promise((r) => setTimeout(r, 20));
+        return fn();
+    };
     const snipIconsLeft = () =>
         elements["snips-counter"].children.filter((c) =>
             (c.className || "").includes("snip-icon") && !(c.className || "").includes("spent")).length;
+
+    // Home screen first: the hub shows the star bank and the PLAY button.
+    check(elements["modal-menu"].style.display === "flex", "Boot: title hub is the home screen");
+    check(/^\d+$/.test(elements["menu-stars"].textContent), "Boot: hub shows the star bank", elements["menu-stars"].textContent);
+    check(["btn-menu-play", "btn-menu-daily", "btn-menu-levels", "btn-menu-armory"].every((id) => elements[id] != null),
+        "Boot: hub has PLAY / DAILY / LEVELS / ARMORY buttons", "");
+
+    // PLAY loads the furthest unlocked level (L1 on a fresh save).
+    elements["btn-menu-play"].dispatch("click", {});
+    await waitFor(() => elements["level-label"].textContent === "LEVEL 1" && elements["modal-menu"].style.display === "none");
+    check(elements["level-label"].textContent === "LEVEL 1", "Boot: PLAY loads Level 1");
     check(snipIconsLeft() === 3, "Boot: snips counter = 3 scissors (geometry-derived)", String(snipIconsLeft()));
     check(elements["tutorial-overlay"].style.display === "flex", "Boot: Level 1 tutorial overlay shown");
 
@@ -1062,6 +1076,7 @@ if (!bootError) {
     // Armory: opens from the star counter, shows 10 payload skins.
     elements["star-display"].dispatch("click", {});
     check(elements["modal-skins"].style.display === "block", "Armory: opens from the star counter");
+    check(elements["modal-menu"].style.display === "none", "Armory: opening it hides the win modal (no stacking)");
     check(elements["tab-payloads"].className.includes("active"), "Armory: BOMBS tab active by default", elements["tab-payloads"].className);
     check(elements["skin-grid"].children.length === 10, "Armory: renders all 10 payload skins", String(elements["skin-grid"].children.length));
     const cards = elements["skin-grid"].children;
@@ -1096,27 +1111,49 @@ if (!bootError) {
     check(JSON.parse(localStorage.getItem("cut_the_fuse_save_v1")).selectedSkin === "melon", "Armory: payload skin selection persisted to save");
     check(JSON.parse(localStorage.getItem("cut_the_fuse_save_v1")).selectedIgniter === "lighter", "Armory: igniter selection persisted to save");
     elements["btn-skins-close"].dispatch("click", {});
-    check(elements["modal-skins"].style.display === "none", "Armory: close returns to the game");
+    check(elements["modal-skins"].style.display === "none", "Armory: BACK returns to the hub");
+    check(elements["modal-menu"].style.display === "flex", "Hub: shown after closing the armory");
 
-    // Level selector
-    elements["level-label"].dispatch("click", {});
-    check(elements["modal-levels"].style.display === "flex", "Selector: click level label opens the map");
+    // PLAY from the hub while a level is loaded and won restarts the level.
+    elements["btn-menu-play"].dispatch("click", {});
+    await waitFor(() => elements["modal-menu"].style.display === "none");
+    check(elements["level-label"].textContent.startsWith("LEVEL 1"), "Hub: PLAY restarts the level", elements["level-label"].textContent);
+
+    // Level selector via the hub button; tiles show big numbers + star art.
+    elements["btn-menu"].dispatch("click", {});
+    await waitFor(() => elements["modal-menu"].style.display === "flex");
+    elements["btn-menu-levels"].dispatch("click", {});
+    check(elements["modal-levels"].style.display === "flex", "Selector: hub LEVEL SELECT opens the map");
+    check(elements["modal-menu"].style.display === "none", "Selector: the hub closes when the map opens (no overlap)");
     check(elements["level-grid"].children.length === 60, "Selector: grid renders all 60 levels", String(elements["level-grid"].children.length));
     check(elements["level-grid"].children[0].children[0]?.textContent === "01", "Selector: level numbers rendered", elements["level-grid"].children[0].children[0]?.textContent);
-    check(elements["level-grid"].children[0].children[1]?.textContent === "★★★", "Selector: earned stars shown per level", elements["level-grid"].children[0].children[1]?.textContent);
+    const cellStars = elements["level-grid"].children[0].children[1];
+    check(cellStars.children.length === 3 && cellStars.children[0].className !== "dim",
+        "Selector: earned stars shown as lit star art", `${cellStars.children.length} imgs`);
     const cell3 = elements["level-grid"].children[2];
     cell3.dispatch("click", {});
     await new Promise((r) => setTimeout(r, 60));
     check(elements["level-label"].textContent.startsWith("LEVEL 3"), "Selector: clicking a cell loads that level", elements["level-label"].textContent);
     check(elements["modal-levels"].style.display === "none", "Selector: modal closes after picking a level");
 
+    // Modal exclusivity: opening the armory while the level select is open
+    // closes the map — the two never stack (the overlap bug).
+    elements["level-label"].dispatch("click", {});
+    await new Promise((r) => setTimeout(r, 30));
+    check(elements["modal-levels"].style.display === "flex", "Selector: click level label opens the map");
+    elements["star-display"].dispatch("click", {});
+    check(elements["modal-skins"].style.display === "block", "Menu: armory opens over the map");
+    check(elements["modal-levels"].style.display === "none", "Menu: opening the armory closes the level select (no overlap)");
+    elements["btn-skins-close"].dispatch("click", {});
+    check(elements["modal-menu"].style.display === "flex", "Menu: armory BACK routes to the hub");
+
     // Daily challenge: banner renders in the selector; entering today's
     // challenge loads a seeded level tagged DAILY; picking a story level
     // exits daily mode.
+    elements["btn-menu-levels"].dispatch("click", {});
+    await new Promise((r) => setTimeout(r, 30));
     check(elements["btn-daily"] != null, "Daily: challenge button rendered in the selector");
     check((elements["daily-streak"].textContent || "").includes("STREAK"), "Daily: streak pill rendered", elements["daily-streak"].textContent);
-    elements["level-label"].dispatch("click", {});
-    await new Promise((r) => setTimeout(r, 30));
     check(elements["btn-daily"].disabled === false, "Daily: challenge is enterable (not yet done today)", `disabled=${elements["btn-daily"].disabled}`);
     elements["btn-daily"].dispatch("click", {});
     await new Promise((r) => setTimeout(r, 60));

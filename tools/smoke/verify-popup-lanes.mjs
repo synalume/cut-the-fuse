@@ -23,6 +23,9 @@ page.on("pageerror", (e) => console.error("  [pageerror]", e.message));
 async function openLevel(idx) {
     await page.goto(BASE);
     await page.waitForFunction(() => window.__CTF__?.levels?.length === 60, null, { timeout: 10000 });
+    // Home screen first — press PLAY to load a level, then pick from the map.
+    await page.click("#btn-menu-play");
+    await page.waitForFunction(() => window.__CTF__?.game?.fuses?.length > 0, null, { timeout: 10000 });
     await page.click("#level-label");
     await page.waitForFunction(() => document.getElementById("modal-levels").style.display !== "none");
     await page.evaluate((i) => document.getElementById("level-grid").children[i].click(), idx);
