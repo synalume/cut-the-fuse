@@ -205,9 +205,9 @@ canvas { display: block; position: absolute; z-index: 10; }
     text-transform: uppercase;
 }
 #win-stats .stat.record { background: #d97706; color: #fff7ed; animation: win-record-pulse 0.9s ease-in-out infinite alternate; }
-#win-stats .stat.perfect { background: #16a34a; color: #f0fdf4; }
+#win-stats .stat.perfect { background: #16a34a; color: #f0fdf4; padding: 8px 13px 1px; } /* larger-glyph pills need more top-heavy padding */
 #win-stats .stat.streak { background: #b45309; color: #fffbeb; animation: win-record-pulse 0.9s ease-in-out infinite alternate; }
-#win-stats .stat.score { background: #f59e0b; color: #451a03; font-size: 1.1rem; }
+#win-stats .stat.score { background: #f59e0b; color: #451a03; font-size: 1.1rem; padding: 9px 13px 0; }
 #win-stats .stat.best { background: #15803d; color: #f0fdf4; animation: win-record-pulse 0.9s ease-in-out infinite alternate; }
 @keyframes win-record-pulse { from { transform: scale(1); } to { transform: scale(1.08); } }
 

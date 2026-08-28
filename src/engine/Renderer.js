@@ -14,6 +14,14 @@ const REACTION_WORDS = {
     spawnDud: ["?", "WHEW", "OK?", "PHEW", "SAFE", "..."],
 };
 
+// Comic words for the big win/lose beats. Picked per attempt (stored on the
+// game state at _finishLevel) so the same level rotates through the set instead
+// of always popping the same two words.
+export const COMIC_WORDS = {
+    won: ["PHEW!", "SAFE!", "WHEW!", "OFF!", "DODGED!", "CLEAR!"],
+    lost: ["KABOOM!", "BOOM!", "BANG!", "BLAM!", "KERBOOM!", "WHAM!"],
+};
+
 /** Deterministic pick from a word list keyed on level + node id, so a character
  *  always says the same thing within a level but it varies across levels. */
 function pickReactionWord(levelId, nodeId, list) {
@@ -143,8 +151,8 @@ export class Renderer {
         // behind the matchstick and banana, not over them.
         if (game.gameState === "playing") this._drawSparkEffects(game);
         this._drawAssets(game);
-        if (game.gameState === "lost") this._drawComicText(game, "KABOOM!", "#ef4444", game.lostAt);
-        if (game.gameState === "won") this._drawComicText(game, "PHEW!", "#22c55e", game.wonAt);
+        if (game.gameState === "lost") this._drawComicText(game, game.comicWord || "KABOOM!", "#ef4444", game.lostAt);
+        if (game.gameState === "won") this._drawComicText(game, game.comicWord || "PHEW!", "#22c55e", game.wonAt);
         this._drawSwipePreview(game);
         this._drawSnipFeedback(game);
         // Onboarding demo hand rides on top of everything while the tutorial is up.
@@ -585,11 +593,11 @@ export class Renderer {
         ctx.translate(node.x, ty);
         ctx.rotate(-0.08 + wobble);
         ctx.scale(pop, pop);
-        ctx.font = "36px 'Luckiest Guy', 'Courier New', Courier, monospace";
+        ctx.font = "26px 'Luckiest Guy', 'Courier New', Courier, monospace";
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
         ctx.lineJoin = "round";
-        ctx.lineWidth = 10;
+        ctx.lineWidth = 7;
         ctx.strokeStyle = "#1c1917";
         ctx.strokeText(text, 0, 0);
         ctx.fillStyle = color;

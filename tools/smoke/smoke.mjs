@@ -701,6 +701,23 @@ check(swept === levels.length, `winnability sweep: all ${levels.length} levels w
         "score: perfects + multi-cut wicks add to the efficiency score", String(g.computeScore()));
 }
 
+// Comic word rotation: _finishLevel picks a word from the won/lost pools per
+// attempt, so the big beat isn't always the same two words.
+{
+    const { COMIC_WORDS } = await import("../../src/engine/Renderer.js");
+    check(COMIC_WORDS.won.length >= 5 && COMIC_WORDS.lost.length >= 5,
+        "comic: each pool has 5+ rotating words", `${COMIC_WORDS.won.length}/${COMIC_WORDS.lost.length}`);
+    const g = new GameLoop({ canvas: null, ...makeStubs() });
+    g.loadLevel(lvl1, 0);
+    g.snipsRemaining = 1;
+    g._finishLevel(true);
+    check(COMIC_WORDS.won.includes(g.comicWord), "comic: win word comes from the won pool", g.comicWord);
+    const g2 = new GameLoop({ canvas: null, ...makeStubs() });
+    g2.loadLevel(lvl1, 0);
+    g2._finishLevel(false);
+    check(COMIC_WORDS.lost.includes(g2.comicWord), "comic: lose word comes from the lost pool", g2.comicWord);
+}
+
 // Difficulty profile: the burn pace is a READ-TIME budget, not a speed race.
 // Simple teaching levels can burn briskly; the dense late mazes (many wicks +
 // forks) burn the SLOWEST so the player has time to read the lines and place

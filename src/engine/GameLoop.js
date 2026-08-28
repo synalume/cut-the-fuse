@@ -1,6 +1,7 @@
 // GameLoop.js — rAF loop, state machine, and the simulation.
 // Owns all mutable game state. Renders through the injected Renderer.
 import { getBezierXY, distToSegment, clamp } from "./MathUtils.js";
+import { COMIC_WORDS } from "./Renderer.js";
 
 export const STATE = { PLAYING: "playing", WON: "won", LOST: "lost", PAUSED: "paused" };
 
@@ -41,6 +42,7 @@ export class GameLoop {
         this.lastLevelWin = null;
         this.lostAt = null; // frameCount when the bomb detonated (drives the blast FX)
         this.wonAt = null; // frameCount when the level was defused (drives the win text)
+        this.comicWord = null; // comic word for the win/lose beat, picked per attempt
         this.tutorialActive = false;
         this.multikills = []; // { x, y, count, at } — one snip severed N wicks (banking popup)
         this._chime = null; // ascending coin-chime queue for multi-cuts
@@ -347,6 +349,7 @@ export class GameLoop {
             this.gameState = STATE.WON;
             this.wonAt = this.frameCount;
             this.lastLevelWin = stars;
+            this.comicWord = COMIC_WORDS.won[Math.floor(Math.random() * COMIC_WORDS.won.length)];
             if (this.analytics) {
                 this.analytics.track("level_win", {
                     level: this.level.level_id, stars, attempts: this.attempts,
@@ -361,6 +364,7 @@ export class GameLoop {
             this.gameState = STATE.LOST;
             this.lostAt = this.frameCount;
             this.failCount++;
+            this.comicWord = COMIC_WORDS.lost[Math.floor(Math.random() * COMIC_WORDS.lost.length)];
             if (this.audio) this.audio.play("blast");
             if (this.analytics) {
                 this.analytics.track("level_fail", {

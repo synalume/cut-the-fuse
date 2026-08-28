@@ -74,13 +74,13 @@ await page.mouse.up();
 await page.waitForFunction(() => document.getElementById("modal-win").style.display === "block", null, { timeout: 15000 });
 const winStats = await page.evaluate(() => ({
     time: document.getElementById("win-time").textContent,
-    par: document.getElementById("win-par").textContent,
+    par: document.getElementById("win-par"), // removed from the UI
     record: document.getElementById("win-record").style.display,
     recordText: document.getElementById("win-record").textContent,
     stats: document.getElementById("win-stats").style.display,
 }));
 check(/^TIME \d+\.\ds$/.test(winStats.time), "win modal shows a clear time", winStats.time);
-check(/^PAR \d+\.\ds$/.test(winStats.par), "win modal shows the level's par", winStats.par);
+check(winStats.par === null, "win modal no longer shows the PAR pill", String(winStats.par));
 check(winStats.record === "inline-block", "win modal flags a NEW RECORD", winStats.record);
 check(winStats.stats !== "none", "win stats row is visible", winStats.stats);
 await page.screenshot({ path: path.join(ROOT, "tools/smoke/verify-win-modal.png") });

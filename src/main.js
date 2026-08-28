@@ -56,7 +56,6 @@ const tutorialText = $("tutorial-text");
 const btnTutorialNext = $("tutorial-next");
 const winStars = $("win-stars");
 const winTime = $("win-time");
-const winPar = $("win-par");
 const winRecord = $("win-record");
 const winPerfect = $("win-perfect");
 const winPerfectCount = $("win-perfect-count");
@@ -305,9 +304,7 @@ game.onLevelComplete = (levelId, stars, won) => {
         // Speed record: clear time vs the level's par, plus perfect-snip count.
         const seconds = Math.round((game.clearFrames / 60) * 10) / 10;
         const isRecord = save.setBestTime(levelId, seconds);
-        const config = levels.find((l) => l.level_id === levelId);
         winTime.textContent = `TIME ${seconds.toFixed(1)}s`;
-        winPar.textContent = config?.par != null ? `PAR ${config.par.toFixed(1)}s` : "";
         winRecord.style.display = isRecord ? "inline-block" : "none";
 
         // Efficiency score: fewer snips used → higher. Fewest snips = most
