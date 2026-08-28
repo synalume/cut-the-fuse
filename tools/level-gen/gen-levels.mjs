@@ -1041,6 +1041,42 @@ function placeLevel(n, k, seedOffset = 0, salt = 0) {
         return f;
     });
 
+    // Tail separation for shared chokepoints: wicks routed through the SAME
+    // crossroad share a control point, so their final legs (chokepoint →
+    // payload center) are IDENTICAL overlapping curves — the "bunch" that
+    // vanishes under the banana as one thick line and reads as disconnected.
+    // Give each wick in a group a DISTINCT bulge, ramped across ±mag, so the
+    // tails fan apart through their run and only converge right at the bomb.
+    // Magnitude is capped by the chokepoint->bomb chord so the mid-leg bow
+    // stays within ~35px — visible separation, never an off-screen swirl.
+    {
+        const grouped = new Map();
+        for (const f of fuses) {
+            if (!f.routeThrough) continue;
+            if (!grouped.has(f.routeThrough)) grouped.set(f.routeThrough, []);
+            grouped.get(f.routeThrough).push(f);
+        }
+        for (const [cpId, grp] of grouped) {
+            if (grp.length < 2) continue;
+            grp.sort((a, b) => {
+                const s1 = spawns.find((s) => s.id === a.start);
+                const s2 = spawns.find((s) => s.id === b.start);
+                const a1 = Math.atan2((s1 ? s1.y : payload.y) - payload.y, (s1 ? s1.x : payload.x) - payload.x);
+                const a2 = Math.atan2((s2 ? s2.y : payload.y) - payload.y, (s2 ? s2.x : payload.x) - payload.x);
+                return a1 - a2;
+            });
+            const n = grp.length;
+            const cp = intersections.find((c) => c.id === cpId);
+            const L = cp ? Math.hypot(cp.x - payload.x, cp.y - payload.y) : 300;
+            const maxBulge = Math.min(0.3, 35 / (0.289 * Math.max(60, L)));
+            const mag = Math.min(maxBulge, 0.05 + n * 0.045);
+            grp.forEach((f, i) => {
+                const v = n === 1 ? 0 : -mag + (2 * mag * i) / (n - 1);
+                f.bulge = Math.round(Math.max(-0.3, Math.min(0.3, v)) * 1000) / 1000;
+            });
+        }
+    }
+
     // Every level ignites its FIRST spark immediately on load — the burn
     // starts and the player reacts. The "rain" rhythm shuffles the arrival
     // ladder per fuse, so by luck it can push EVERY timer up (e.g. L48/L51

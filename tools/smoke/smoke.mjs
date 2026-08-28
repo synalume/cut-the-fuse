@@ -353,6 +353,31 @@ check(swept === levels.length, `winnability sweep: all ${levels.length} levels w
         }
         check(offWicks.length === 0, "no wick curve leaves the viewport (tail bows stay in-frame)", offWicks.join(", "));
         check(farWicks.length === 0, "no wick curve drifts past the bomb (single-endpoint tails)", farWicks.join(", "));
+
+        // Shared-chokepoint divergence: wicks routed through the SAME crossroad
+        // share a control point, so if any two carry the SAME bulge their final
+        // legs are identical overlapping curves — the "bunch" that reads as a
+        // disconnected blob at the banana. Each wick in a group must carry a
+        // distinct value so the tails fan apart and enter the bomb separately.
+        let bunched = [];
+        for (const c of levels) {
+            const byCp = new Map();
+            for (const f of c.fuses) {
+                if (!f.routeThrough) continue;
+                if (!byCp.has(f.routeThrough)) byCp.set(f.routeThrough, []);
+                byCp.get(f.routeThrough).push(f);
+            }
+            for (const [cpId, grp] of byCp) {
+                if (grp.length < 2) continue;
+                const seen = new Set();
+                for (const f of grp) {
+                    const key = String(f.bulge ?? 0);
+                    if (seen.has(key)) bunched.push(`L${c.level_id}:${cpId} ${f.id} bulge=${key}`);
+                    seen.add(key);
+                }
+            }
+        }
+        check(bunched.length === 0, "shared chokepoints: every grouped wick fans with a distinct tail bow", bunched.join(", "));
     }
 
     // Fit-camera guard: a chokepoint that drifts absurdly far from the payload
