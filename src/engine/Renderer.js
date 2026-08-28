@@ -8,7 +8,7 @@ const ASSET_PREFIX = "assets/";
 
 // Reaction words for the small character reactions. Picked deterministically by
 // level + character so each level uses a different set, but never flickers.
-const REACTION_WORDS = {
+export const REACTION_WORDS = {
     payloadDanger: ["AHH!", "HELP!", "PANIC!", "NOOO!", "YIKES!", "GULP!"],
     spawnLit: ["EEK!", "OH!", "HOT!", "YIKES!", "UH OH!", "HEY!"],
     spawnDud: ["?", "WHEW", "OK?", "PHEW", "SAFE", "..."],
@@ -860,39 +860,105 @@ export class Renderer {
             ctx.restore();
         }
 
-        if (game.noSnipsAt) {
-            this._drawPopupWord(
-                game, "NO MORE SNIPS!", "#ef4444",
-                game.noSnipsAt.x, game.noSnipsAt.y - 26, 24,
-                game.noSnipsAt.at, 85
-            );
-        }
+        // Announcement popups (NO MORE SNIPS! / LAST SNIP! / PERFECT! / +N).
+        // Collected and drawn together so each gets its own vertical lane and
+        // popups fired by the same cut (perfect + last-snip + multi-cut) never
+        // stack on top of each other.
+        this._drawPopupWords(game);
+    }
 
+    /** Every announcement popup active this frame with its natural vertical
+     *  lane. Lanes are spaced for the worst-case pop overshoot so popups fired
+     *  by the SAME cut — a perfect snip that's also the last snip and/or a
+     *  multi-cut — never overlap: +N sits highest, then LAST SNIP!, then
+     *  PERFECT!, then NO MORE SNIPS!. */
+    _activePopupWords(game) {
+        const active = (at, dur) => at != null && game.frameCount >= at && game.frameCount - at < dur;
+        const out = [];
+        if (game.noSnipsAt && active(game.noSnipsAt.at, 85)) {
+            out.push({ kind: "word", text: "NO MORE SNIPS!", color: "#ef4444", x: game.noSnipsAt.x, y: game.noSnipsAt.y, size: 24, at: game.noSnipsAt.at, duration: 85, dy: -26 });
+        }
         if (game.lastSnipAt != null) {
             const last = game.cuts[game.cuts.length - 1];
-            if (last) {
-                this._drawPopupWord(
-                    game, "LAST SNIP!", "#d97706",
-                    last.x, last.y - 34, 22,
-                    game.lastSnipAt, 70
-                );
+            if (last && active(game.lastSnipAt, 70)) {
+                out.push({ kind: "word", text: "LAST SNIP!", color: "#d97706", x: last.x, y: last.y, size: 22, at: game.lastSnipAt, duration: 70, dy: -78 });
             }
         }
-
-        // PERFECT! popups — a cut placed right ahead of a burning spark. Short
-        // life so back-to-back perfects stack cleanly on the wick.
         for (const p of game.perfectSnipsAt || []) {
-            this._drawPopupWord(
-                game, "PERFECT!", "#16a34a",
-                p.x, p.y - 38, 21,
-                p.at, 65
-            );
+            if (active(p.at, 65)) out.push({ kind: "word", text: "PERFECT!", color: "#16a34a", x: p.x, y: p.y, size: 21, at: p.at, duration: 65, dy: -38 });
         }
-
-        // MULTI-CUT banking numbers — a Big Fluff-style "+N" pops where one snip
-        // sliced several wicks at once: gold, bouncy, floats up as it fades.
         for (const mk of game.multikills || []) {
-            this._drawBankCount(game, mk);
+            if (active(mk.at, 55)) out.push({ kind: "bank", text: `+${mk.count}`, count: mk.count, x: mk.x, y: mk.y, size: 30 + mk.count * 5, at: mk.at, duration: 55, dy: -140 });
+        }
+        return out;
+    }
+
+    /** World-space boxes of reaction words currently on screen — the payload's
+     *  danger word ("AHH!") and each matchstick's panic/dud chatter — so the
+     *  announcement popups climb above them instead of writing over the chatter. */
+    _activeReactionObstacles(game) {
+        const out = [];
+        const lit = (at, dur) => at != null && game.frameCount >= at && game.frameCount - at < dur;
+        const payload = game.nodes?.find((n) => n.type === "payload");
+        if (payload) {
+            let latestIgnite = -1;
+            for (const s of game.sparks || []) {
+                if (s.active && s.ignited && s.ignitedAt != null && s.progress < 1) latestIgnite = Math.max(latestIgnite, s.ignitedAt);
+            }
+            if (latestIgnite >= 0 && lit(latestIgnite, REACTION_SHOW_FRAMES)) {
+                out.push({ text: pickReactionWord(game.level.level_id, payload.id, REACTION_WORDS.payloadDanger), x: payload.x, y: payload.y - 128, size: 40 });
+            }
+        }
+        for (const node of game.nodes || []) {
+            if (node.type !== "spawn") continue;
+            const fuseIndex = game.fuses.findIndex((f) => f.start === node.id);
+            const spark = fuseIndex >= 0 ? game.sparks[fuseIndex] : null;
+            if (spark && spark.active && spark.ignited && lit(spark.ignitedAt, REACTION_SHOW_FRAMES)) {
+                out.push({ text: pickReactionWord(game.level.level_id, node.id, REACTION_WORDS.spawnLit), x: node.x, y: node.y - 58, size: 22 });
+            }
+            if (spark && !spark.active && lit(spark.diedAt, 60)) {
+                out.push({ text: pickReactionWord(game.level.level_id, node.id, REACTION_WORDS.spawnDud), x: node.x, y: node.y - 58, size: 26 });
+            }
+        }
+        return out;
+    }
+
+    /** Draw announcement popups with per-frame collision resolution. Popups
+     *  keep their natural lane; if any two overlap (e.g. a cut near a lingering
+     *  popup or an active reaction word), the later-spawned one climbs above
+     *  the earlier one so text never sits on top of text. Half-heights are
+     *  padded to the pop overshoot. */
+    _drawPopupWords(game) {
+        const popups = this._activePopupWords(game);
+        if (!popups.length) return;
+
+        const ctx = this.ctx;
+        const box = (text, size) => {
+            const halfH = size * 0.62 * 1.4;
+            ctx.font = `${size}px 'Luckiest Guy', 'Courier New', Courier, monospace`;
+            return { halfH, halfW: ctx.measureText(text).width / 2 };
+        };
+
+        // Reaction words already on screen count as placed obstacles; the
+        // announcement popups climb above any they'd collide with.
+        const placed = this._activeReactionObstacles(game).map((o) => ({ x: o.x, y: o.y, ...box(o.text, o.size) }));
+
+        // Oldest first: earlier popups keep their spot; later ones climb over
+        // anything they'd collide with.
+        popups.sort((a, b) => a.at - b.at);
+
+        for (const p of popups) {
+            const { halfH, halfW } = box(p.text, p.size);
+            let ty = p.y + p.dy;
+            for (const q of placed) {
+                if (Math.abs(q.x - p.x) > q.halfW + halfW + 14) continue; // horizontally clear
+                if (ty + halfH <= q.y - q.halfH) continue; // already above, clear
+                if (ty - halfH < q.y + q.halfH) ty = q.y - q.halfH - halfH - 10; // overlapping → climb above
+            }
+            placed.push({ x: p.x, y: ty, halfW, halfH });
+
+            if (p.kind === "bank") this._drawBankCount(game, p, ty);
+            else this._drawPopupWord(game, p.text, p.color, p.x, ty, p.size, p.at, p.duration);
         }
     }
 
@@ -911,7 +977,7 @@ export class Renderer {
         const sy = this.height / 2 + (ty - (this.height / 2 - cam.y)) * cam.zoom;
         if (sy < 70) ty += (70 - sy) / cam.zoom;
 
-        const pop = 1.5 - 0.5 * Math.exp(-elapsed * 5);
+        const pop = 1.18 - 0.18 * Math.exp(-elapsed * 5);
         const wobble = Math.sin(game.frameCount * 0.16) * 0.05 * Math.min(1, elapsed / 10);
 
         ctx.save();
@@ -933,26 +999,26 @@ export class Renderer {
 
     /** Big Fluff-style banking counter for a multi-cut: a big gold "+N" that
      *  pops in with overshoot, floats up, and fades — the dopamine hit for
-     *  slicing several wicks with one snip. */
-    _drawBankCount(game, mk) {
+     *  slicing several wicks with one snip. `y` is the collision-resolved lane. */
+    _drawBankCount(game, mk, y) {
         if (mk.at == null) return;
         const elapsed = game.frameCount - mk.at;
         if (elapsed < 0 || elapsed > 55) return;
         const ctx = this.ctx;
 
-        let ty = mk.y;
+        let ty = y;
         const cam = game.camera;
         const sy = this.height / 2 + (ty - (this.height / 2 - cam.y)) * cam.zoom;
         if (sy < 70) ty += (70 - sy) / cam.zoom;
 
-        const pop = 1.9 - 0.9 * Math.exp(-elapsed * 5);
+        const pop = 1.35 - 0.35 * Math.exp(-elapsed * 5);
         const float = Math.min(22, elapsed * 0.45); // rises as it fades
         const wobble = Math.sin(game.frameCount * 0.14) * 0.06 * Math.min(1, elapsed / 10);
         const size = 30 + mk.count * 5;
 
         ctx.save();
         ctx.globalAlpha = Math.min(1, elapsed / 5) * Math.min(1, (55 - elapsed) / 14);
-        ctx.translate(mk.x, ty - 56 - float);
+        ctx.translate(mk.x, ty - float);
         ctx.rotate(-0.05 + wobble);
         ctx.scale(pop, pop);
         ctx.font = `${size}px 'Luckiest Guy', 'Courier New', Courier, monospace`;

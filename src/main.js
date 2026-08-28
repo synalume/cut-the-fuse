@@ -1,6 +1,6 @@
 // main.js — entry point: fetch levels.json, build the engine stack, wire UI.
 import { GameLoop, STATE } from "./engine/GameLoop.js";
-import { Renderer } from "./engine/Renderer.js";
+import { Renderer, REACTION_WORDS } from "./engine/Renderer.js";
 import { InputHandler } from "./engine/InputHandler.js";
 import { AudioManager } from "./engine/AudioManager.js";
 import { SaveManager } from "./engine/SaveManager.js";
@@ -33,7 +33,7 @@ platform.onEvent = (name, val) => {
 const input = new InputHandler(canvas, game);
 
 // QA hook: lets Playwright drive the loop and read game state directly.
-window.__CTF__ = { game, renderer, save, get levels() { return levels; } };
+window.__CTF__ = { game, renderer, save, REACTION_WORDS, get levels() { return levels; } };
 
 // ---- UI elements ---------------------------------------------------------------
 

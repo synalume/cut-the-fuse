@@ -1129,5 +1129,80 @@ if (!bootError) {
     check(elements["level-label"].textContent === "LEVEL 1", "Daily: picking a story level exits daily mode", elements["level-label"].textContent);
 }
 
+// ---------------------------------------------------------------------------
+// Part C — popup lanes: announcement popups fired by the same snip never
+// overlap (PERFECT! / LAST SNIP! / +N all land on separate vertical lanes).
+// ---------------------------------------------------------------------------
+console.log("\n[C] popup lanes — same-cut popups never overlap");
+{
+    const { Renderer } = await import("../../src/engine/Renderer.js");
+    const canvas = { getContext: () => ctx2d, width: 800, height: 800, style: {} };
+    const renderer = new Renderer(canvas);
+
+    const game = {
+        frameCount: 100,
+        gameState: "playing",
+        camera: { x: 0, y: 0, zoom: 1 },
+        level: { level_id: 4 },
+        nodes: [{ id: "payload", type: "payload", x: 0, y: 0 }],
+        fuses: [],
+        sparks: [],
+        cuts: [{ x: 50, y: 120 }],
+        lastSnipAt: 100,
+        perfectSnipsAt: [{ x: 50, y: 120, at: 100 }],
+        multikills: [{ x: 50, y: 120, at: 100, count: 2 }],
+        noSnipsAt: null,
+    };
+
+    // Capture the resolved draw positions instead of drawing.
+    const drawn = [];
+    const origWord = renderer._drawPopupWord.bind(renderer);
+    const origBank = renderer._drawBankCount.bind(renderer);
+    renderer._drawPopupWord = (_g, text, _c, x, y, size) => drawn.push({ text, x, y, size });
+    renderer._drawBankCount = (_g, mk, y) => drawn.push({ text: `+${mk.count}`, x: mk.x, y, size: 30 + mk.count * 5 });
+    renderer._drawPopupWords(game);
+    renderer._drawPopupWord = origWord;
+    renderer._drawBankCount = origBank;
+
+    const byText = Object.fromEntries(drawn.map((d) => [d.text, d]));
+    check(drawn.length === 3, "popups: PERFECT + LAST SNIP + +N all drawn", JSON.stringify(drawn.map((d) => d.text)));
+    const yPerfect = byText["PERFECT!"]?.y, yLast = byText["LAST SNIP!"]?.y, yBank = byText["+2"]?.y;
+    check(yBank < yLast && yLast < yPerfect,
+        "popups: stack order +N → LAST SNIP → PERFECT (top → bottom)",
+        `bank=${yBank} last=${yLast} perfect=${yPerfect}`
+    );
+
+    // No two popups overlap at their padded extents (size*0.62*1.4 half-height).
+    const half = (t) => byText[t].size * 0.62 * 1.4;
+    const noOverlap = (a, b) => Math.abs(byText[a].y - byText[b].y) >= half(a) + half(b);
+    check(
+        noOverlap("+2", "PERFECT!") && noOverlap("+2", "LAST SNIP!") && noOverlap("PERFECT!", "LAST SNIP!"),
+        "popups: PERFECT/LAST/+N boxes never overlap",
+        `diffs bank-perfect=${Math.abs(yBank - yPerfect)} bank-last=${Math.abs(yBank - yLast)} perfect-last=${Math.abs(yPerfect - yLast)}`
+    );
+
+    // A denied swipe at the same spot adds NO MORE SNIPS! without collision.
+    game.noSnipsAt = { at: 100, x: 50, y: 120 };
+    drawn.length = 0;
+    renderer._drawPopupWord = (_g, text, _c, x, y, size) => drawn.push({ text, x, y, size });
+    renderer._drawBankCount = (_g, mk, y) => drawn.push({ text: `+${mk.count}`, x: mk.x, y, size: 30 + mk.count * 5 });
+    renderer._drawPopupWords(game);
+    renderer._drawPopupWord = origWord;
+    renderer._drawBankCount = origBank;
+    const all = Object.fromEntries(drawn.map((d) => [d.text, d]));
+    const names = Object.keys(all);
+    check(names.length === 4, "popups: NO MORE SNIPS! joins the stack", names.join(","));
+    const halfAll = (t) => all[t].size * 0.62 * 1.4;
+    let clear = true, worst = "";
+    for (let i = 0; i < names.length && clear; i++) {
+        for (let j = i + 1; j < names.length; j++) {
+            const a = all[names[i]], b = all[names[j]];
+            const ok = Math.abs(a.y - b.y) >= halfAll(a.text) + halfAll(b.text);
+            if (!ok) { clear = false; worst = `${a.text}@${a.y} vs ${b.text}@${b.y}`; }
+        }
+    }
+    check(clear, "popups: all four popups clear each other", worst);
+}
+
 console.log(failures === 0 ? "\nSMOKE PASS" : `\nSMOKE FAIL — ${failures} failing check(s)`);
 process.exit(failures === 0 ? 0 : 1);
