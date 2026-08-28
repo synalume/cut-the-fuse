@@ -110,8 +110,11 @@ function knobsForLevel(n) {
         // the player reads the lines and plans cuts instead of reacting.
         Object.assign(k, { spawns: 6, chokepoints: 2, share: false, delay: "spread", speed: 0.0014 });
         if (n <= 44) {
-            // Minimal snips: single shared chokepoint, still brisk.
-            Object.assign(k, { spawns: 6, chokepoints: 1, share: true, delay: "spread", speed: 0.0014 });
+            // Minimal nets: 6 wicks through 2 crossroads — still the most
+            // efficient cuts in the act (each cut clears 3 wicks), but the
+            // matchsticks scatter AROUND the bomb instead of the old single
+            // shared-chokepoint spider that funneled every wick down one path.
+            Object.assign(k, { spawns: 6, chokepoints: 2, share: false, delay: "spread", speed: 0.0014 });
         } else if (n <= 50) {
             // Full nets: many spawns funneled through a few chokepoints.
             Object.assign(k, {
