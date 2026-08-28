@@ -615,35 +615,31 @@ check(swept === levels.length, `winnability sweep: all ${levels.length} levels w
     }
 }
 
-// Anti-cheat: a cut only kills sparks on ITS OWN wick, or sparks crossing a
-// shared chokepoint (the intended crossroads multi-kill). Without the fuse
-// guard, every wick converges on the bomb — waiting until sparks bunch at the
-// banana and snipping there killed several fuses with one snip.
+// Spatial cutting: ONE snip severs every wick it crosses. Wicks that overlap
+// or merge near the bomb (the bunch at the banana) are all cut by a single
+// swipe placed across them — the cut mark and the mechanic stay in sync.
 {
     const cfg = levels.find((l) => l.level_id === 4); // 2 fuses, both end at the bomb
     const level = buildLevel(cfg, { width: 1280, height: 720 });
     const g = new GameLoop({ canvas: null, ...makeStubs() });
     g.loadLevel(level, 0);
 
-    // A cut placed right at the bomb, on fuse 0 (as if the player waited for
-    // the sparks to bunch up at the banana and swiped there).
-    const f0 = level.fuses[0];
+    // A cut placed right at the bomb, as if the player waited for the sparks
+    // to bunch up at the banana and swiped there.
     const bomb = Object.values(level.nodeMap).find((n) => n.type === "payload");
-    g.cuts.push({ x: bomb.x, y: bomb.y, radius: 15, angle: 0, fuseId: f0.id });
+    g.cuts.push({ x: bomb.x, y: bomb.y, radius: 15, angle: 0, fuseId: level.fuses[0].id });
 
-    let f0DiedFrame = -1;
+    let s0Died = false, s1Died = false;
     for (let i = 0; i < 6000 && g.gameState === STATE.PLAYING; i++) {
         g.frameCount++;
         g._update();
-        if (!g.sparks[0].active) { f0DiedFrame = g.frameCount; break; }
+        if (!g.sparks[0].active) s0Died = true;
+        if (!g.sparks[1].active) s1Died = true;
     }
-    const s1 = g.sparks[1];
-    check(f0DiedFrame > 0, "anti-cheat: the cut at the bomb kills the fuse it was placed on", `died frame ${f0DiedFrame}`);
-    check(s1.active && s1.progress < 1,
-        "anti-cheat: a converging spark on ANOTHER wick survives the same cut (no multi-kill at the bomb)",
-        `progress=${s1.progress.toFixed(2)} active=${s1.active}`);
-    check(g.gameState === STATE.PLAYING,
-        "anti-cheat: level still in play — the surviving spark is a real threat (waiting at the bomb no longer wins)", g.gameState);
+    check(s0Died, "one snip cuts the wick it was placed on", `s0 active=${g.sparks[0].active}`);
+    check(s1Died, "one snip cuts the overlapping wick too (multi-kill at the bomb)", `s1 active=${g.sparks[1].active}`);
+    check(g.gameState === STATE.WON,
+        "level clears — no spark sneaks through the visible cut mark", g.gameState);
 }
 
 // Difficulty profile: the burn pace is a READ-TIME budget, not a speed race.
