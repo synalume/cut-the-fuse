@@ -138,6 +138,7 @@ export class Renderer {
         this._drawFuses(game);
         this._drawCuts(game);
         this._drawCutFlash(game);
+        this._drawBranchFlares(game);
         // Spark effects draw before the assets so the burning head passes
         // behind the matchstick and banana, not over them.
         if (game.gameState === "playing") this._drawSparkEffects(game);
@@ -235,6 +236,27 @@ export class Renderer {
                     return { x: pt.x - t.y * amp, y: pt.y + t.x * amp };
                 };
 
+                // A branch wick renders like any live wick — the fork is meant
+                // to be a subtle Y-split the player has to look for, not a
+                // highlighted feature. The one exception is a DUD: if the parent
+                // died before the fork, the branch is near-black and settled —
+                // it was never going to light.
+                const spark = game.sparks[fIdx];
+                const parentSpark = spark && spark.chain ? game.sparks[spark.chain.fromFuseIndex] : null;
+                const unlitBranch = spark && spark.chain && !spark.triggered && !spark.ignited;
+                if (unlitBranch && parentSpark && !parentSpark.active) {
+                    ctx.beginPath();
+                    ctx.strokeStyle = "#44403c";
+                    ctx.lineWidth = 3;
+                    ctx.moveTo(wob(0).x, wob(0).y);
+                    for (let u = 0.02; u <= 1; u += 0.02) {
+                        const pt = wob(u);
+                        ctx.lineTo(pt.x, pt.y);
+                    }
+                    ctx.stroke();
+                    continue;
+                }
+
                 // Amber body with a steady soft glow (no breathing pulse).
                 ctx.beginPath();
                 ctx.shadowColor = "rgba(249, 115, 22, 0.5)";
@@ -250,15 +272,19 @@ export class Renderer {
                 ctx.shadowBlur = 0;
 
                 // Ember glow at the burn front (ties the wire to the spark head).
-                const ember = wob(Math.max(0.001, burnt));
-                const grad = this._radialGradient(ember.x, ember.y, 0, ember.x, ember.y, 16);
-                grad.addColorStop(0, "rgba(254, 240, 138, 0.9)");
-                grad.addColorStop(0.35, "rgba(249, 115, 22, 0.55)");
-                grad.addColorStop(1, "rgba(249, 115, 22, 0)");
-                ctx.fillStyle = grad;
-                ctx.beginPath();
-                ctx.arc(ember.x, ember.y, 16, 0, Math.PI * 2);
-                ctx.fill();
+                // A waiting branch has no spark yet — no ember, so the fork stays
+                // unmarked until the parent's fire actually reaches it.
+                if (!unlitBranch) {
+                    const ember = wob(Math.max(0.001, burnt));
+                    const grad = this._radialGradient(ember.x, ember.y, 0, ember.x, ember.y, 16);
+                    grad.addColorStop(0, "rgba(254, 240, 138, 0.9)");
+                    grad.addColorStop(0.35, "rgba(249, 115, 22, 0.55)");
+                    grad.addColorStop(1, "rgba(249, 115, 22, 0)");
+                    ctx.fillStyle = grad;
+                    ctx.beginPath();
+                    ctx.arc(ember.x, ember.y, 16, 0, Math.PI * 2);
+                    ctx.fill();
+                }
             }
         }
     }
@@ -276,6 +302,32 @@ export class Renderer {
         grad.addColorStop(0.65 + drift, "#d97706");
         grad.addColorStop(1, "#b45309");
         return grad;
+    }
+
+    /** Fork junctions get no marker — the branch wick simply splits off the
+     *  parent's wick, so the fork reads as a subtle Y the player has to look
+     *  for. The only thing drawn here is a soft flare the moment the branch
+     *  lights: the payoff when the parent's fire reaches the fork. */
+    _drawBranchFlares(game) {
+        const ctx = this.ctx;
+        for (let i = 0; i < game.sparks.length; i++) {
+            const spark = game.sparks[i];
+            if (!spark.chain) continue;
+            const node = game.fuses[spark.fuseIndex].startNode;
+            if (!node || node.type !== "branch") continue;
+
+            // Junction flare the moment the branch lights.
+            if (spark.triggered && spark.ignited && spark.ignitedAt != null && game.frameCount - spark.ignitedAt < 25) {
+                const grad = this._radialGradient(node.x, node.y, 0, node.x, node.y, 26);
+                grad.addColorStop(0, "rgba(254, 240, 138, 0.9)");
+                grad.addColorStop(0.4, "rgba(249, 115, 22, 0.55)");
+                grad.addColorStop(1, "rgba(249, 115, 22, 0)");
+                ctx.fillStyle = grad;
+                ctx.beginPath();
+                ctx.arc(node.x, node.y, 26, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
     }
 
     _drawCuts(game) {

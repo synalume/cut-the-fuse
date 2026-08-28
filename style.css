@@ -198,8 +198,9 @@ canvas { display: block; position: absolute; z-index: 10; }
     margin: 0 0 16px; font-family: 'Luckiest Guy', 'Baloo 2', 'Courier New', Courier, monospace;
 }
 #win-stats .stat {
+    display: inline-flex; align-items: center; justify-content: center;
     background: #1c1917; color: #f5f5f4;
-    border-radius: 999px; padding: 3px 12px 5px;
+    border-radius: 999px; padding: 6px 13px 3px; /* Luckiest Guy rises high in the em box; top-heavy padding centers it */
     font-size: 0.9rem; letter-spacing: 0.05em; line-height: 1;
     text-transform: uppercase;
 }
@@ -367,7 +368,7 @@ canvas { display: block; position: absolute; z-index: 10; }
     #modal-win {
         padding: 14px 18px;
     }
-    #win-stats .stat { font-size: 0.72rem; padding: 2px 9px 4px; }
+    #win-stats .stat { font-size: 0.72rem; padding: 5px 9px 2px; }
     .message-box.skins { width: min(92vw, 520px); }
     .header { font-size: 1.15rem; }
     .controls { bottom: 14px; right: 14px; gap: 8px; }
@@ -397,7 +398,7 @@ canvas { display: block; position: absolute; z-index: 10; }
     #level-grid { max-height: 62vh; }
     .win-stars { gap: 8px; margin: 2px 0 10px; }
     #win-stats { margin: 0 0 12px; }
-    #win-stats .stat { font-size: 0.72rem; padding: 2px 9px 4px; }
+    #win-stats .stat { font-size: 0.72rem; padding: 5px 9px 2px; }
     #modal-lose, #modal-win { padding: 10px 16px; }
     /* Center the armory vertically so its tabs stay on screen. */
     .message-box.skins {

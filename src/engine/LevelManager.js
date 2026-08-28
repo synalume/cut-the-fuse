@@ -1,6 +1,6 @@
 // LevelManager.js — parses a levels.json config into the runtime node graph.
 // Everything is data-driven: nodes, forced-intersection fuses, sparks, camera.
-import { createForcedIntersectionFuse } from "./MathUtils.js";
+import { createForcedIntersectionFuse, getBezierXY } from "./MathUtils.js";
 import { findPayloadSkin, findIgniterType } from "../data/skins.js";
 
 const PLACEHOLDER_PAYLOAD = {
@@ -115,34 +115,82 @@ export function buildLevel(config, viewport, assets = null) {
     }
 
     // Fuses + sparks.
+    // Branch fuses (chain ignition) start AT a fork point ON their parent's
+    // wick, so they're resolved in two passes: spawn-rooted fuses first, then
+    // branches once every parent's geometry exists. The generator emits parents
+    // before branches; this ordering also keeps hand-authored JSON safe.
     const fuses = [];
     const sparks = [];
-    const fuseIndexByStart = new Map((config.fuses || []).map((f, i) => [f.start, i]));
+    const fuseIndexById = new Map((config.fuses || []).map((f, i) => [f.id || `f${i}`, i]));
+
+    const resolveStart = (f, i) => {
+        if (!f.branchOf) return { start: nodeMap[f.start], chain: null };
+        const parentIdx = fuseIndexById.get(f.branchOf);
+        const parentFuse = parentIdx != null ? fuses[parentIdx] : null;
+        if (!parentFuse) return { start: null, chain: null };
+        const at = f.at ?? 0.5;
+        const P = getBezierXY(at, parentFuse.startNode, parentFuse.cp1, parentFuse.cp2, parentFuse.endNode);
+        // A synthetic "branch" node — the fork. It is NOT a spawn, so no
+        // matchstick is drawn there and the new spark appears at the fork.
+        const node = {
+            id: `${f.id || `f${i}`}-start`,
+            type: "branch",
+            x: P.x,
+            y: P.y,
+            parentFuseIndex: parentIdx,
+            at,
+        };
+        nodes.push(node);
+        return { start: node, chain: { fromFuseIndex: parentIdx, at } };
+    };
+
+    // Pass 1: spawn-rooted fuses.
     (config.fuses || []).forEach((f, i) => {
-        const start = nodeMap[f.start];
+        if (f.branchOf) return;
+        const { start } = resolveStart(f, i);
+        if (!start) return;
         const end = nodeMap[f.end];
         const intersection = intersectionMap[f.routeThrough] || { x: (start.x + end.x) / 2, y: (start.y + end.y) / 2 };
 
-        const fuse = createForcedIntersectionFuse(`f${i}`, start, end, intersection, f.bulge ?? 0);
+        const fuse = createForcedIntersectionFuse(f.id || `f${i}`, start, end, intersection, f.bulge ?? 0);
         fuse.routeThrough = f.routeThrough || null;
         fuse.speed = f.speed ?? 0.001;
         fuse.delayFrames = f.delayFrames ?? 0;
         fuse.startNode = start;
         fuse.endNode = end;
-        fuses.push(fuse);
+        fuses[i] = fuse;
+    });
 
-        // Chain ignition: this spark stays DARK (no timer) until its parent
-        // spark's progress crosses chain.at. The parent fuse is identified by
-        // the spawn id it starts from.
-        const parentIdx = f.chain ? fuseIndexByStart.get(f.chain.from) : -1;
-        const chain = f.chain && parentIdx >= 0 ? { fromFuseIndex: parentIdx, at: f.chain.at } : null;
+    // Pass 2: branch fuses — a new wick that splits off the parent's wick.
+    (config.fuses || []).forEach((f, i) => {
+        if (!f.branchOf) return;
+        const { start, chain } = resolveStart(f, i);
+        if (!start) return;
+        const end = nodeMap[f.end];
+        const intersection = intersectionMap[f.routeThrough] || { x: (start.x + end.x) / 2, y: (start.y + end.y) / 2 };
 
+        const fuse = createForcedIntersectionFuse(f.id || `f${i}`, start, end, intersection, f.bulge ?? 0);
+        fuse.routeThrough = f.routeThrough || null;
+        fuse.speed = f.speed ?? 0.001;
+        fuse.delayFrames = f.delayFrames ?? 0;
+        fuse.startNode = start;
+        fuse.endNode = end;
+        fuses[i] = fuse;
+    });
+
+    (config.fuses || []).forEach((f, i) => {
+        const fuse = fuses[i];
+        const chain = f.branchOf
+            ? fuseIndexById.has(f.branchOf)
+                ? { fromFuseIndex: fuseIndexById.get(f.branchOf), at: f.at ?? 0.5 }
+                : null
+            : null;
         sparks.push({
             fuseIndex: i,
             progress: 0,
             speed: fuse.speed,
             active: true,
-            delay: fuse.delayFrames,
+            delay: chain ? 99999 : fuse.delayFrames,
             ignitedAt: null,
             diedAt: null,
             chain,
@@ -234,8 +282,28 @@ export function validateLevel(config) {
 
     const allIds = new Set(ids);
     if (config.payload?.id) allIds.add(config.payload.id);
+    const fuseIds = new Set((config.fuses || []).map((f, i) => f.id || `f${i}`));
 
     for (const f of config.fuses || []) {
+        if (f.branchOf) {
+            // Branch fuse: starts at the fork point ON its parent's wick.
+            if (!fuseIds.has(f.branchOf)) {
+                warnings.push(`level ${config.level_id}: fuse '${f.id}' branchOf '${f.branchOf}' unknown`);
+            }
+            if (typeof f.at !== "number" || f.at <= 0 || f.at >= 1) {
+                warnings.push(`level ${config.level_id}: fuse '${f.id}' branch at must be in (0,1) (got ${f.at})`);
+            }
+            if (f.end !== config.payload?.id) {
+                warnings.push(`level ${config.level_id}: fuse '${f.id}' does not end at the payload`);
+            }
+            if (typeof f.speed !== "number" || f.speed <= 0) {
+                warnings.push(`level ${config.level_id}: fuse speed must be > 0 (got ${f.speed})`);
+            }
+            if (f.routeThrough && !ids.has(f.routeThrough)) {
+                warnings.push(`level ${config.level_id}: fuse '${f.id}' branch routeThrough '${f.routeThrough}' unknown`);
+            }
+            continue;
+        }
         if (!allIds.has(f.start)) warnings.push(`level ${config.level_id}: fuse start '${f.start}' unknown`);
         if (!allIds.has(f.end)) warnings.push(`level ${config.level_id}: fuse end '${f.end}' unknown`);
         if (f.routeThrough && !ids.has(f.routeThrough)) {
@@ -246,17 +314,6 @@ export function validateLevel(config) {
         }
         if (typeof f.speed !== "number" || f.speed <= 0) {
             warnings.push(`level ${config.level_id}: fuse speed must be > 0 (got ${f.speed})`);
-        }
-        // A chained wick lights when its parent's burn crosses `at`. A bad
-        // `from` (or an `at` outside (0,1)) would leave the wick dark forever —
-        // active but never burning, so the level can neither be won nor lost.
-        if (f.chain) {
-            if (!config.fuses.some((x) => x.start === f.chain.from)) {
-                warnings.push(`level ${config.level_id}: fuse '${f.start}' chain.from '${f.chain.from}' unknown`);
-            }
-            if (typeof f.chain.at !== "number" || f.chain.at <= 0 || f.chain.at >= 1) {
-                warnings.push(`level ${config.level_id}: fuse '${f.start}' chain.at must be in (0,1) (got ${f.chain.at})`);
-            }
         }
     }
 
@@ -286,11 +343,12 @@ export function validateLevel(config) {
     }
 
     // Timing guard: a spark must reach the payload slowly enough to be cut.
+    // (Branch sparks have no timer — their delay is the parent's burn time.)
     for (const f of config.fuses || []) {
-        const framesToPayload = (f.delayFrames ?? 0) + 1 / f.speed;
+        const framesToPayload = (f.branchOf ? 0 : (f.delayFrames ?? 0)) + 1 / f.speed;
         if (framesToPayload < 90) {
             warnings.push(
-                `level ${config.level_id}: fuse '${f.start}' reaches payload in ~${Math.round(framesToPayload)} frames (< 90) — may be un-cuttable`
+                `level ${config.level_id}: fuse '${f.start || f.id}' reaches payload in ~${Math.round(framesToPayload)} frames (< 90) — may be un-cuttable`
             );
         }
     }

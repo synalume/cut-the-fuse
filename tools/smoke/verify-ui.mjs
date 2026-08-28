@@ -79,7 +79,7 @@ const winStats = await page.evaluate(() => ({
     recordText: document.getElementById("win-record").textContent,
     stats: document.getElementById("win-stats").style.display,
 }));
-check(/^\d+\.\ds$/.test(winStats.time), "win modal shows a clear time", winStats.time);
+check(/^TIME \d+\.\ds$/.test(winStats.time), "win modal shows a clear time", winStats.time);
 check(/^PAR \d+\.\ds$/.test(winStats.par), "win modal shows the level's par", winStats.par);
 check(winStats.record === "inline-block", "win modal flags a NEW RECORD", winStats.record);
 check(winStats.stats !== "none", "win stats row is visible", winStats.stats);
@@ -97,18 +97,85 @@ const cell1Time = await page.evaluate(() =>
 check(/^\d+\.\ds$/.test(cell1Time), "level 1 cell shows its best time", `"${cell1Time}"`);
 await page.screenshot({ path: path.join(ROOT, "tools/smoke/verify-level-select.png") });
 
-// ---- 3. Level 8 chain tutorial ---------------------------------------------
-console.log("\n[verify] L8 chain tutorial");
+// ---- 3. Level 8 fork tutorial ----------------------------------------------
+console.log("\n[verify] L8 fork tutorial");
 await page.evaluate(() => {
     const cell = document.getElementById("level-grid").children[7];
     cell.click();
 });
 await page.waitForFunction(() => document.getElementById("tutorial-overlay").style.display === "flex");
 const l8Text = await page.evaluate(() => document.getElementById("tutorial-text").textContent);
-check(l8Text.includes("lights ANOTHER wick"), "L8 tutorial teaches the chain mechanic", l8Text.slice(0, 60));
+check(l8Text.includes("fork") && l8Text.includes("NEW wick"), "L8 tutorial teaches the fork mechanic", l8Text.slice(0, 80));
 const l8Config = levels.find((l) => l.level_id === 8);
-check(l8Config.fuses.filter((f) => f.chain).length === 1, "L8 config has exactly one chain", "");
+check(l8Config.fuses.filter((f) => f.branchOf).length === 1, "L8 config has exactly one branch wick", "");
 await page.click("#tutorial-next");
+
+// ---- 3b. L8 fork visuals: cold → warm → dud ---------------------------------
+console.log("\n[verify] L8 fork visuals (cold / warm / dud)");
+await page.waitForFunction(() => {
+    const g = window.__CTF__.game;
+    return g.gameState === "playing";
+}, null, { timeout: 5000 });
+await page.waitForTimeout(150);
+await page.screenshot({ path: path.join(ROOT, "tools/smoke/verify-l8-fork-cold.png") });
+console.log("  → screenshot tools/smoke/verify-l8-fork-cold.png");
+
+// Warm: the parent's burn crosses the fork → the branch ignites from that point.
+const warmed = await page
+    .waitForFunction(() => {
+        const g = window.__CTF__.game;
+        const cs = g.sparks.find((s) => s.chain);
+        return cs && cs.triggered && cs.ignited;
+    }, null, { timeout: 60000 })
+    .then(() => true)
+    .catch(() => false);
+check(warmed, "L8 fork ignites as the parent's burn crosses it", "");
+if (warmed) {
+    await page.waitForTimeout(200);
+    await page.screenshot({ path: path.join(ROOT, "tools/smoke/verify-l8-fork-warm.png") });
+    console.log("  → screenshot tools/smoke/verify-l8-fork-warm.png");
+}
+
+// Dud: fresh attempt, cut the parent's wick BEFORE the fork → the branch stays
+// unlit (dark wick + dark junction dot).
+await page.evaluate(() => window.__CTF__.game.resetLevel());
+await page.waitForTimeout(100);
+const cutParentEarly = await page.evaluate(() => {
+    const g = window.__CTF__.game;
+    const cs = g.sparks.find((s) => s.chain);
+    const ps = g.sparks[cs.chain.fromFuseIndex];
+    const pf = g.fuses[ps.fuseIndex];
+    const bez = (t) => {
+        const { x: x0, y: y0 } = pf.startNode, { x: x1, y: y1 } = pf.cp1;
+        const { x: x2, y: y2 } = pf.cp2, { x: x3, y: y3 } = pf.endNode;
+        const u = 1 - t;
+        return {
+            x: u * u * u * x0 + 3 * u * u * t * x1 + 3 * u * t * t * x2 + t * t * t * x3,
+            y: u * u * u * y0 + 3 * u * u * t * y1 + 3 * u * t * t * y2 + t * t * t * y3,
+        };
+    };
+    const t = Math.max(0.05, cs.chain.at - 0.08);
+    const p = bez(t);
+    return g.tryCut(
+        { x: p.x - 8, y: p.y },
+        { x: p.x + 8, y: p.y },
+        [{ x: p.x - 8, y: p.y }, { x: p.x + 8, y: p.y }]
+    );
+});
+check(cutParentEarly === true, "L8 dud: cut placed on the parent before the fork", String(cutParentEarly));
+const dud = await page
+    .waitForFunction(() => {
+        const g = window.__CTF__.game;
+        const cs = g.sparks.find((s) => s.chain);
+        const ps = g.sparks[cs.chain.fromFuseIndex];
+        return !ps.active && !cs.ignited;
+    }, null, { timeout: 15000 })
+    .then(() => true)
+    .catch(() => false);
+check(dud, "L8 dud: branch stays unlit after the parent is cut early", "");
+await page.waitForTimeout(150);
+await page.screenshot({ path: path.join(ROOT, "tools/smoke/verify-l8-fork-dud.png") });
+console.log("  → screenshot tools/smoke/verify-l8-fork-dud.png");
 
 // ---- 4. PERFECT SNIP on L4 via the QA hook ---------------------------------
 console.log("\n[verify] PERFECT SNIP detection (live game loop)");

@@ -19,6 +19,7 @@
     "intersections": [],
     "fuses": [
       {
+        "id": "f0",
         "start": "s1",
         "end": "bomb",
         "speed": 0.0008,
@@ -52,6 +53,7 @@
     "intersections": [],
     "fuses": [
       {
+        "id": "f0",
         "start": "s1",
         "end": "bomb",
         "speed": 0.0008,
@@ -80,6 +82,7 @@
     "intersections": [],
     "fuses": [
       {
+        "id": "f0",
         "start": "s1",
         "end": "bomb",
         "speed": 0.0008,
@@ -119,6 +122,7 @@
     ],
     "fuses": [
       {
+        "id": "f0",
         "start": "s1",
         "routeThrough": "cut1",
         "end": "bomb",
@@ -127,6 +131,7 @@
         "bulge": 0.081
       },
       {
+        "id": "f1",
         "start": "s2",
         "routeThrough": "cut1",
         "end": "bomb",
@@ -177,6 +182,7 @@
     ],
     "fuses": [
       {
+        "id": "f0",
         "start": "s1",
         "routeThrough": "cut1",
         "end": "bomb",
@@ -185,6 +191,7 @@
         "bulge": 0.1
       },
       {
+        "id": "f1",
         "start": "s2",
         "routeThrough": "cut1",
         "end": "bomb",
@@ -193,6 +200,7 @@
         "bulge": -0.1
       },
       {
+        "id": "f2",
         "start": "s3",
         "routeThrough": "cut1",
         "end": "bomb",
@@ -233,6 +241,7 @@
     ],
     "fuses": [
       {
+        "id": "f0",
         "start": "s1",
         "routeThrough": "cut1",
         "end": "bomb",
@@ -241,6 +250,7 @@
         "bulge": 0
       },
       {
+        "id": "f1",
         "start": "s2",
         "routeThrough": "cut1",
         "end": "bomb",
@@ -291,6 +301,7 @@
     ],
     "fuses": [
       {
+        "id": "f0",
         "start": "s1",
         "routeThrough": "cut1",
         "end": "bomb",
@@ -299,6 +310,7 @@
         "bulge": 0.1
       },
       {
+        "id": "f1",
         "start": "s2",
         "routeThrough": "cut1",
         "end": "bomb",
@@ -307,6 +319,7 @@
         "bulge": -0.1
       },
       {
+        "id": "f2",
         "start": "s3",
         "routeThrough": "cut1",
         "end": "bomb",
@@ -315,6 +328,7 @@
         "bulge": 0.1
       },
       {
+        "id": "f3",
         "start": "s4",
         "routeThrough": "cut1",
         "end": "bomb",
@@ -333,7 +347,7 @@
     "level_id": 8,
     "layout": "hub",
     "snipsAllowed": 3,
-    "par": 11.2,
+    "par": 14,
     "payload": {
       "id": "bomb",
       "x": 0,
@@ -342,58 +356,63 @@
     "spawns": [
       {
         "id": "s1",
-        "x": -40,
-        "y": 219
+        "x": -178,
+        "y": 99
       },
       {
         "id": "s2",
-        "x": -313,
-        "y": -27
-      },
-      {
-        "id": "s3",
-        "x": -2,
-        "y": -221
+        "x": -246,
+        "y": -188
       }
     ],
     "intersections": [
       {
         "id": "cut1",
-        "x": -256.5623840912453,
-        "y": -4.994214053341545
+        "x": -146,
+        "y": -112
+      },
+      {
+        "id": "b0",
+        "x": -85,
+        "y": -140
       }
     ],
     "fuses": [
       {
+        "id": "f0",
         "start": "s1",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.0013,
-        "delayFrames": 8,
-        "bulge": 0
+        "speed": 0.0011,
+        "delayFrames": 46,
+        "bulge": 0.1
       },
       {
+        "id": "f1",
         "start": "s2",
         "routeThrough": "cut1",
         "end": "bomb",
         "speed": 0.001,
-        "delayFrames": 53,
-        "bulge": 0
+        "delayFrames": 36,
+        "bulge": -0.1
       },
       {
-        "start": "s3",
+        "id": "f2",
+        "branchOf": "f1",
+        "at": 0.352,
         "end": "bomb",
-        "speed": 0.0013,
+        "speed": 0.0011,
         "delayFrames": 99999,
-        "bulge": 0,
-        "chain": {
-          "from": "s1",
-          "at": 0.367
-        }
+        "branchPoint": {
+          "x": -168,
+          "y": -137
+        },
+        "routeThrough": "b0",
+        "bulge": -0.066
       }
     ],
     "tutorial": {
-      "text": "This wick lights ANOTHER wick mid-burn! Snip the first fuse EARLY to stop it — or cut the new wick it lights.",
+      "text": "See that fork in the wick? When the fire reaches it, a NEW wick lights from that point! Snip the first fuse EARLY to stop it — or be ready to cut the new wick.",
       "focus": "spawn",
       "highlight": "s1"
     }
@@ -402,7 +421,7 @@
     "level_id": 9,
     "layout": "offset",
     "snipsAllowed": 3,
-    "par": 12,
+    "par": 10.8,
     "payload": {
       "id": "bomb",
       "x": 139,
@@ -435,10 +454,16 @@
         "id": "cut1",
         "x": -157.37134225702343,
         "y": 8.928620443362782
+      },
+      {
+        "id": "b0",
+        "x": 43,
+        "y": 158
       }
     ],
     "fuses": [
       {
+        "id": "f0",
         "start": "s1",
         "routeThrough": "cut1",
         "end": "bomb",
@@ -447,6 +472,7 @@
         "bulge": 0.074
       },
       {
+        "id": "f1",
         "start": "s2",
         "routeThrough": "cut1",
         "end": "bomb",
@@ -455,6 +481,7 @@
         "bulge": 0.098
       },
       {
+        "id": "f2",
         "start": "s3",
         "routeThrough": "cut1",
         "end": "bomb",
@@ -463,15 +490,27 @@
         "bulge": 0.077
       },
       {
+        "id": "f3",
         "start": "s4",
+        "routeThrough": "cut1",
         "end": "bomb",
         "speed": 0.0012,
+        "delayFrames": 131,
+        "bulge": 0.062
+      },
+      {
+        "id": "f4",
+        "branchOf": "f0",
+        "at": 0.309,
+        "end": "bomb",
+        "speed": 0.0013,
         "delayFrames": 99999,
-        "bulge": 0.062,
-        "chain": {
-          "from": "s1",
-          "at": 0.357
-        }
+        "branchPoint": {
+          "x": -163,
+          "y": 52
+        },
+        "routeThrough": "b0",
+        "bulge": 0.066
       }
     ]
   },
@@ -479,7 +518,7 @@
     "level_id": 10,
     "layout": "hub",
     "snipsAllowed": 3,
-    "par": 11.8,
+    "par": 10.6,
     "payload": {
       "id": "bomb",
       "x": 0,
@@ -507,10 +546,16 @@
         "id": "cut1",
         "x": -228,
         "y": 85
+      },
+      {
+        "id": "b0",
+        "x": -109,
+        "y": 123
       }
     ],
     "fuses": [
       {
+        "id": "f0",
         "start": "s1",
         "routeThrough": "cut1",
         "end": "bomb",
@@ -519,6 +564,7 @@
         "bulge": 0
       },
       {
+        "id": "f1",
         "start": "s2",
         "routeThrough": "cut1",
         "end": "bomb",
@@ -527,23 +573,35 @@
         "bulge": 0
       },
       {
+        "id": "f2",
         "start": "s3",
+        "routeThrough": "cut1",
         "end": "bomb",
         "speed": 0.0013,
+        "delayFrames": 83,
+        "bulge": 0
+      },
+      {
+        "id": "f3",
+        "branchOf": "f0",
+        "at": 0.359,
+        "end": "bomb",
+        "speed": 0.0014,
         "delayFrames": 99999,
-        "bulge": 0,
-        "chain": {
-          "from": "s1",
-          "at": 0.416
-        }
+        "branchPoint": {
+          "x": -209,
+          "y": 115
+        },
+        "routeThrough": "b0",
+        "bulge": 0.066
       }
     ]
   },
   {
     "level_id": 11,
     "layout": "split",
-    "snipsAllowed": 3,
-    "par": 13.7,
+    "snipsAllowed": 4,
+    "par": 11.2,
     "payload": {
       "id": "bomb",
       "x": 0,
@@ -585,6 +643,7 @@
     ],
     "fuses": [
       {
+        "id": "f0",
         "start": "s1",
         "routeThrough": "cut1",
         "end": "bomb",
@@ -593,6 +652,7 @@
         "bulge": 0
       },
       {
+        "id": "f1",
         "start": "s2",
         "routeThrough": "cut1",
         "end": "bomb",
@@ -601,6 +661,7 @@
         "bulge": 0
       },
       {
+        "id": "f2",
         "start": "s3",
         "routeThrough": "cut2",
         "end": "bomb",
@@ -609,16 +670,26 @@
         "bulge": 0
       },
       {
+        "id": "f3",
         "start": "s4",
         "routeThrough": "cut2",
         "end": "bomb",
         "speed": 0.0009,
+        "delayFrames": 114,
+        "bulge": 0
+      },
+      {
+        "id": "f4",
+        "branchOf": "f0",
+        "at": 0.148,
+        "end": "bomb",
+        "speed": 0.0015,
         "delayFrames": 99999,
-        "bulge": 0,
-        "chain": {
-          "from": "s1",
-          "at": 0.402
-        }
+        "branchPoint": {
+          "x": 79,
+          "y": 143
+        },
+        "bulge": 0.12
       }
     ]
   },
@@ -626,90 +697,90 @@
     "level_id": 12,
     "layout": "offset",
     "snipsAllowed": 3,
-    "par": 11.8,
+    "par": 7.9,
     "payload": {
       "id": "bomb",
-      "x": -35,
-      "y": -131
+      "x": 108,
+      "y": 88
     },
     "spawns": [
       {
         "id": "s1",
-        "x": 103,
-        "y": -152
+        "x": 9,
+        "y": 189
       },
       {
         "id": "s2",
-        "x": 164,
-        "y": 100
+        "x": -188,
+        "y": 153
       },
       {
         "id": "s3",
-        "x": -280,
-        "y": -13
+        "x": -366,
+        "y": -115
       },
       {
         "id": "s4",
-        "x": -272,
-        "y": -133
+        "x": 86,
+        "y": -187
       }
     ],
     "intersections": [
       {
         "id": "cut1",
-        "x": 105.14344110854503,
-        "y": 33.7390415704388
+        "x": -156.60259141494436,
+        "y": 57.967607313195565
       },
       {
         "id": "cut2",
-        "x": -137,
-        "y": 112
+        "x": -63.46113538646135,
+        "y": -43.42853864613538
       }
     ],
     "fuses": [
       {
+        "id": "f0",
         "start": "s1",
-        "routeThrough": "cut1",
+        "routeThrough": "cut2",
         "end": "bomb",
-        "speed": 0.0015,
-        "delayFrames": 10,
-        "bulge": 0
+        "speed": 0.0014,
+        "delayFrames": 0,
+        "bulge": 0.1
       },
       {
+        "id": "f1",
         "start": "s2",
-        "routeThrough": "cut1",
+        "routeThrough": "cut2",
         "end": "bomb",
-        "speed": 0.0011,
-        "delayFrames": 74,
-        "bulge": 0
+        "speed": 0.0014,
+        "delayFrames": 64,
+        "bulge": -0.1
       },
       {
+        "id": "f2",
         "start": "s3",
         "routeThrough": "cut2",
         "end": "bomb",
-        "speed": 0.0013,
-        "delayFrames": 87,
-        "bulge": 0
+        "speed": 0.0014,
+        "delayFrames": 89,
+        "bulge": 0.1
       },
       {
+        "id": "f3",
         "start": "s4",
-        "routeThrough": "cut2",
+        "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.0012,
-        "delayFrames": 99999,
-        "bulge": 0,
-        "chain": {
-          "from": "s1",
-          "at": 0.426
-        }
+        "speed": 0.0015,
+        "delayFrames": 141,
+        "bulge": -0.1
       }
     ]
   },
   {
     "level_id": 13,
     "layout": "hub",
-    "snipsAllowed": 3,
-    "par": 15.2,
+    "snipsAllowed": 4,
+    "par": 12.3,
     "payload": {
       "id": "bomb",
       "x": 0,
@@ -740,17 +811,23 @@
     "intersections": [
       {
         "id": "cut1",
-        "x": -368.0773368229535,
-        "y": 63.59590487576635
+        "x": -368.25719929478316,
+        "y": 63.66091540775292
       },
       {
         "id": "cut2",
         "x": -6.1773958697935285,
         "y": -239.81669933496676
+      },
+      {
+        "id": "b0",
+        "x": -135,
+        "y": 103
       }
     ],
     "fuses": [
       {
+        "id": "f0",
         "start": "s1",
         "routeThrough": "cut1",
         "end": "bomb",
@@ -759,6 +836,7 @@
         "bulge": 0.072
       },
       {
+        "id": "f1",
         "start": "s2",
         "routeThrough": "cut2",
         "end": "bomb",
@@ -767,6 +845,7 @@
         "bulge": 0.075
       },
       {
+        "id": "f2",
         "start": "s3",
         "routeThrough": "cut1",
         "end": "bomb",
@@ -775,24 +854,35 @@
         "bulge": 0.064
       },
       {
+        "id": "f3",
         "start": "s4",
         "routeThrough": "cut2",
         "end": "bomb",
         "speed": 0.0008,
+        "delayFrames": 110,
+        "bulge": 0.087
+      },
+      {
+        "id": "f4",
+        "branchOf": "f0",
+        "at": 0.369,
+        "end": "bomb",
+        "speed": 0.0017,
         "delayFrames": 99999,
-        "bulge": 0.087,
-        "chain": {
-          "from": "s1",
-          "at": 0.427
-        }
+        "branchPoint": {
+          "x": -339,
+          "y": 109
+        },
+        "routeThrough": "b0",
+        "bulge": 0.066
       }
     ]
   },
   {
     "level_id": 14,
     "layout": "train",
-    "snipsAllowed": 4,
-    "par": 11.8,
+    "snipsAllowed": 5,
+    "par": 11.3,
     "payload": {
       "id": "bomb",
       "x": 0,
@@ -834,6 +924,7 @@
     ],
     "fuses": [
       {
+        "id": "f0",
         "start": "s1",
         "routeThrough": "cut1",
         "end": "bomb",
@@ -842,6 +933,7 @@
         "bulge": 0.085
       },
       {
+        "id": "f1",
         "start": "s2",
         "routeThrough": "cut2",
         "end": "bomb",
@@ -850,6 +942,7 @@
         "bulge": 0.089
       },
       {
+        "id": "f2",
         "start": "s3",
         "end": "bomb",
         "speed": 0.0012,
@@ -857,16 +950,26 @@
         "bulge": 0.076
       },
       {
+        "id": "f3",
         "start": "s4",
         "routeThrough": "cut2",
         "end": "bomb",
         "speed": 0.0011,
+        "delayFrames": 139,
+        "bulge": 0.098
+      },
+      {
+        "id": "f4",
+        "branchOf": "f0",
+        "at": 0.322,
+        "end": "bomb",
+        "speed": 0.0016,
         "delayFrames": 99999,
-        "bulge": 0.098,
-        "chain": {
-          "from": "s1",
-          "at": 0.373
-        }
+        "branchPoint": {
+          "x": -124,
+          "y": 139
+        },
+        "bulge": 0.12
       }
     ],
     "tutorial": {
@@ -878,8 +981,8 @@
   {
     "level_id": 15,
     "layout": "offset",
-    "snipsAllowed": 4,
-    "par": 8,
+    "snipsAllowed": 5,
+    "par": 7.1,
     "payload": {
       "id": "bomb",
       "x": 74,
@@ -922,10 +1025,16 @@
         "id": "cut2",
         "x": -28.744916583794705,
         "y": -140.2837740637941
+      },
+      {
+        "id": "b0",
+        "x": -103,
+        "y": 128
       }
     ],
     "fuses": [
       {
+        "id": "f0",
         "start": "s1",
         "routeThrough": "cut2",
         "end": "bomb",
@@ -934,6 +1043,7 @@
         "bulge": 0
       },
       {
+        "id": "f1",
         "start": "s2",
         "routeThrough": "cut2",
         "end": "bomb",
@@ -942,6 +1052,7 @@
         "bulge": 0
       },
       {
+        "id": "f2",
         "start": "s3",
         "end": "bomb",
         "speed": 0.0019,
@@ -949,6 +1060,7 @@
         "bulge": 0
       },
       {
+        "id": "f3",
         "start": "s4",
         "routeThrough": "cut1",
         "end": "bomb",
@@ -957,23 +1069,34 @@
         "bulge": 0
       },
       {
+        "id": "f4",
         "start": "s5",
         "routeThrough": "cut1",
         "end": "bomb",
         "speed": 0.0019,
+        "delayFrames": 155,
+        "bulge": 0
+      },
+      {
+        "id": "f5",
+        "branchOf": "f0",
+        "at": 0.348,
+        "end": "bomb",
+        "speed": 0.0021,
         "delayFrames": 99999,
-        "bulge": 0,
-        "chain": {
-          "from": "s1",
-          "at": 0.403
-        }
+        "branchPoint": {
+          "x": -61,
+          "y": -109
+        },
+        "routeThrough": "b0",
+        "bulge": 0.066
       }
     ]
   },
   {
     "level_id": 16,
     "layout": "split",
-    "snipsAllowed": 4,
+    "snipsAllowed": 5,
     "par": 9.3,
     "payload": {
       "id": "bomb",
@@ -1010,12 +1133,18 @@
       },
       {
         "id": "cut2",
-        "x": 182.2784343640732,
-        "y": -270.413748009777
+        "x": 182.30879984336113,
+        "y": -270.48182545527743
+      },
+      {
+        "id": "b0",
+        "x": -151.66776312135516,
+        "y": -62.70075118022771
       }
     ],
     "fuses": [
       {
+        "id": "f0",
         "start": "s1",
         "routeThrough": "cut1",
         "end": "bomb",
@@ -1024,6 +1153,7 @@
         "bulge": 0
       },
       {
+        "id": "f1",
         "start": "s2",
         "routeThrough": "cut2",
         "end": "bomb",
@@ -1032,6 +1162,7 @@
         "bulge": 0
       },
       {
+        "id": "f2",
         "start": "s3",
         "end": "bomb",
         "speed": 0.0013,
@@ -1039,24 +1170,35 @@
         "bulge": 0
       },
       {
+        "id": "f3",
         "start": "s4",
         "routeThrough": "cut2",
         "end": "bomb",
         "speed": 0.0016,
+        "delayFrames": 100,
+        "bulge": 0
+      },
+      {
+        "id": "f4",
+        "branchOf": "f0",
+        "at": 0.14,
+        "end": "bomb",
+        "speed": 0.0022,
         "delayFrames": 99999,
-        "bulge": 0,
-        "chain": {
-          "from": "s1",
-          "at": 0.368
-        }
+        "branchPoint": {
+          "x": -141,
+          "y": -127
+        },
+        "routeThrough": "b0",
+        "bulge": 0.066
       }
     ]
   },
   {
     "level_id": 17,
     "layout": "offset",
-    "snipsAllowed": 4,
-    "par": 7.6,
+    "snipsAllowed": 5,
+    "par": 7,
     "payload": {
       "id": "bomb",
       "x": 33,
@@ -1103,6 +1245,7 @@
     ],
     "fuses": [
       {
+        "id": "f0",
         "start": "s1",
         "routeThrough": "cut1",
         "end": "bomb",
@@ -1111,6 +1254,7 @@
         "bulge": 0.1
       },
       {
+        "id": "f1",
         "start": "s2",
         "routeThrough": "cut1",
         "end": "bomb",
@@ -1119,6 +1263,7 @@
         "bulge": -0.1
       },
       {
+        "id": "f2",
         "start": "s3",
         "end": "bomb",
         "speed": 0.0018,
@@ -1126,6 +1271,7 @@
         "bulge": 0.1
       },
       {
+        "id": "f3",
         "start": "s4",
         "routeThrough": "cut2",
         "end": "bomb",
@@ -1134,24 +1280,34 @@
         "bulge": -0.1
       },
       {
+        "id": "f4",
         "start": "s5",
         "routeThrough": "cut2",
         "end": "bomb",
         "speed": 0.0019,
+        "delayFrames": 108,
+        "bulge": 0.1
+      },
+      {
+        "id": "f5",
+        "branchOf": "f0",
+        "at": 0.304,
+        "end": "bomb",
+        "speed": 0.002,
         "delayFrames": 99999,
-        "bulge": 0.1,
-        "chain": {
-          "from": "s1",
-          "at": 0.351
-        }
+        "branchPoint": {
+          "x": 195,
+          "y": 112
+        },
+        "bulge": 0.12
       }
     ]
   },
   {
     "level_id": 18,
     "layout": "split",
-    "snipsAllowed": 4,
-    "par": 9.9,
+    "snipsAllowed": 5,
+    "par": 7.3,
     "payload": {
       "id": "bomb",
       "x": 0,
@@ -1193,6 +1349,7 @@
     ],
     "fuses": [
       {
+        "id": "f0",
         "start": "s1",
         "routeThrough": "cut2",
         "end": "bomb",
@@ -1201,6 +1358,7 @@
         "bulge": 0
       },
       {
+        "id": "f1",
         "start": "s2",
         "routeThrough": "cut2",
         "end": "bomb",
@@ -1209,6 +1367,7 @@
         "bulge": 0
       },
       {
+        "id": "f2",
         "start": "s3",
         "end": "bomb",
         "speed": 0.0017,
@@ -1216,24 +1375,34 @@
         "bulge": 0
       },
       {
+        "id": "f3",
         "start": "s4",
         "routeThrough": "cut1",
         "end": "bomb",
         "speed": 0.0013,
+        "delayFrames": 55,
+        "bulge": 0
+      },
+      {
+        "id": "f4",
+        "branchOf": "f0",
+        "at": 0.156,
+        "end": "bomb",
+        "speed": 0.0022,
         "delayFrames": 99999,
-        "bulge": 0,
-        "chain": {
-          "from": "s1",
-          "at": 0.412
-        }
+        "branchPoint": {
+          "x": 165,
+          "y": 36
+        },
+        "bulge": -0.12
       }
     ]
   },
   {
     "level_id": 19,
     "layout": "offset",
-    "snipsAllowed": 4,
-    "par": 7.1,
+    "snipsAllowed": 5,
+    "par": 6.9,
     "payload": {
       "id": "bomb",
       "x": -20,
@@ -1280,6 +1449,7 @@
     ],
     "fuses": [
       {
+        "id": "f0",
         "start": "s1",
         "routeThrough": "cut1",
         "end": "bomb",
@@ -1288,6 +1458,7 @@
         "bulge": 0
       },
       {
+        "id": "f1",
         "start": "s2",
         "routeThrough": "cut1",
         "end": "bomb",
@@ -1296,6 +1467,7 @@
         "bulge": 0
       },
       {
+        "id": "f2",
         "start": "s3",
         "end": "bomb",
         "speed": 0.0019,
@@ -1303,6 +1475,7 @@
         "bulge": 0
       },
       {
+        "id": "f3",
         "start": "s4",
         "routeThrough": "cut2",
         "end": "bomb",
@@ -1311,24 +1484,34 @@
         "bulge": 0
       },
       {
+        "id": "f4",
         "start": "s5",
         "routeThrough": "cut2",
         "end": "bomb",
         "speed": 0.002,
+        "delayFrames": 113,
+        "bulge": 0
+      },
+      {
+        "id": "f5",
+        "branchOf": "f0",
+        "at": 0.28,
+        "end": "bomb",
+        "speed": 0.0019,
         "delayFrames": 99999,
-        "bulge": 0,
-        "chain": {
-          "from": "s1",
-          "at": 0.323
-        }
+        "branchPoint": {
+          "x": -206,
+          "y": 2
+        },
+        "bulge": 0.12
       }
     ]
   },
   {
     "level_id": 20,
     "layout": "split",
-    "snipsAllowed": 4,
-    "par": 7.6,
+    "snipsAllowed": 5,
+    "par": 6.5,
     "payload": {
       "id": "bomb",
       "x": 0,
@@ -1366,10 +1549,16 @@
         "id": "cut2",
         "x": 129.08216989454928,
         "y": -76.40545409402861
+      },
+      {
+        "id": "b0",
+        "x": 164,
+        "y": -8
       }
     ],
     "fuses": [
       {
+        "id": "f0",
         "start": "s1",
         "routeThrough": "cut2",
         "end": "bomb",
@@ -1378,6 +1567,7 @@
         "bulge": 0
       },
       {
+        "id": "f1",
         "start": "s2",
         "routeThrough": "cut2",
         "end": "bomb",
@@ -1386,6 +1576,7 @@
         "bulge": 0
       },
       {
+        "id": "f2",
         "start": "s3",
         "end": "bomb",
         "speed": 0.002,
@@ -1393,24 +1584,35 @@
         "bulge": 0
       },
       {
+        "id": "f3",
         "start": "s4",
         "routeThrough": "cut1",
         "end": "bomb",
         "speed": 0.0018,
+        "delayFrames": 111,
+        "bulge": 0
+      },
+      {
+        "id": "f4",
+        "branchOf": "f0",
+        "at": 0.14,
+        "end": "bomb",
+        "speed": 0.0021,
         "delayFrames": 99999,
-        "bulge": 0,
-        "chain": {
-          "from": "s1",
-          "at": 0.324
-        }
+        "branchPoint": {
+          "x": 177,
+          "y": -73
+        },
+        "routeThrough": "b0",
+        "bulge": -0.066
       }
     ]
   },
   {
     "level_id": 21,
     "layout": "rings",
-    "snipsAllowed": 4,
-    "par": 8.2,
+    "snipsAllowed": 5,
+    "par": 9.3,
     "payload": {
       "id": "bomb",
       "x": 0,
@@ -1453,59 +1655,79 @@
         "id": "cut2",
         "x": -150,
         "y": 9
+      },
+      {
+        "id": "b0",
+        "x": 155,
+        "y": 54
       }
     ],
     "fuses": [
       {
+        "id": "f0",
         "start": "s1",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.002,
+        "speed": 0.0018,
         "delayFrames": 8,
         "bulge": 0
       },
       {
+        "id": "f1",
         "start": "s2",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.0016,
+        "speed": 0.0015,
         "delayFrames": 29,
         "bulge": 0
       },
       {
+        "id": "f2",
         "start": "s3",
         "end": "bomb",
-        "speed": 0.0014,
+        "speed": 0.0012,
         "delayFrames": 60,
         "bulge": 0
       },
       {
+        "id": "f3",
         "start": "s4",
         "routeThrough": "cut2",
         "end": "bomb",
-        "speed": 0.0013,
+        "speed": 0.0011,
         "delayFrames": 106,
         "bulge": 0
       },
       {
+        "id": "f4",
         "start": "s5",
         "routeThrough": "cut2",
         "end": "bomb",
-        "speed": 0.0017,
+        "speed": 0.0015,
+        "delayFrames": 206,
+        "bulge": 0
+      },
+      {
+        "id": "f5",
+        "branchOf": "f0",
+        "at": 0.226,
+        "end": "bomb",
+        "speed": 0.0018,
         "delayFrames": 99999,
-        "bulge": 0,
-        "chain": {
-          "from": "s1",
-          "at": 0.319
-        }
+        "branchPoint": {
+          "x": 162,
+          "y": 130
+        },
+        "routeThrough": "b0",
+        "bulge": 0.066
       }
     ]
   },
   {
     "level_id": 22,
     "layout": "split",
-    "snipsAllowed": 4,
-    "par": 8.1,
+    "snipsAllowed": 5,
+    "par": 5.9,
     "payload": {
       "id": "bomb",
       "x": 0,
@@ -1514,80 +1736,99 @@
     "spawns": [
       {
         "id": "s1",
-        "x": -218,
-        "y": 224
+        "x": 109,
+        "y": 296
       },
       {
         "id": "s2",
-        "x": -263,
-        "y": 78
+        "x": -206,
+        "y": 212
       },
       {
         "id": "s3",
-        "x": -209,
-        "y": -58
+        "x": -41,
+        "y": -308
       },
       {
         "id": "s4",
-        "x": 179,
-        "y": -220
+        "x": 211,
+        "y": -155
       }
     ],
     "intersections": [
       {
         "id": "cut1",
-        "x": -147.24471852610029,
-        "y": -62.610931422722636
+        "x": -59.59595586029577,
+        "y": -162.4561359597517
       },
       {
         "id": "cut2",
-        "x": 172,
-        "y": -73
+        "x": 43.984510350082495,
+        "y": 143.40628594752562
+      },
+      {
+        "id": "b0",
+        "x": -130,
+        "y": 101
       }
     ],
     "fuses": [
       {
+        "id": "f0",
         "start": "s1",
-        "routeThrough": "cut1",
-        "end": "bomb",
-        "speed": 0.0021,
-        "delayFrames": 4,
-        "bulge": 0
-      },
-      {
-        "start": "s2",
-        "routeThrough": "cut1",
-        "end": "bomb",
-        "speed": 0.0012,
-        "delayFrames": 11,
-        "bulge": 0
-      },
-      {
-        "start": "s3",
-        "end": "bomb",
-        "speed": 0.0021,
-        "delayFrames": 53,
-        "bulge": 0
-      },
-      {
-        "start": "s4",
         "routeThrough": "cut2",
         "end": "bomb",
-        "speed": 0.0017,
+        "speed": 0.0018,
+        "delayFrames": 8,
+        "bulge": 0.1
+      },
+      {
+        "id": "f1",
+        "start": "s2",
+        "routeThrough": "cut2",
+        "end": "bomb",
+        "speed": 0.0018,
+        "delayFrames": 7,
+        "bulge": -0.1
+      },
+      {
+        "id": "f2",
+        "start": "s3",
+        "end": "bomb",
+        "speed": 0.0019,
+        "delayFrames": 77,
+        "bulge": 0.1
+      },
+      {
+        "id": "f3",
+        "start": "s4",
+        "routeThrough": "cut1",
+        "end": "bomb",
+        "speed": 0.0018,
+        "delayFrames": 76,
+        "bulge": -0.1
+      },
+      {
+        "id": "f4",
+        "branchOf": "f1",
+        "at": 0.14,
+        "end": "bomb",
+        "speed": 0.0019,
         "delayFrames": 99999,
-        "bulge": 0,
-        "chain": {
-          "from": "s1",
-          "at": 0.391
-        }
+        "branchPoint": {
+          "x": -108,
+          "y": 169
+        },
+        "routeThrough": "b0",
+        "bulge": -0.066
       }
     ]
   },
   {
     "level_id": 23,
     "layout": "train",
-    "snipsAllowed": 4,
-    "par": 7.8,
+    "snipsAllowed": 5,
+    "par": 8.3,
     "payload": {
       "id": "bomb",
       "x": 0,
@@ -1630,59 +1871,79 @@
         "id": "cut2",
         "x": 0,
         "y": 101
+      },
+      {
+        "id": "b0",
+        "x": -135,
+        "y": -93
       }
     ],
     "fuses": [
       {
+        "id": "f0",
         "start": "s1",
         "routeThrough": "cut2",
         "end": "bomb",
-        "speed": 0.0022,
+        "speed": 0.002,
         "delayFrames": 6,
         "bulge": 0.096
       },
       {
+        "id": "f1",
         "start": "s2",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.0015,
+        "speed": 0.0014,
         "delayFrames": 17,
         "bulge": 0.065
       },
       {
+        "id": "f2",
         "start": "s3",
         "end": "bomb",
-        "speed": 0.0022,
+        "speed": 0.002,
         "delayFrames": 99,
         "bulge": 0.098
       },
       {
+        "id": "f3",
         "start": "s4",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.0013,
+        "speed": 0.0012,
         "delayFrames": 81,
         "bulge": 0.08
       },
       {
+        "id": "f4",
         "start": "s5",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.0022,
+        "speed": 0.002,
+        "delayFrames": 178,
+        "bulge": 0.061
+      },
+      {
+        "id": "f5",
+        "branchOf": "f0",
+        "at": 0.297,
+        "end": "bomb",
+        "speed": 0.0021,
         "delayFrames": 99999,
-        "bulge": 0.061,
-        "chain": {
-          "from": "s1",
-          "at": 0.344
-        }
+        "branchPoint": {
+          "x": -17,
+          "y": 154
+        },
+        "routeThrough": "b0",
+        "bulge": -0.066
       }
     ]
   },
   {
     "level_id": 24,
     "layout": "hub",
-    "snipsAllowed": 4,
-    "par": 8.1,
+    "snipsAllowed": 5,
+    "par": 8.5,
     "payload": {
       "id": "bomb",
       "x": 0,
@@ -1724,39 +1985,52 @@
     ],
     "fuses": [
       {
+        "id": "f0",
         "start": "s1",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.002,
+        "speed": 0.0018,
         "delayFrames": 1,
         "bulge": 0.064
       },
       {
+        "id": "f1",
         "start": "s2",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.0011,
+        "speed": 0.001,
         "delayFrames": 8,
         "bulge": 0.072
       },
       {
+        "id": "f2",
         "start": "s3",
         "end": "bomb",
-        "speed": 0.0015,
-        "delayFrames": 99999,
-        "bulge": 0.067,
-        "chain": {
-          "from": "s1",
-          "at": 0.304
-        }
+        "speed": 0.0013,
+        "delayFrames": 63,
+        "bulge": 0.067
       },
       {
+        "id": "f3",
         "start": "s4",
         "routeThrough": "cut2",
         "end": "bomb",
-        "speed": 0.0014,
+        "speed": 0.0013,
         "delayFrames": 57,
         "bulge": 0.08
+      },
+      {
+        "id": "f4",
+        "branchOf": "f0",
+        "at": 0.14,
+        "end": "bomb",
+        "speed": 0.002,
+        "delayFrames": 99999,
+        "branchPoint": {
+          "x": -123,
+          "y": 120
+        },
+        "bulge": 0.12
       }
     ]
   },
@@ -1764,7 +2038,7 @@
     "level_id": 25,
     "layout": "weave",
     "snipsAllowed": 5,
-    "par": 11,
+    "par": 8.1,
     "payload": {
       "id": "bomb",
       "x": 0,
@@ -1773,110 +2047,129 @@
     "spawns": [
       {
         "id": "s1",
-        "x": -68,
-        "y": 229
+        "x": 124,
+        "y": 166
       },
       {
         "id": "s2",
-        "x": -213,
-        "y": 243
+        "x": 20,
+        "y": 274
       },
       {
         "id": "s3",
-        "x": -212,
-        "y": -35
+        "x": -193,
+        "y": 131
       },
       {
         "id": "s4",
-        "x": -267,
-        "y": -180
+        "x": -271,
+        "y": 7
       },
       {
         "id": "s5",
-        "x": 7,
-        "y": -220
+        "x": -154,
+        "y": -253
       },
       {
         "id": "s6",
-        "x": 143,
-        "y": -286
+        "x": 7,
+        "y": -329
       }
     ],
     "intersections": [
       {
         "id": "cut1",
-        "x": -55,
-        "y": -229
+        "x": -80.22435089462442,
+        "y": 126.74404729034092
       },
       {
         "id": "cut2",
-        "x": 94.63874980921153,
-        "y": 116.3765742516485
+        "x": -214.70256825376592,
+        "y": 66.5417806762053
       },
       {
         "id": "cut3",
-        "x": -136.4311326588435,
-        "y": -134.3530663294217
+        "x": -122.8000226734534,
+        "y": -86.14031826850497
+      },
+      {
+        "id": "b0",
+        "x": 20,
+        "y": -163
       }
     ],
     "fuses": [
       {
+        "id": "f0",
         "start": "s1",
+        "routeThrough": "cut1",
+        "end": "bomb",
+        "speed": 0.0016,
+        "delayFrames": 40,
+        "bulge": 0.1
+      },
+      {
+        "id": "f1",
+        "start": "s2",
         "routeThrough": "cut2",
         "end": "bomb",
-        "speed": 0.002,
-        "delayFrames": 3,
-        "bulge": 0
+        "speed": 0.0017,
+        "delayFrames": 126,
+        "bulge": -0.1
       },
       {
-        "start": "s2",
-        "end": "bomb",
-        "speed": 0.0012,
-        "delayFrames": 16,
-        "bulge": 0
-      },
-      {
+        "id": "f2",
         "start": "s3",
         "routeThrough": "cut3",
         "end": "bomb",
-        "speed": 0.002,
-        "delayFrames": 51,
-        "bulge": 0
+        "speed": 0.0017,
+        "delayFrames": 77,
+        "bulge": 0.1
       },
       {
+        "id": "f3",
         "start": "s4",
-        "routeThrough": "cut3",
+        "routeThrough": "cut1",
         "end": "bomb",
         "speed": 0.0017,
-        "delayFrames": 109,
-        "bulge": 0
+        "delayFrames": 190,
+        "bulge": -0.1
       },
       {
+        "id": "f4",
         "start": "s5",
+        "routeThrough": "cut2",
         "end": "bomb",
-        "speed": 0.002,
-        "delayFrames": 99999,
-        "bulge": 0,
-        "chain": {
-          "from": "s2",
-          "at": 0.369
-        }
+        "speed": 0.0017,
+        "delayFrames": 151,
+        "bulge": 0.1
       },
       {
+        "id": "f5",
         "start": "s6",
         "routeThrough": "cut3",
         "end": "bomb",
-        "speed": 0.0011,
+        "speed": 0.0017,
+        "delayFrames": 8,
+        "bulge": -0.1
+      },
+      {
+        "id": "f6",
+        "branchOf": "f5",
+        "at": 0.174,
+        "end": "bomb",
+        "speed": 0.0017,
         "delayFrames": 99999,
-        "bulge": 0,
-        "chain": {
-          "from": "s1",
-          "at": 0.406
-        }
+        "branchPoint": {
+          "x": -45,
+          "y": -202
+        },
+        "routeThrough": "b0",
+        "bulge": -0.088
       }
     ],
     "tutorial": {
-      "text": "TWO wicks light other wicks now. Cut a parent EARLY to stop its chain — or be ready to snip every new wick it lights.",
+      "text": "TWO wicks fork now. Cut a parent EARLY to stop both — or be ready to snip every new wick it lights.",
       "focus": "spawn",
       "highlight": "s1"
     }
@@ -1884,8 +2177,8 @@
   {
     "level_id": 26,
     "layout": "split",
-    "snipsAllowed": 4,
-    "par": 10.6,
+    "snipsAllowed": 6,
+    "par": 12.4,
     "payload": {
       "id": "bomb",
       "x": 0,
@@ -1931,78 +2224,114 @@
       },
       {
         "id": "cut2",
-        "x": 176.49858562879112,
-        "y": 181.73924349353516
+        "x": 176.53463298511704,
+        "y": 181.76474040410716
       },
       {
         "id": "cut3",
-        "x": -12.290785873517855,
-        "y": -247.0383317330392
+        "x": -12.282240250871483,
+        "y": -247.08232067584163
+      },
+      {
+        "id": "b0",
+        "x": 95,
+        "y": -134
+      },
+      {
+        "id": "b1",
+        "x": 89,
+        "y": 138
       }
     ],
     "fuses": [
       {
+        "id": "f0",
         "start": "s1",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.0023,
+        "speed": 0.002,
         "delayFrames": 5,
         "bulge": 0.068
       },
       {
+        "id": "f1",
         "start": "s2",
         "routeThrough": "cut2",
         "end": "bomb",
-        "speed": 0.0015,
+        "speed": 0.0013,
         "delayFrames": 72,
         "bulge": 0.102
       },
       {
+        "id": "f2",
         "start": "s3",
         "routeThrough": "cut3",
         "end": "bomb",
-        "speed": 0.0023,
+        "speed": 0.002,
         "delayFrames": 89,
         "bulge": 0.074
       },
       {
+        "id": "f3",
         "start": "s4",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.0014,
-        "delayFrames": 99999,
-        "bulge": 0.07,
-        "chain": {
-          "from": "s2",
-          "at": 0.313
-        }
+        "speed": 0.0012,
+        "delayFrames": 150,
+        "bulge": 0.07
       },
       {
+        "id": "f4",
         "start": "s5",
         "routeThrough": "cut2",
         "end": "bomb",
-        "speed": 0.0023,
+        "speed": 0.002,
         "delayFrames": 128,
         "bulge": 0.109
       },
       {
+        "id": "f5",
         "start": "s6",
         "routeThrough": "cut3",
         "end": "bomb",
+        "speed": 0.0015,
+        "delayFrames": 172,
+        "bulge": 0.097
+      },
+      {
+        "id": "f6",
+        "branchOf": "f0",
+        "at": 0.169,
+        "end": "bomb",
         "speed": 0.0018,
         "delayFrames": 99999,
-        "bulge": 0.097,
-        "chain": {
-          "from": "s1",
-          "at": 0.369
-        }
+        "branchPoint": {
+          "x": 169,
+          "y": -118
+        },
+        "routeThrough": "b0",
+        "bulge": 0.092
+      },
+      {
+        "id": "f7",
+        "branchOf": "f1",
+        "at": 0.331,
+        "end": "bomb",
+        "speed": 0.0012,
+        "delayFrames": 99999,
+        "branchPoint": {
+          "x": 201,
+          "y": 125
+        },
+        "routeThrough": "b1",
+        "bulge": -0.092
       }
     ]
   },
   {
     "level_id": 27,
     "layout": "hub",
-    "snipsAllowed": 4,
+    "snipsAllowed": 6,
     "par": 11.3,
     "payload": {
       "id": "bomb",
@@ -2012,116 +2341,152 @@
     "spawns": [
       {
         "id": "s1",
-        "x": 202,
-        "y": 194
+        "x": 76,
+        "y": 227
       },
       {
         "id": "s2",
-        "x": 202,
-        "y": 212
+        "x": 65,
+        "y": 287
       },
       {
         "id": "s3",
-        "x": 162,
-        "y": 306
+        "x": -47,
+        "y": 220
       },
       {
         "id": "s4",
-        "x": -60,
-        "y": 259
+        "x": -309,
+        "y": 151
       },
       {
         "id": "s5",
-        "x": -279,
-        "y": 0
+        "x": -113,
+        "y": -180
       },
       {
         "id": "s6",
-        "x": 195,
-        "y": -290
+        "x": 317,
+        "y": -8
       }
     ],
     "intersections": [
       {
         "id": "cut1",
-        "x": 8,
-        "y": 173
+        "x": -94,
+        "y": 167
       },
       {
         "id": "cut2",
-        "x": -116.91918918918918,
-        "y": 134.3748648648649
+        "x": -254.46283020150514,
+        "y": 113.3224156265005
       },
       {
         "id": "cut3",
-        "x": -51.615,
-        "y": -180
+        "x": 117.73337802332519,
+        "y": 92.94542322899397
+      },
+      {
+        "id": "b0",
+        "x": 13,
+        "y": 163
+      },
+      {
+        "id": "b1",
+        "x": -159,
+        "y": 41
       }
     ],
     "fuses": [
       {
+        "id": "f0",
         "start": "s1",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.0023,
-        "delayFrames": 2,
+        "speed": 0.002,
+        "delayFrames": 10,
         "bulge": 0
       },
       {
+        "id": "f1",
         "start": "s2",
-        "routeThrough": "cut1",
-        "end": "bomb",
-        "speed": 0.0015,
-        "delayFrames": 44,
-        "bulge": 0
-      },
-      {
-        "start": "s3",
         "routeThrough": "cut2",
         "end": "bomb",
-        "speed": 0.0014,
-        "delayFrames": 99,
+        "speed": 0.0013,
+        "delayFrames": 62,
         "bulge": 0
       },
       {
+        "id": "f2",
+        "start": "s3",
+        "routeThrough": "cut3",
+        "end": "bomb",
+        "speed": 0.0018,
+        "delayFrames": 64,
+        "bulge": 0
+      },
+      {
+        "id": "f3",
         "start": "s4",
+        "routeThrough": "cut1",
+        "end": "bomb",
+        "speed": 0.0014,
+        "delayFrames": 145,
+        "bulge": 0
+      },
+      {
+        "id": "f4",
+        "start": "s5",
         "routeThrough": "cut2",
         "end": "bomb",
         "speed": 0.0016,
-        "delayFrames": 134,
+        "delayFrames": 118,
         "bulge": 0
       },
       {
-        "start": "s5",
-        "routeThrough": "cut3",
-        "end": "bomb",
-        "speed": 0.0012,
-        "delayFrames": 99999,
-        "bulge": 0,
-        "chain": {
-          "from": "s2",
-          "at": 0.324
-        }
-      },
-      {
+        "id": "f5",
         "start": "s6",
         "routeThrough": "cut3",
         "end": "bomb",
-        "speed": 0.0017,
+        "speed": 0.0016,
+        "delayFrames": 206,
+        "bulge": 0
+      },
+      {
+        "id": "f6",
+        "branchOf": "f0",
+        "at": 0.273,
+        "end": "bomb",
+        "speed": 0.002,
         "delayFrames": 99999,
-        "bulge": 0,
-        "chain": {
-          "from": "s1",
-          "at": 0.415
-        }
+        "branchPoint": {
+          "x": -53,
+          "y": 197
+        },
+        "routeThrough": "b0",
+        "bulge": 0.096
+      },
+      {
+        "id": "f7",
+        "branchOf": "f1",
+        "at": 0.3,
+        "end": "bomb",
+        "speed": 0.0013,
+        "delayFrames": 99999,
+        "branchPoint": {
+          "x": -197,
+          "y": 163
+        },
+        "routeThrough": "b1",
+        "bulge": -0.096
       }
     ]
   },
   {
     "level_id": 28,
     "layout": "rings",
-    "snipsAllowed": 3,
-    "par": 10.2,
+    "snipsAllowed": 5,
+    "par": 8.4,
     "payload": {
       "id": "bomb",
       "x": 0,
@@ -2174,403 +2539,529 @@
         "id": "cut3",
         "x": -86.87651523861246,
         "y": 122.28029726818274
+      },
+      {
+        "id": "b0",
+        "x": -40,
+        "y": 159
       }
     ],
     "fuses": [
       {
+        "id": "f0",
         "start": "s1",
         "routeThrough": "cut3",
         "end": "bomb",
-        "speed": 0.0023,
+        "speed": 0.002,
         "delayFrames": 142,
         "bulge": 0
       },
       {
+        "id": "f1",
         "start": "s2",
         "routeThrough": "cut3",
         "end": "bomb",
-        "speed": 0.0019,
+        "speed": 0.0017,
         "delayFrames": 47,
         "bulge": 0
       },
       {
+        "id": "f2",
         "start": "s3",
         "routeThrough": "cut3",
         "end": "bomb",
-        "speed": 0.0023,
+        "speed": 0.002,
         "delayFrames": 92,
         "bulge": 0
       },
       {
+        "id": "f3",
         "start": "s4",
         "routeThrough": "cut3",
         "end": "bomb",
-        "speed": 0.0017,
+        "speed": 0.0015,
         "delayFrames": 48,
         "bulge": 0
       },
       {
+        "id": "f4",
         "start": "s5",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.0023,
-        "delayFrames": 99999,
-        "bulge": 0,
-        "chain": {
-          "from": "s2",
-          "at": 0.302
-        }
+        "speed": 0.002,
+        "delayFrames": 164,
+        "bulge": 0
       },
       {
+        "id": "f5",
         "start": "s6",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.0016,
+        "speed": 0.0014,
+        "delayFrames": 148,
+        "bulge": 0
+      },
+      {
+        "id": "f6",
+        "branchOf": "f1",
+        "at": 0.187,
+        "end": "bomb",
+        "speed": 0.0017,
         "delayFrames": 99999,
-        "bulge": 0,
-        "chain": {
-          "from": "s4",
-          "at": 0.423
-        }
+        "branchPoint": {
+          "x": -113,
+          "y": 169
+        },
+        "routeThrough": "b0",
+        "bulge": 0.1
+      },
+      {
+        "id": "f7",
+        "branchOf": "f3",
+        "at": 0.179,
+        "end": "bomb",
+        "speed": 0.0015,
+        "delayFrames": 99999,
+        "branchPoint": {
+          "x": -155,
+          "y": 72
+        },
+        "bulge": -0.181
       }
     ]
   },
   {
     "level_id": 29,
     "layout": "offset",
-    "snipsAllowed": 3,
-    "par": 9.1,
+    "snipsAllowed": 5,
+    "par": 8.3,
     "payload": {
       "id": "bomb",
-      "x": -68,
-      "y": 100
+      "x": -118,
+      "y": -3
     },
     "spawns": [
       {
         "id": "s1",
-        "x": -335,
-        "y": -11
+        "x": -182,
+        "y": -157
       },
       {
         "id": "s2",
-        "x": -344,
-        "y": -102
+        "x": -67,
+        "y": -279
       },
       {
         "id": "s3",
-        "x": -175,
-        "y": -216
+        "x": 171,
+        "y": -174
       },
       {
         "id": "s4",
-        "x": 72,
-        "y": -342
+        "x": 332,
+        "y": -58
       },
       {
         "id": "s5",
-        "x": 292,
-        "y": -64
+        "x": 145,
+        "y": 162
       },
       {
         "id": "s6",
-        "x": 141,
-        "y": 329
+        "x": 33,
+        "y": 301
       }
     ],
     "intersections": [
       {
         "id": "cut1",
-        "x": -91.37473181797763,
-        "y": -179.1534135932797
+        "x": 54,
+        "y": -140
       },
       {
         "id": "cut2",
-        "x": 217,
-        "y": 21
+        "x": 76.89598480520964,
+        "y": -19.790035416428644
+      },
+      {
+        "id": "b1",
+        "x": -54,
+        "y": -155
       }
     ],
     "fuses": [
       {
+        "id": "f0",
         "start": "s1",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.0023,
-        "delayFrames": 3,
-        "bulge": 0
+        "speed": 0.0018,
+        "delayFrames": 9,
+        "bulge": 0.105
       },
       {
+        "id": "f1",
         "start": "s2",
-        "routeThrough": "cut1",
+        "routeThrough": "cut2",
         "end": "bomb",
-        "speed": 0.0013,
-        "delayFrames": 53,
-        "bulge": 0
+        "speed": 0.0019,
+        "delayFrames": 33,
+        "bulge": 0.095
       },
       {
+        "id": "f2",
         "start": "s3",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.0023,
-        "delayFrames": 81,
-        "bulge": 0
+        "speed": 0.0019,
+        "delayFrames": 49,
+        "bulge": 0.063
       },
       {
+        "id": "f3",
         "start": "s4",
         "routeThrough": "cut2",
         "end": "bomb",
-        "speed": 0.0017,
-        "delayFrames": 91,
-        "bulge": 0
+        "speed": 0.002,
+        "delayFrames": 74,
+        "bulge": 0.105
       },
       {
+        "id": "f4",
         "start": "s5",
-        "routeThrough": "cut2",
+        "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.0023,
-        "delayFrames": 99999,
-        "bulge": 0,
-        "chain": {
-          "from": "s2",
-          "at": 0.359
-        }
+        "speed": 0.0019,
+        "delayFrames": 101,
+        "bulge": 0.07
       },
       {
+        "id": "f5",
         "start": "s6",
         "routeThrough": "cut2",
         "end": "bomb",
         "speed": 0.0019,
+        "delayFrames": 121,
+        "bulge": 0.086
+      },
+      {
+        "id": "f6",
+        "branchOf": "f0",
+        "at": 0.35,
+        "end": "bomb",
+        "speed": 0.0017,
         "delayFrames": 99999,
-        "bulge": 0,
-        "chain": {
-          "from": "s1",
-          "at": 0.416
-        }
+        "branchPoint": {
+          "x": 25,
+          "y": -151
+        },
+        "bulge": 0.188
+      },
+      {
+        "id": "f7",
+        "branchOf": "f1",
+        "at": 0.148,
+        "end": "bomb",
+        "speed": 0.0018,
+        "delayFrames": 99999,
+        "branchPoint": {
+          "x": 2,
+          "y": -166
+        },
+        "routeThrough": "b1",
+        "bulge": -0.103
       }
     ]
   },
   {
     "level_id": 30,
     "layout": "train",
-    "snipsAllowed": 3,
-    "par": 8.3,
+    "snipsAllowed": 5,
+    "par": 13.5,
     "payload": {
       "id": "bomb",
-      "x": -204,
-      "y": 0
+      "x": 0,
+      "y": -223
     },
     "spawns": [
       {
         "id": "s1",
-        "x": 132,
-        "y": -161
+        "x": -133,
+        "y": 169
       },
       {
         "id": "s2",
-        "x": 157,
-        "y": -138
+        "x": -73,
+        "y": 192
       },
       {
         "id": "s3",
-        "x": 191,
-        "y": -79
+        "x": -24,
+        "y": 204
       },
       {
         "id": "s4",
-        "x": 195,
-        "y": -11
+        "x": 31,
+        "y": 212
       },
       {
         "id": "s5",
-        "x": 183,
-        "y": 69
+        "x": 83,
+        "y": 181
       },
       {
         "id": "s6",
-        "x": 130,
-        "y": 168
+        "x": 129,
+        "y": 156
       }
     ],
     "intersections": [
       {
         "id": "cut1",
-        "x": 31.93424638192729,
-        "y": -210.32265972467349
+        "x": -181.54969885218017,
+        "y": 93.75513731033939
       },
       {
         "id": "cut2",
-        "x": 82,
-        "y": 0
+        "x": 0,
+        "y": 106
+      },
+      {
+        "id": "b0",
+        "x": -119,
+        "y": -113
+      },
+      {
+        "id": "b1",
+        "x": 95.19522401954012,
+        "y": -93.08794652839057
       }
     ],
     "fuses": [
       {
+        "id": "f0",
         "start": "s1",
-        "routeThrough": "cut1",
+        "routeThrough": "cut2",
         "end": "bomb",
-        "speed": 0.0023,
-        "delayFrames": 7,
-        "bulge": 0.1
+        "speed": 0.002,
+        "delayFrames": 9,
+        "bulge": 0
       },
       {
+        "id": "f1",
         "start": "s2",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.0021,
-        "delayFrames": 43,
-        "bulge": -0.1
+        "speed": 0.0011,
+        "delayFrames": 28,
+        "bulge": 0
       },
       {
+        "id": "f2",
         "start": "s3",
-        "routeThrough": "cut2",
+        "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.0023,
-        "delayFrames": 51,
-        "bulge": 0.1
+        "speed": 0.002,
+        "delayFrames": 53,
+        "bulge": 0
       },
       {
+        "id": "f3",
         "start": "s4",
-        "routeThrough": "cut2",
+        "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.0017,
-        "delayFrames": 81,
-        "bulge": -0.1
+        "speed": 0.0012,
+        "delayFrames": 79,
+        "bulge": 0
       },
       {
+        "id": "f4",
         "start": "s5",
-        "routeThrough": "cut2",
+        "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.0023,
-        "delayFrames": 99999,
-        "bulge": 0.1,
-        "chain": {
-          "from": "s2",
-          "at": 0.327
-        }
+        "speed": 0.002,
+        "delayFrames": 104,
+        "bulge": 0
       },
       {
+        "id": "f5",
         "start": "s6",
-        "routeThrough": "cut2",
+        "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.0014,
+        "speed": 0.0012,
+        "delayFrames": 122,
+        "bulge": 0
+      },
+      {
+        "id": "f6",
+        "branchOf": "f0",
+        "at": 0.353,
+        "end": "bomb",
+        "speed": 0.0019,
         "delayFrames": 99999,
-        "bulge": -0.1,
-        "chain": {
-          "from": "s1",
-          "at": 0.31
-        }
+        "branchPoint": {
+          "x": -21,
+          "y": 139
+        },
+        "routeThrough": "b0",
+        "bulge": -0.107
+      },
+      {
+        "id": "f7",
+        "branchOf": "f1",
+        "at": 0.359,
+        "end": "bomb",
+        "speed": 0.0011,
+        "delayFrames": 99999,
+        "branchPoint": {
+          "x": -178,
+          "y": 130
+        },
+        "routeThrough": "b1",
+        "bulge": 0.107
       }
     ]
   },
   {
     "level_id": 31,
     "layout": "offset",
-    "snipsAllowed": 3,
-    "par": 9.1,
+    "snipsAllowed": 5,
+    "par": 10,
     "payload": {
       "id": "bomb",
-      "x": 125,
-      "y": -26
+      "x": 3,
+      "y": 106
     },
     "spawns": [
       {
         "id": "s1",
-        "x": 111,
-        "y": 164
+        "x": -157,
+        "y": 244
       },
       {
         "id": "s2",
-        "x": 40,
-        "y": 275
+        "x": -278,
+        "y": 233
       },
       {
         "id": "s3",
-        "x": -173,
-        "y": 199
+        "x": -330,
+        "y": -6
       },
       {
         "id": "s4",
-        "x": -261,
-        "y": 112
+        "x": -99,
+        "y": -183
       },
       {
         "id": "s5",
-        "x": -293,
-        "y": -142
+        "x": 196,
+        "y": -167
       },
       {
         "id": "s6",
-        "x": -218,
-        "y": -278
+        "x": 118,
+        "y": 161
       }
     ],
     "intersections": [
       {
         "id": "cut1",
-        "x": -55.33495040775843,
-        "y": 116.40289839100727
+        "x": -219,
+        "y": -60
       },
       {
         "id": "cut2",
-        "x": -123,
-        "y": -122
+        "x": 207.09295620357383,
+        "y": -79.94436297110894
+      },
+      {
+        "id": "b1",
+        "x": -164,
+        "y": -5
       }
     ],
     "fuses": [
       {
+        "id": "f0",
         "start": "s1",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.0026,
+        "speed": 0.0022,
         "delayFrames": 9,
         "bulge": 0
       },
       {
+        "id": "f1",
         "start": "s2",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.0018,
-        "delayFrames": 18,
+        "speed": 0.0016,
+        "delayFrames": 56,
         "bulge": 0
       },
       {
+        "id": "f2",
         "start": "s3",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.0015,
-        "delayFrames": 36,
+        "speed": 0.0013,
+        "delayFrames": 80,
         "bulge": 0
       },
       {
+        "id": "f3",
         "start": "s4",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.0017,
-        "delayFrames": 60,
+        "speed": 0.0012,
+        "delayFrames": 92,
         "bulge": 0
       },
       {
+        "id": "f4",
         "start": "s5",
         "routeThrough": "cut2",
         "end": "bomb",
-        "speed": 0.0017,
-        "delayFrames": 99999,
-        "bulge": 0,
-        "chain": {
-          "from": "s2",
-          "at": 0.425
-        }
+        "speed": 0.0014,
+        "delayFrames": 108,
+        "bulge": 0
       },
       {
+        "id": "f5",
         "start": "s6",
         "routeThrough": "cut2",
         "end": "bomb",
-        "speed": 0.0022,
+        "speed": 0.0018,
+        "delayFrames": 128,
+        "bulge": 0
+      },
+      {
+        "id": "f6",
+        "branchOf": "f0",
+        "at": 0.321,
+        "end": "bomb",
+        "speed": 0.0021,
         "delayFrames": 99999,
-        "bulge": 0,
-        "chain": {
-          "from": "s1",
-          "at": 0.34
-        }
+        "branchPoint": {
+          "x": -223,
+          "y": -11
+        },
+        "bulge": 0.202
+      },
+      {
+        "id": "f7",
+        "branchOf": "f1",
+        "at": 0.336,
+        "end": "bomb",
+        "speed": 0.0015,
+        "delayFrames": 99999,
+        "branchPoint": {
+          "x": -246,
+          "y": -19
+        },
+        "routeThrough": "b1",
+        "bulge": -0.111
       }
     ]
   },
@@ -2578,7 +3069,7 @@
     "level_id": 32,
     "layout": "weave",
     "snipsAllowed": 4,
-    "par": 6.6,
+    "par": 11.3,
     "payload": {
       "id": "bomb",
       "x": 0,
@@ -2587,110 +3078,128 @@
     "spawns": [
       {
         "id": "s1",
-        "x": 313,
-        "y": 1
+        "x": 193,
+        "y": 70
       },
       {
         "id": "s2",
-        "x": 273,
-        "y": 223
+        "x": 158,
+        "y": 283
       },
       {
         "id": "s3",
-        "x": 72,
-        "y": 342
+        "x": -45,
+        "y": 217
       },
       {
         "id": "s4",
-        "x": -309,
-        "y": -26
+        "x": -262,
+        "y": 201
       },
       {
         "id": "s5",
-        "x": -291,
-        "y": -79
+        "x": -211,
+        "y": -12
       },
       {
         "id": "s6",
-        "x": -324,
-        "y": -88
+        "x": -221,
+        "y": -214
       }
     ],
     "intersections": [
       {
         "id": "cut1",
-        "x": 50.20506522057584,
-        "y": -397.8511896099691
+        "x": 3.3892786401727166,
+        "y": 149.9617044124908
       },
       {
         "id": "cut2",
-        "x": -73.82432376729008,
-        "y": 193.17965554202473
+        "x": -165.92572592926214,
+        "y": -115.97056907714077
+      },
+      {
+        "id": "b0",
+        "x": 105,
+        "y": 126
       }
     ],
     "fuses": [
       {
+        "id": "f0",
         "start": "s1",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.0025,
-        "delayFrames": 8,
+        "speed": 0.0022,
+        "delayFrames": 3,
         "bulge": 0
       },
       {
+        "id": "f1",
         "start": "s2",
-        "routeThrough": "cut2",
+        "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.0026,
-        "delayFrames": 28,
+        "speed": 0.0012,
+        "delayFrames": 59,
         "bulge": 0
       },
       {
+        "id": "f2",
         "start": "s3",
-        "routeThrough": "cut2",
+        "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.0024,
-        "delayFrames": 56,
-        "bulge": 0
-      },
-      {
-        "start": "s4",
-        "routeThrough": "cut2",
-        "end": "bomb",
-        "speed": 0.0024,
+        "speed": 0.0022,
         "delayFrames": 78,
         "bulge": 0
       },
       {
-        "start": "s5",
-        "routeThrough": "cut1",
+        "id": "f3",
+        "start": "s4",
+        "routeThrough": "cut2",
         "end": "bomb",
-        "speed": 0.0024,
-        "delayFrames": 99999,
-        "bulge": 0,
-        "chain": {
-          "from": "s2",
-          "at": 0.418
-        }
+        "speed": 0.0016,
+        "delayFrames": 92,
+        "bulge": 0
       },
       {
-        "start": "s6",
+        "id": "f4",
+        "start": "s5",
+        "routeThrough": "cut2",
         "end": "bomb",
-        "speed": 0.0024,
+        "speed": 0.0022,
+        "delayFrames": 113,
+        "bulge": 0
+      },
+      {
+        "id": "f5",
+        "start": "s6",
+        "routeThrough": "cut2",
+        "end": "bomb",
+        "speed": 0.0014,
+        "delayFrames": 120,
+        "bulge": 0
+      },
+      {
+        "id": "f7",
+        "branchOf": "f1",
+        "at": 0.2,
+        "end": "bomb",
+        "speed": 0.0011,
         "delayFrames": 99999,
-        "bulge": 0,
-        "chain": {
-          "from": "s1",
-          "at": 0.439
-        }
+        "branchPoint": {
+          "x": 70,
+          "y": 189
+        },
+        "routeThrough": "b0",
+        "bulge": 0.115
       }
     ]
   },
   {
     "level_id": 33,
     "layout": "hub",
-    "snipsAllowed": 3,
-    "par": 6.9,
+    "snipsAllowed": 5,
+    "par": 8.7,
     "payload": {
       "id": "bomb",
       "x": 0,
@@ -2736,185 +3245,257 @@
       },
       {
         "id": "cut2",
-        "x": -10.472223391877677,
+        "x": -10.472223391877698,
         "y": -211.83186049088593
+      },
+      {
+        "id": "b0",
+        "x": -164,
+        "y": -5
+      },
+      {
+        "id": "b1",
+        "x": -94,
+        "y": -135
       }
     ],
     "fuses": [
       {
+        "id": "f0",
         "start": "s1",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.0026,
+        "speed": 0.0022,
         "delayFrames": 1,
         "bulge": 0
       },
       {
+        "id": "f1",
         "start": "s2",
         "routeThrough": "cut2",
         "end": "bomb",
-        "speed": 0.002,
+        "speed": 0.0017,
         "delayFrames": 28,
         "bulge": 0
       },
       {
+        "id": "f2",
         "start": "s3",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.0026,
+        "speed": 0.0022,
         "delayFrames": 55,
         "bulge": 0
       },
       {
+        "id": "f3",
         "start": "s4",
         "routeThrough": "cut2",
         "end": "bomb",
-        "speed": 0.0017,
+        "speed": 0.0015,
         "delayFrames": 76,
         "bulge": 0
       },
       {
+        "id": "f4",
         "start": "s5",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.0026,
-        "delayFrames": 99999,
-        "bulge": 0,
-        "chain": {
-          "from": "s2",
-          "at": 0.326
-        }
+        "speed": 0.0022,
+        "delayFrames": 101,
+        "bulge": 0
       },
       {
+        "id": "f5",
         "start": "s6",
         "routeThrough": "cut2",
         "end": "bomb",
-        "speed": 0.0018,
+        "speed": 0.0015,
+        "delayFrames": 127,
+        "bulge": 0
+      },
+      {
+        "id": "f6",
+        "branchOf": "f0",
+        "at": 0.307,
+        "end": "bomb",
+        "speed": 0.002,
         "delayFrames": 99999,
-        "bulge": 0,
-        "chain": {
-          "from": "s1",
-          "at": 0.355
-        }
+        "branchPoint": {
+          "x": -205,
+          "y": -80
+        },
+        "routeThrough": "b0",
+        "bulge": 0.119
+      },
+      {
+        "id": "f7",
+        "branchOf": "f1",
+        "at": 0.343,
+        "end": "bomb",
+        "speed": 0.0017,
+        "delayFrames": 99999,
+        "branchPoint": {
+          "x": -55,
+          "y": -199
+        },
+        "routeThrough": "b1",
+        "bulge": 0.119
       }
     ]
   },
   {
     "level_id": 34,
     "layout": "train",
-    "snipsAllowed": 5,
-    "par": 6.8,
+    "snipsAllowed": 7,
+    "par": 6.6,
     "payload": {
       "id": "bomb",
       "x": 0,
-      "y": -197
+      "y": -219
     },
     "spawns": [
       {
         "id": "s1",
-        "x": -150,
-        "y": 191
+        "x": -171,
+        "y": 221
       },
       {
         "id": "s2",
-        "x": -126,
-        "y": 206
+        "x": -100,
+        "y": 221
       },
       {
         "id": "s3",
-        "x": -67,
-        "y": 188
+        "x": -31,
+        "y": 219
       },
       {
         "id": "s4",
-        "x": -4,
-        "y": 203
+        "x": 28,
+        "y": 214
       },
       {
         "id": "s5",
-        "x": 68,
-        "y": 191
+        "x": 102,
+        "y": 213
       },
       {
         "id": "s6",
-        "x": 141,
-        "y": 191
+        "x": 173,
+        "y": 209
       }
     ],
     "intersections": [
       {
         "id": "cut1",
-        "x": -206,
-        "y": 73
+        "x": -233,
+        "y": 88
       },
       {
         "id": "cut2",
         "x": 0,
-        "y": 72
+        "y": 95
+      },
+      {
+        "id": "b0",
+        "x": -153,
+        "y": -60
+      },
+      {
+        "id": "b1",
+        "x": -129,
+        "y": 101
       }
     ],
     "fuses": [
       {
+        "id": "f0",
         "start": "s1",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.0023,
-        "delayFrames": 3,
+        "speed": 0.0022,
+        "delayFrames": 1,
         "bulge": 0.1
       },
       {
+        "id": "f1",
         "start": "s2",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.0024,
-        "delayFrames": 26,
+        "speed": 0.0021,
+        "delayFrames": 5,
         "bulge": -0.1
       },
       {
+        "id": "f2",
         "start": "s3",
         "end": "bomb",
-        "speed": 0.0025,
-        "delayFrames": 56,
+        "speed": 0.0021,
+        "delayFrames": 45,
         "bulge": 0.1
       },
       {
+        "id": "f3",
         "start": "s4",
         "routeThrough": "cut2",
         "end": "bomb",
-        "speed": 0.0025,
-        "delayFrames": 79,
+        "speed": 0.0021,
+        "delayFrames": 46,
         "bulge": -0.1
       },
       {
+        "id": "f4",
         "start": "s5",
         "routeThrough": "cut2",
         "end": "bomb",
-        "speed": 0.0024,
-        "delayFrames": 99999,
-        "bulge": 0.1,
-        "chain": {
-          "from": "s2",
-          "at": 0.423
-        }
+        "speed": 0.002,
+        "delayFrames": 90,
+        "bulge": 0.1
       },
       {
+        "id": "f5",
         "start": "s6",
         "end": "bomb",
-        "speed": 0.0024,
+        "speed": 0.002,
+        "delayFrames": 86,
+        "bulge": -0.1
+      },
+      {
+        "id": "f6",
+        "branchOf": "f0",
+        "at": 0.28,
+        "end": "bomb",
+        "speed": 0.002,
         "delayFrames": 99999,
-        "bulge": -0.1,
-        "chain": {
-          "from": "s1",
-          "at": 0.317
-        }
+        "branchPoint": {
+          "x": -223,
+          "y": 153
+        },
+        "routeThrough": "b0",
+        "bulge": 0.123
+      },
+      {
+        "id": "f7",
+        "branchOf": "f1",
+        "at": 0.271,
+        "end": "bomb",
+        "speed": 0.0019,
+        "delayFrames": 99999,
+        "branchPoint": {
+          "x": -225,
+          "y": 148
+        },
+        "routeThrough": "b1",
+        "bulge": 0.123
       }
     ]
   },
   {
     "level_id": 35,
     "layout": "rings",
-    "snipsAllowed": 5,
-    "par": 10.8,
+    "snipsAllowed": 7,
+    "par": 8.9,
     "payload": {
       "id": "bomb",
       "x": 0,
@@ -2923,122 +3504,159 @@
     "spawns": [
       {
         "id": "s1",
-        "x": 87,
-        "y": 314
+        "x": -15,
+        "y": 337
       },
       {
         "id": "s2",
-        "x": -107,
-        "y": 227
+        "x": -29,
+        "y": 228
       },
       {
         "id": "s3",
-        "x": -302,
-        "y": 135
+        "x": -122,
+        "y": 285
       },
       {
         "id": "s4",
-        "x": -213,
-        "y": -63
+        "x": -191,
+        "y": 154
       },
       {
         "id": "s5",
-        "x": -179,
-        "y": -278
+        "x": -333,
+        "y": -11
       },
       {
         "id": "s6",
-        "x": 34,
-        "y": -246
+        "x": -136,
+        "y": -201
       },
       {
         "id": "s7",
-        "x": 264,
-        "y": -234
+        "x": 168,
+        "y": -253
       }
     ],
     "intersections": [
       {
         "id": "cut1",
-        "x": -121,
-        "y": 119
+        "x": -48.77578802341605,
+        "y": -141.84823757345305
       },
       {
         "id": "cut2",
-        "x": -43,
-        "y": -194
+        "x": -117.68036900364557,
+        "y": 93.01253007614521
+      },
+      {
+        "id": "b0",
+        "x": -161,
+        "y": -31
+      },
+      {
+        "id": "b1",
+        "x": -131.60421342629033,
+        "y": -96.41752164623861
       }
     ],
     "fuses": [
       {
+        "id": "f0",
         "start": "s1",
-        "routeThrough": "cut1",
+        "routeThrough": "cut2",
         "end": "bomb",
-        "speed": 0.0026,
-        "delayFrames": 8,
+        "speed": 0.0022,
+        "delayFrames": 136,
         "bulge": 0
       },
       {
+        "id": "f1",
         "start": "s2",
-        "routeThrough": "cut1",
+        "routeThrough": "cut2",
         "end": "bomb",
-        "speed": 0.0014,
-        "delayFrames": 33,
+        "speed": 0.0018,
+        "delayFrames": 51,
         "bulge": 0
       },
       {
+        "id": "f2",
         "start": "s3",
         "end": "bomb",
-        "speed": 0.0016,
-        "delayFrames": 42,
+        "speed": 0.0022,
+        "delayFrames": 70,
         "bulge": 0
       },
       {
+        "id": "f3",
         "start": "s4",
-        "routeThrough": "cut1",
+        "routeThrough": "cut2",
         "end": "bomb",
-        "speed": 0.0015,
-        "delayFrames": 76,
+        "speed": 0.0016,
+        "delayFrames": 70,
         "bulge": 0
       },
       {
+        "id": "f4",
         "start": "s5",
         "routeThrough": "cut2",
         "end": "bomb",
-        "speed": 0.0016,
-        "delayFrames": 82,
+        "speed": 0.0022,
+        "delayFrames": 6,
         "bulge": 0
       },
       {
+        "id": "f5",
         "start": "s6",
         "end": "bomb",
-        "speed": 0.0013,
-        "delayFrames": 99999,
-        "bulge": 0,
-        "chain": {
-          "from": "s2",
-          "at": 0.323
-        }
+        "speed": 0.0014,
+        "delayFrames": 50,
+        "bulge": 0
       },
       {
+        "id": "f6",
         "start": "s7",
-        "routeThrough": "cut2",
+        "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.0017,
+        "speed": 0.0022,
+        "delayFrames": 91,
+        "bulge": 0
+      },
+      {
+        "id": "f7",
+        "branchOf": "f4",
+        "at": 0.187,
+        "end": "bomb",
+        "speed": 0.0021,
         "delayFrames": 99999,
-        "bulge": 0,
-        "chain": {
-          "from": "s1",
-          "at": 0.389
-        }
+        "branchPoint": {
+          "x": -199,
+          "y": 31
+        },
+        "routeThrough": "b0",
+        "bulge": -0.127
+      },
+      {
+        "id": "f8",
+        "branchOf": "f5",
+        "at": 0.175,
+        "end": "bomb",
+        "speed": 0.0014,
+        "delayFrames": 99999,
+        "branchPoint": {
+          "x": -106,
+          "y": -156
+        },
+        "routeThrough": "b1",
+        "bulge": 0.127
       }
     ]
   },
   {
     "level_id": 36,
     "layout": "offset",
-    "snipsAllowed": 5,
-    "par": 8.1,
+    "snipsAllowed": 7,
+    "par": 8.5,
     "payload": {
       "id": "bomb",
       "x": -103,
@@ -3086,70 +3704,100 @@
         "id": "cut2",
         "x": 150,
         "y": 92
+      },
+      {
+        "id": "b1",
+        "x": 117.7947056926775,
+        "y": -113.58304567039924
       }
     ],
     "fuses": [
       {
+        "id": "f0",
         "start": "s1",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.0029,
+        "speed": 0.0024,
         "delayFrames": 5,
         "bulge": 0.092
       },
       {
+        "id": "f1",
         "start": "s2",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.0022,
+        "speed": 0.0018,
         "delayFrames": 19,
         "bulge": 0.091
       },
       {
+        "id": "f2",
         "start": "s3",
         "end": "bomb",
-        "speed": 0.0021,
+        "speed": 0.0018,
         "delayFrames": 33,
         "bulge": 0.09
       },
       {
+        "id": "f3",
         "start": "s4",
         "routeThrough": "cut2",
         "end": "bomb",
-        "speed": 0.0025,
+        "speed": 0.0021,
         "delayFrames": 54,
         "bulge": 0.083
       },
       {
+        "id": "f4",
         "start": "s5",
         "routeThrough": "cut2",
         "end": "bomb",
-        "speed": 0.0022,
-        "delayFrames": 99999,
-        "bulge": 0.061,
-        "chain": {
-          "from": "s2",
-          "at": 0.313
-        }
+        "speed": 0.0018,
+        "delayFrames": 91,
+        "bulge": 0.061
       },
       {
+        "id": "f5",
         "start": "s6",
         "end": "bomb",
-        "speed": 0.0015,
+        "speed": 0.0013,
+        "delayFrames": 126,
+        "bulge": 0.063
+      },
+      {
+        "id": "f6",
+        "branchOf": "f0",
+        "at": 0.368,
+        "end": "bomb",
+        "speed": 0.0022,
         "delayFrames": 99999,
-        "bulge": 0.063,
-        "chain": {
-          "from": "s1",
-          "at": 0.426
-        }
+        "branchPoint": {
+          "x": 8,
+          "y": -202
+        },
+        "bulge": 0.237
+      },
+      {
+        "id": "f7",
+        "branchOf": "f1",
+        "at": 0.353,
+        "end": "bomb",
+        "speed": 0.0017,
+        "delayFrames": 99999,
+        "branchPoint": {
+          "x": 26,
+          "y": -219
+        },
+        "routeThrough": "b1",
+        "bulge": -0.13
       }
     ]
   },
   {
     "level_id": 37,
     "layout": "split",
-    "snipsAllowed": 5,
-    "par": 7.2,
+    "snipsAllowed": 7,
+    "par": 7.8,
     "payload": {
       "id": "bomb",
       "x": 0,
@@ -3202,78 +3850,115 @@
         "id": "cut2",
         "x": 111.17161338804377,
         "y": 100.70189857544557
+      },
+      {
+        "id": "b0",
+        "x": 40,
+        "y": 159
+      },
+      {
+        "id": "b1",
+        "x": -35,
+        "y": 160
       }
     ],
     "fuses": [
       {
+        "id": "f0",
         "start": "s1",
         "routeThrough": "cut2",
         "end": "bomb",
-        "speed": 0.0029,
+        "speed": 0.0024,
         "delayFrames": 5,
         "bulge": 0
       },
       {
+        "id": "f1",
         "start": "s2",
         "routeThrough": "cut2",
         "end": "bomb",
-        "speed": 0.002,
+        "speed": 0.0017,
         "delayFrames": 8,
         "bulge": 0
       },
       {
+        "id": "f2",
         "start": "s3",
         "end": "bomb",
-        "speed": 0.0018,
+        "speed": 0.0014,
         "delayFrames": 45,
         "bulge": 0
       },
       {
+        "id": "f3",
         "start": "s4",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.0025,
+        "speed": 0.0021,
         "delayFrames": 55,
         "bulge": 0
       },
       {
+        "id": "f4",
         "start": "s5",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.0025,
+        "speed": 0.0021,
         "delayFrames": 94,
         "bulge": 0
       },
       {
+        "id": "f5",
         "start": "s6",
         "end": "bomb",
-        "speed": 0.0021,
-        "delayFrames": 99999,
-        "bulge": 0,
-        "chain": {
-          "from": "s2",
-          "at": 0.317
-        }
+        "speed": 0.0018,
+        "delayFrames": 99,
+        "bulge": 0
       },
       {
+        "id": "f6",
         "start": "s7",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.0018,
+        "speed": 0.0015,
+        "delayFrames": 137,
+        "bulge": 0
+      },
+      {
+        "id": "f7",
+        "branchOf": "f0",
+        "at": 0.175,
+        "end": "bomb",
+        "speed": 0.0022,
         "delayFrames": 99999,
-        "bulge": 0,
-        "chain": {
-          "from": "s1",
-          "at": 0.434
-        }
+        "branchPoint": {
+          "x": 111,
+          "y": 167
+        },
+        "routeThrough": "b0",
+        "bulge": -0.134
+      },
+      {
+        "id": "f8",
+        "branchOf": "f1",
+        "at": 0.215,
+        "end": "bomb",
+        "speed": 0.0017,
+        "delayFrames": 99999,
+        "branchPoint": {
+          "x": 62,
+          "y": 197
+        },
+        "routeThrough": "b1",
+        "bulge": -0.134
       }
     ]
   },
   {
     "level_id": 38,
     "layout": "weave",
-    "snipsAllowed": 5,
-    "par": 5.2,
+    "snipsAllowed": 6,
+    "par": 7.1,
     "payload": {
       "id": "bomb",
       "x": 0,
@@ -3282,107 +3967,143 @@
     "spawns": [
       {
         "id": "s1",
-        "x": 351,
-        "y": 138
+        "x": 10,
+        "y": 311
       },
       {
         "id": "s2",
-        "x": 5,
-        "y": 190
+        "x": -199,
+        "y": 182
       },
       {
         "id": "s3",
-        "x": -207,
-        "y": 156
+        "x": -237,
+        "y": -29
       },
       {
         "id": "s4",
-        "x": -287,
-        "y": -104
+        "x": -167,
+        "y": -251
       },
       {
         "id": "s5",
-        "x": -207,
-        "y": -299
+        "x": 78,
+        "y": -279
       },
       {
         "id": "s6",
-        "x": -26,
-        "y": -268
+        "x": 256,
+        "y": -119
       }
     ],
     "intersections": [
       {
         "id": "cut1",
-        "x": -197.72690311418685,
-        "y": 40.37768166089964
+        "x": 261.93508768394355,
+        "y": 17.666617202433255
       },
       {
         "id": "cut2",
-        "x": -154,
-        "y": -121
+        "x": 50,
+        "y": -190
       },
       {
         "id": "cut3",
-        "x": 134.9231050300538,
-        "y": -152.48322366339767
+        "x": -149.90701734263516,
+        "y": -5.280733986378226
+      },
+      {
+        "id": "b0",
+        "x": 65,
+        "y": 151
+      },
+      {
+        "id": "b1",
+        "x": -112,
+        "y": 120
       }
     ],
     "fuses": [
       {
+        "id": "f0",
         "start": "s1",
+        "end": "bomb",
+        "speed": 0.0025,
+        "delayFrames": 1,
+        "bulge": 0.089
+      },
+      {
+        "id": "f1",
+        "start": "s2",
         "routeThrough": "cut3",
         "end": "bomb",
-        "speed": 0.0029,
-        "delayFrames": 1,
-        "bulge": 0
+        "speed": 0.0021,
+        "delayFrames": 12,
+        "bulge": 0.065
       },
       {
-        "start": "s2",
-        "routeThrough": "cut1",
-        "end": "bomb",
-        "speed": 0.003,
-        "delayFrames": 19,
-        "bulge": 0
-      },
-      {
+        "id": "f2",
         "start": "s3",
+        "routeThrough": "cut3",
+        "end": "bomb",
+        "speed": 0.0019,
+        "delayFrames": 49,
+        "bulge": 0.084
+      },
+      {
+        "id": "f3",
+        "start": "s4",
+        "routeThrough": "cut3",
+        "end": "bomb",
+        "speed": 0.0017,
+        "delayFrames": 51,
+        "bulge": 0.069
+      },
+      {
+        "id": "f4",
+        "start": "s5",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.0029,
-        "delayFrames": 37,
-        "bulge": 0
+        "speed": 0.0017,
+        "delayFrames": 84,
+        "bulge": 0.085
       },
       {
-        "start": "s4",
-        "routeThrough": "cut2",
-        "end": "bomb",
-        "speed": 0.003,
-        "delayFrames": 62,
-        "bulge": 0
-      },
-      {
-        "start": "s5",
-        "routeThrough": "cut2",
-        "end": "bomb",
-        "speed": 0.0029,
-        "delayFrames": 99999,
-        "bulge": 0,
-        "chain": {
-          "from": "s2",
-          "at": 0.367
-        }
-      },
-      {
+        "id": "f5",
         "start": "s6",
+        "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.0031,
+        "speed": 0.0015,
+        "delayFrames": 92,
+        "bulge": 0.084
+      },
+      {
+        "id": "f6",
+        "branchOf": "f0",
+        "at": 0.315,
+        "end": "bomb",
+        "speed": 0.0025,
         "delayFrames": 99999,
-        "bulge": 0,
-        "chain": {
-          "from": "s1",
-          "at": 0.359
-        }
+        "branchPoint": {
+          "x": 13,
+          "y": 200
+        },
+        "routeThrough": "b0",
+        "bulge": 0.138
+      },
+      {
+        "id": "f7",
+        "branchOf": "f1",
+        "at": 0.164,
+        "end": "bomb",
+        "speed": 0.0021,
+        "delayFrames": 99999,
+        "branchPoint": {
+          "x": -182,
+          "y": 95
+        },
+        "routeThrough": "b1",
+        "bulge": 0.138
       }
     ]
   },
@@ -3390,124 +4111,136 @@
     "level_id": 39,
     "layout": "offset",
     "snipsAllowed": 5,
-    "par": 6.5,
+    "par": 7,
     "payload": {
       "id": "bomb",
-      "x": 96,
-      "y": -40
+      "x": 141,
+      "y": 32
     },
     "spawns": [
       {
         "id": "s1",
-        "x": 99,
-        "y": 191
+        "x": 106,
+        "y": 184
       },
       {
         "id": "s2",
-        "x": -37,
-        "y": 200
+        "x": 75,
+        "y": 179
       },
       {
         "id": "s3",
-        "x": -155,
-        "y": 137
+        "x": -13,
+        "y": 189
       },
       {
         "id": "s4",
-        "x": -92,
-        "y": -292
+        "x": -235,
+        "y": 169
       },
       {
         "id": "s5",
-        "x": -94,
-        "y": -297
+        "x": -253,
+        "y": -218
       },
       {
         "id": "s6",
-        "x": -107,
-        "y": -338
+        "x": 263,
+        "y": -184
       }
     ],
     "intersections": [
       {
         "id": "cut1",
-        "x": -99.16131218483471,
-        "y": 33.02955036011479
+        "x": -23.39318176124477,
+        "y": 102.14642859699214
       },
       {
         "id": "cut2",
-        "x": -164,
-        "y": 68
+        "x": -183,
+        "y": -41
       },
       {
         "id": "cut3",
-        "x": -113,
-        "y": -98
+        "x": 29,
+        "y": -147
       }
     ],
     "fuses": [
       {
+        "id": "f0",
         "start": "s1",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.0032,
-        "delayFrames": 1,
-        "bulge": 0
+        "speed": 0.0025,
+        "delayFrames": 6,
+        "bulge": 0.1
       },
       {
+        "id": "f1",
         "start": "s2",
-        "routeThrough": "cut2",
-        "end": "bomb",
-        "speed": 0.0028,
-        "delayFrames": 19,
-        "bulge": 0
-      },
-      {
-        "start": "s3",
-        "routeThrough": "cut3",
-        "end": "bomb",
-        "speed": 0.0017,
-        "delayFrames": 34,
-        "bulge": 0
-      },
-      {
-        "start": "s4",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.0027,
-        "delayFrames": 56,
-        "bulge": 0
+        "speed": 0.002,
+        "delayFrames": 57,
+        "bulge": -0.1
       },
       {
-        "start": "s5",
+        "id": "f2",
+        "start": "s3",
+        "routeThrough": "cut2",
         "end": "bomb",
         "speed": 0.0025,
-        "delayFrames": 99999,
-        "bulge": 0,
-        "chain": {
-          "from": "s2",
-          "at": 0.407
-        }
+        "delayFrames": 76,
+        "bulge": 0.1
       },
       {
+        "id": "f3",
+        "start": "s4",
+        "routeThrough": "cut2",
+        "end": "bomb",
+        "speed": 0.0019,
+        "delayFrames": 97,
+        "bulge": -0.1
+      },
+      {
+        "id": "f4",
+        "start": "s5",
+        "routeThrough": "cut3",
+        "end": "bomb",
+        "speed": 0.0025,
+        "delayFrames": 110,
+        "bulge": 0.1
+      },
+      {
+        "id": "f5",
         "start": "s6",
         "routeThrough": "cut3",
         "end": "bomb",
+        "speed": 0.0017,
+        "delayFrames": 124,
+        "bulge": -0.1
+      },
+      {
+        "id": "f7",
+        "branchOf": "f1",
+        "at": 0.14,
+        "end": "bomb",
         "speed": 0.0019,
         "delayFrames": 99999,
-        "bulge": 0,
-        "chain": {
-          "from": "s1",
-          "at": 0.411
-        }
+        "branchPoint": {
+          "x": 20,
+          "y": 149
+        },
+        "bulge": 0.258
       }
     ]
   },
   {
     "level_id": 40,
     "layout": "hub",
-    "snipsAllowed": 4,
-    "par": 5.5,
+    "snipsAllowed": 6,
+    "par": 6.9,
     "payload": {
       "id": "bomb",
       "x": 0,
@@ -3516,108 +4249,144 @@
     "spawns": [
       {
         "id": "s1",
-        "x": 184,
-        "y": 89
+        "x": 336,
+        "y": 152
       },
       {
         "id": "s2",
-        "x": 212,
-        "y": 193
+        "x": 97,
+        "y": 251
       },
       {
         "id": "s3",
-        "x": 26,
-        "y": 211
+        "x": -102,
+        "y": 236
       },
       {
         "id": "s4",
-        "x": -271,
-        "y": 197
+        "x": -211,
+        "y": 85
       },
       {
         "id": "s5",
-        "x": -153,
-        "y": -146
+        "x": -122,
+        "y": -292
       },
       {
         "id": "s6",
-        "x": 243,
-        "y": -198
+        "x": -93,
+        "y": -223
       }
     ],
     "intersections": [
       {
         "id": "cut1",
-        "x": 39,
-        "y": 145
+        "x": 97,
+        "y": 178
       },
       {
         "id": "cut2",
-        "x": -185,
-        "y": 21
+        "x": -142.35886289909172,
+        "y": 142.76788150931353
       },
       {
         "id": "cut3",
-        "x": 6,
-        "y": -199
+        "x": -220.4252716776868,
+        "y": -121.42833961423824
+      },
+      {
+        "id": "b0",
+        "x": 141,
+        "y": 85
+      },
+      {
+        "id": "b1",
+        "x": 16,
+        "y": 163
       }
     ],
     "fuses": [
       {
+        "id": "f0",
         "start": "s1",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.003,
-        "delayFrames": 6,
-        "bulge": 0
+        "speed": 0.0024,
+        "delayFrames": 1,
+        "bulge": 0.1
       },
       {
+        "id": "f1",
         "start": "s2",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.003,
-        "delayFrames": 51,
-        "bulge": 0
+        "speed": 0.0023,
+        "delayFrames": 11,
+        "bulge": -0.1
       },
       {
+        "id": "f2",
         "start": "s3",
-        "routeThrough": "cut1",
+        "routeThrough": "cut2",
         "end": "bomb",
-        "speed": 0.003,
-        "delayFrames": 79,
-        "bulge": 0
+        "speed": 0.0024,
+        "delayFrames": 43,
+        "bulge": 0.1
       },
       {
+        "id": "f3",
         "start": "s4",
         "routeThrough": "cut2",
         "end": "bomb",
-        "speed": 0.003,
-        "delayFrames": 97,
-        "bulge": 0
+        "speed": 0.0024,
+        "delayFrames": 50,
+        "bulge": -0.1
       },
       {
+        "id": "f4",
         "start": "s5",
         "routeThrough": "cut3",
         "end": "bomb",
-        "speed": 0.003,
-        "delayFrames": 99999,
-        "bulge": 0,
-        "chain": {
-          "from": "s2",
-          "at": 0.335
-        }
+        "speed": 0.0023,
+        "delayFrames": 81,
+        "bulge": 0.1
       },
       {
+        "id": "f5",
         "start": "s6",
         "routeThrough": "cut3",
         "end": "bomb",
-        "speed": 0.003,
+        "speed": 0.0025,
+        "delayFrames": 89,
+        "bulge": -0.1
+      },
+      {
+        "id": "f6",
+        "branchOf": "f0",
+        "at": 0.345,
+        "end": "bomb",
+        "speed": 0.002,
         "delayFrames": 99999,
-        "bulge": 0,
-        "chain": {
-          "from": "s1",
-          "at": 0.303
-        }
+        "branchPoint": {
+          "x": 147,
+          "y": 179
+        },
+        "routeThrough": "b0",
+        "bulge": 0.146
+      },
+      {
+        "id": "f7",
+        "branchOf": "f1",
+        "at": 0.32,
+        "end": "bomb",
+        "speed": 0.0019,
+        "delayFrames": 99999,
+        "branchPoint": {
+          "x": 98,
+          "y": 209
+        },
+        "routeThrough": "b1",
+        "bulge": -0.146
       }
     ]
   },
@@ -3625,7 +4394,7 @@
     "level_id": 41,
     "layout": "train",
     "snipsAllowed": 4,
-    "par": 6.3,
+    "par": 9.6,
     "payload": {
       "id": "bomb",
       "x": 0,
@@ -3668,62 +4437,94 @@
         "id": "cut1",
         "x": -254,
         "y": 84
+      },
+      {
+        "id": "b1",
+        "x": -142,
+        "y": -82
       }
     ],
     "fuses": [
       {
+        "id": "f0",
         "start": "s1",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.0038,
+        "speed": 0.0024,
         "delayFrames": 57,
         "bulge": 0.1
       },
       {
+        "id": "f1",
         "start": "s2",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.0032,
+        "speed": 0.002,
         "delayFrames": 57,
         "bulge": -0.1
       },
       {
+        "id": "f2",
         "start": "s3",
+        "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.0019,
-        "delayFrames": 99999,
-        "bulge": 0.1,
-        "chain": {
-          "from": "s6",
-          "at": 0.306
-        }
+        "speed": 0.0012,
+        "delayFrames": 121,
+        "bulge": 0.1
       },
       {
+        "id": "f3",
         "start": "s4",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.0026,
+        "speed": 0.0017,
         "delayFrames": 56,
         "bulge": -0.1
       },
       {
+        "id": "f4",
         "start": "s5",
+        "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.003,
-        "delayFrames": 99999,
-        "bulge": 0.1,
-        "chain": {
-          "from": "s4",
-          "at": 0.395
-        }
+        "speed": 0.0019,
+        "delayFrames": 79,
+        "bulge": 0.1
       },
       {
+        "id": "f5",
         "start": "s6",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.0034,
+        "speed": 0.0021,
         "delayFrames": 26,
         "bulge": -0.1
+      },
+      {
+        "id": "f6",
+        "branchOf": "f5",
+        "at": 0.265,
+        "end": "bomb",
+        "speed": 0.0019,
+        "delayFrames": 99999,
+        "branchPoint": {
+          "x": -157,
+          "y": 154
+        },
+        "bulge": 0.272
+      },
+      {
+        "id": "f7",
+        "branchOf": "f3",
+        "at": 0.319,
+        "end": "bomb",
+        "speed": 0.0015,
+        "delayFrames": 99999,
+        "branchPoint": {
+          "x": -225,
+          "y": 137
+        },
+        "routeThrough": "b1",
+        "bulge": 0.15
       }
     ]
   },
@@ -3731,7 +4532,7 @@
     "level_id": 42,
     "layout": "hub",
     "snipsAllowed": 4,
-    "par": 4.1,
+    "par": 6.7,
     "payload": {
       "id": "bomb",
       "x": 0,
@@ -3774,62 +4575,94 @@
         "id": "cut1",
         "x": -55.41157563434208,
         "y": 175.75561930822644
+      },
+      {
+        "id": "b0",
+        "x": 55,
+        "y": 155
       }
     ],
     "fuses": [
       {
+        "id": "f0",
         "start": "s1",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.0037,
+        "speed": 0.0023,
         "delayFrames": 10,
         "bulge": 0.087
       },
       {
+        "id": "f1",
         "start": "s2",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.0034,
+        "speed": 0.0022,
         "delayFrames": 7,
         "bulge": 0.08
       },
       {
+        "id": "f2",
         "start": "s3",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.0038,
+        "speed": 0.0024,
         "delayFrames": 43,
         "bulge": 0.102
       },
       {
+        "id": "f3",
         "start": "s4",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.0035,
+        "speed": 0.0022,
         "delayFrames": 52,
         "bulge": 0.069
       },
       {
+        "id": "f4",
         "start": "s5",
+        "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.0038,
-        "delayFrames": 99999,
-        "bulge": 0.076,
-        "chain": {
-          "from": "s1",
-          "at": 0.389
-        }
+        "speed": 0.0024,
+        "delayFrames": 84,
+        "bulge": 0.076
       },
       {
+        "id": "f5",
         "start": "s6",
+        "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.0038,
+        "speed": 0.0024,
+        "delayFrames": 87,
+        "bulge": 0.064
+      },
+      {
+        "id": "f6",
+        "branchOf": "f1",
+        "at": 0.288,
+        "end": "bomb",
+        "speed": 0.0019,
         "delayFrames": 99999,
-        "bulge": 0.064,
-        "chain": {
-          "from": "s2",
-          "at": 0.333
-        }
+        "branchPoint": {
+          "x": 0,
+          "y": 211
+        },
+        "routeThrough": "b0",
+        "bulge": 0.153
+      },
+      {
+        "id": "f7",
+        "branchOf": "f0",
+        "at": 0.14,
+        "end": "bomb",
+        "speed": 0.0021,
+        "delayFrames": 99999,
+        "branchPoint": {
+          "x": 82,
+          "y": 147
+        },
+        "bulge": 0.279
       }
     ]
   },
@@ -3837,105 +4670,143 @@
     "level_id": 43,
     "layout": "offset",
     "snipsAllowed": 4,
-    "par": 4.2,
+    "par": 6.8,
     "payload": {
       "id": "bomb",
-      "x": 80,
-      "y": -45
+      "x": 106,
+      "y": -57
     },
     "spawns": [
       {
         "id": "s1",
-        "x": -98,
-        "y": 266
+        "x": -58,
+        "y": 218
       },
       {
         "id": "s2",
-        "x": -159,
-        "y": 267
+        "x": -107,
+        "y": 354
       },
       {
         "id": "s3",
-        "x": -212,
-        "y": 196
+        "x": -90,
+        "y": 192
       },
       {
         "id": "s4",
-        "x": -264,
-        "y": 167
+        "x": -211,
+        "y": 231
       },
       {
         "id": "s5",
-        "x": -308,
-        "y": 87
+        "x": -197,
+        "y": 73
       },
       {
         "id": "s6",
-        "x": -351,
-        "y": 32
+        "x": -332,
+        "y": -113
       }
     ],
     "intersections": [
       {
         "id": "cut1",
-        "x": -161,
-        "y": 90
+        "x": -132.61721280091956,
+        "y": 68.36015016401055
+      },
+      {
+        "id": "b0",
+        "x": 66,
+        "y": 150
+      },
+      {
+        "id": "b1",
+        "x": -163,
+        "y": -22
       }
     ],
     "fuses": [
       {
+        "id": "f0",
         "start": "s1",
+        "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.0035,
-        "delayFrames": 99999,
-        "bulge": 0.067,
-        "chain": {
-          "from": "s6",
-          "at": 0.348
-        }
+        "speed": 0.0023,
+        "delayFrames": 7,
+        "bulge": 0.063
       },
       {
+        "id": "f1",
         "start": "s2",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.0035,
-        "delayFrames": 26,
-        "bulge": 0.088
+        "speed": 0.0023,
+        "delayFrames": 8,
+        "bulge": 0.104
       },
       {
+        "id": "f2",
         "start": "s3",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.0036,
-        "delayFrames": 72,
-        "bulge": 0.099
+        "speed": 0.0023,
+        "delayFrames": 46,
+        "bulge": 0.07
       },
       {
+        "id": "f3",
         "start": "s4",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.0037,
-        "delayFrames": 32,
-        "bulge": 0.088
+        "speed": 0.0023,
+        "delayFrames": 47,
+        "bulge": 0.075
       },
       {
+        "id": "f4",
         "start": "s5",
+        "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.0038,
-        "delayFrames": 99999,
-        "bulge": 0.087,
-        "chain": {
-          "from": "s2",
-          "at": 0.328
-        }
+        "speed": 0.0024,
+        "delayFrames": 84,
+        "bulge": 0.073
       },
       {
+        "id": "f5",
         "start": "s6",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.0035,
-        "delayFrames": 0,
-        "bulge": 0.092
+        "speed": 0.0022,
+        "delayFrames": 90,
+        "bulge": 0.065
+      },
+      {
+        "id": "f6",
+        "branchOf": "f0",
+        "at": 0.35,
+        "end": "bomb",
+        "speed": 0.002,
+        "delayFrames": 99999,
+        "branchPoint": {
+          "x": -134,
+          "y": 103
+        },
+        "routeThrough": "b0",
+        "bulge": 0.157
+      },
+      {
+        "id": "f7",
+        "branchOf": "f1",
+        "at": 0.271,
+        "end": "bomb",
+        "speed": 0.002,
+        "delayFrames": 99999,
+        "branchPoint": {
+          "x": -132,
+          "y": 167
+        },
+        "routeThrough": "b1",
+        "bulge": -0.157
       }
     ]
   },
@@ -3943,7 +4814,7 @@
     "level_id": 44,
     "layout": "hub",
     "snipsAllowed": 4,
-    "par": 5,
+    "par": 7.7,
     "payload": {
       "id": "bomb",
       "x": 0,
@@ -3952,104 +4823,136 @@
     "spawns": [
       {
         "id": "s1",
-        "x": -372,
-        "y": 100
+        "x": -231,
+        "y": -43
       },
       {
         "id": "s2",
-        "x": -308,
-        "y": -73
+        "x": -317,
+        "y": -160
       },
       {
         "id": "s3",
-        "x": -228,
-        "y": -204
+        "x": -92,
+        "y": -196
       },
       {
         "id": "s4",
-        "x": 129,
-        "y": -262
+        "x": -55,
+        "y": -354
       },
       {
         "id": "s5",
-        "x": 152,
-        "y": -202
+        "x": 111,
+        "y": -199
       },
       {
         "id": "s6",
-        "x": 235,
-        "y": -312
+        "x": 219,
+        "y": -215
       }
     ],
     "intersections": [
       {
         "id": "cut1",
-        "x": -105.62355368961052,
-        "y": -118.40921972535106
+        "x": -11.22918583589929,
+        "y": -177.2071644629596
+      },
+      {
+        "id": "b0",
+        "x": -109,
+        "y": -122
       }
     ],
     "fuses": [
       {
+        "id": "f0",
         "start": "s1",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.0038,
+        "speed": 0.0024,
         "delayFrames": 4,
         "bulge": 0
       },
       {
+        "id": "f1",
         "start": "s2",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.0031,
-        "delayFrames": 36,
+        "speed": 0.0021,
+        "delayFrames": 11,
         "bulge": 0
       },
       {
+        "id": "f2",
         "start": "s3",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.0038,
-        "delayFrames": 51,
+        "speed": 0.0024,
+        "delayFrames": 37,
         "bulge": 0
       },
       {
+        "id": "f3",
         "start": "s4",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.0027,
-        "delayFrames": 80,
+        "speed": 0.0021,
+        "delayFrames": 53,
         "bulge": 0
       },
       {
+        "id": "f4",
         "start": "s5",
+        "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.0038,
-        "delayFrames": 99999,
-        "bulge": 0,
-        "chain": {
-          "from": "s2",
-          "at": 0.412
-        }
+        "speed": 0.0024,
+        "delayFrames": 90,
+        "bulge": 0
       },
       {
+        "id": "f5",
         "start": "s6",
+        "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.0028,
+        "speed": 0.0015,
+        "delayFrames": 128,
+        "bulge": 0
+      },
+      {
+        "id": "f6",
+        "branchOf": "f0",
+        "at": 0.14,
+        "end": "bomb",
+        "speed": 0.002,
         "delayFrames": 99999,
-        "bulge": 0,
-        "chain": {
-          "from": "s1",
-          "at": 0.345
-        }
+        "branchPoint": {
+          "x": -138,
+          "y": -110
+        },
+        "bulge": 0.293
+      },
+      {
+        "id": "f7",
+        "branchOf": "f1",
+        "at": 0.317,
+        "end": "bomb",
+        "speed": 0.0019,
+        "delayFrames": 99999,
+        "branchPoint": {
+          "x": -76,
+          "y": -187
+        },
+        "routeThrough": "b0",
+        "bulge": 0.161
       }
     ]
   },
   {
     "level_id": 45,
     "layout": "weave",
-    "snipsAllowed": 6,
-    "par": 4.4,
+    "snipsAllowed": 8,
+    "par": 8.2,
     "payload": {
       "id": "bomb",
       "x": 0,
@@ -4058,127 +4961,164 @@
     "spawns": [
       {
         "id": "s1",
-        "x": 142,
-        "y": 235
+        "x": 241,
+        "y": 198
       },
       {
         "id": "s2",
-        "x": -307,
-        "y": 57
+        "x": 29,
+        "y": 328
       },
       {
         "id": "s3",
-        "x": -172,
-        "y": -243
+        "x": -186,
+        "y": 217
       },
       {
         "id": "s4",
-        "x": -103,
-        "y": -303
+        "x": -287,
+        "y": 112
       },
       {
         "id": "s5",
-        "x": -14,
-        "y": -345
+        "x": -322,
+        "y": -31
       },
       {
         "id": "s6",
-        "x": 86,
-        "y": -341
+        "x": -260,
+        "y": -165
       },
       {
         "id": "s7",
-        "x": 142,
-        "y": -240
+        "x": -150,
+        "y": -253
       }
     ],
     "intersections": [
       {
         "id": "cut1",
-        "x": -201,
-        "y": -111
+        "x": -34.58490644128988,
+        "y": 145.9585017957064
       },
       {
         "id": "cut2",
-        "x": -48,
-        "y": -185
+        "x": -121.89417398038204,
+        "y": -155.57788332472896
       },
       {
         "id": "cut3",
-        "x": 205.47896947830588,
-        "y": -64.81297304646563
+        "x": 47,
+        "y": -205
+      },
+      {
+        "id": "b0",
+        "x": 136,
+        "y": 92
+      },
+      {
+        "id": "b1",
+        "x": 50,
+        "y": 156
       }
     ],
     "fuses": [
       {
+        "id": "f0",
         "start": "s1",
-        "routeThrough": "cut3",
+        "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.0039,
-        "delayFrames": 99999,
-        "bulge": 0.1,
-        "chain": {
-          "from": "s3",
-          "at": 0.391
-        }
+        "speed": 0.0022,
+        "delayFrames": 9,
+        "bulge": 0.09
       },
       {
+        "id": "f1",
         "start": "s2",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.0037,
-        "delayFrames": 4,
-        "bulge": -0.1
+        "speed": 0.0019,
+        "delayFrames": 15,
+        "bulge": 0.073
       },
       {
+        "id": "f2",
         "start": "s3",
         "end": "bomb",
-        "speed": 0.0036,
-        "delayFrames": 30,
-        "bulge": 0.1
+        "speed": 0.0022,
+        "delayFrames": 23,
+        "bulge": 0.084
       },
       {
+        "id": "f3",
         "start": "s4",
         "routeThrough": "cut2",
         "end": "bomb",
-        "speed": 0.0038,
-        "delayFrames": 94,
-        "bulge": -0.1
+        "speed": 0.002,
+        "delayFrames": 48,
+        "bulge": 0.064
       },
       {
+        "id": "f4",
         "start": "s5",
         "routeThrough": "cut2",
         "end": "bomb",
-        "speed": 0.0037,
-        "delayFrames": 96,
-        "bulge": 0.1
+        "speed": 0.0022,
+        "delayFrames": 74,
+        "bulge": 0.089
       },
       {
+        "id": "f5",
         "start": "s6",
         "end": "bomb",
-        "speed": 0.0037,
-        "delayFrames": 99999,
-        "bulge": -0.1,
-        "chain": {
-          "from": "s2",
-          "at": 0.421
-        }
+        "speed": 0.0013,
+        "delayFrames": 105,
+        "bulge": 0.107
       },
       {
+        "id": "f6",
         "start": "s7",
         "routeThrough": "cut3",
         "end": "bomb",
-        "speed": 0.0039,
-        "delayFrames": 49,
-        "bulge": 0.1
+        "speed": 0.0022,
+        "delayFrames": 141,
+        "bulge": 0.066
+      },
+      {
+        "id": "f7",
+        "branchOf": "f0",
+        "at": 0.146,
+        "end": "bomb",
+        "speed": 0.002,
+        "delayFrames": 99999,
+        "branchPoint": {
+          "x": 125,
+          "y": 169
+        },
+        "routeThrough": "b0",
+        "bulge": 0.165
+      },
+      {
+        "id": "f8",
+        "branchOf": "f1",
+        "at": 0.247,
+        "end": "bomb",
+        "speed": 0.0017,
+        "delayFrames": 99999,
+        "branchPoint": {
+          "x": -6,
+          "y": 204
+        },
+        "routeThrough": "b1",
+        "bulge": 0.165
       }
     ]
   },
   {
     "level_id": 46,
     "layout": "train",
-    "snipsAllowed": 4,
-    "par": 3.8,
+    "snipsAllowed": 6,
+    "par": 7.2,
     "payload": {
       "id": "bomb",
       "x": 0,
@@ -4231,72 +5171,102 @@
         "id": "cut3",
         "x": 85,
         "y": 111
+      },
+      {
+        "id": "b0",
+        "x": -162,
+        "y": -23
       }
     ],
     "fuses": [
       {
+        "id": "f0",
         "start": "s1",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.004,
+        "speed": 0.0022,
         "delayFrames": 4,
         "bulge": 0.074
       },
       {
+        "id": "f1",
         "start": "s2",
         "routeThrough": "cut2",
         "end": "bomb",
-        "speed": 0.0042,
+        "speed": 0.0023,
         "delayFrames": 6,
         "bulge": 0.06
       },
       {
+        "id": "f2",
         "start": "s3",
         "routeThrough": "cut2",
         "end": "bomb",
-        "speed": 0.0038,
+        "speed": 0.0021,
         "delayFrames": 43,
         "bulge": 0.06
       },
       {
+        "id": "f3",
         "start": "s4",
         "routeThrough": "cut3",
         "end": "bomb",
-        "speed": 0.0038,
+        "speed": 0.0021,
         "delayFrames": 52,
         "bulge": 0.072
       },
       {
+        "id": "f4",
         "start": "s5",
         "routeThrough": "cut3",
         "end": "bomb",
-        "speed": 0.0042,
-        "delayFrames": 99999,
-        "bulge": 0.061,
-        "chain": {
-          "from": "s2",
-          "at": 0.312
-        }
+        "speed": 0.0023,
+        "delayFrames": 85,
+        "bulge": 0.061
       },
       {
+        "id": "f5",
         "start": "s6",
         "routeThrough": "cut3",
         "end": "bomb",
-        "speed": 0.004,
+        "speed": 0.0022,
+        "delayFrames": 93,
+        "bulge": 0.067
+      },
+      {
+        "id": "f6",
+        "branchOf": "f0",
+        "at": 0.334,
+        "end": "bomb",
+        "speed": 0.0018,
         "delayFrames": 99999,
-        "bulge": 0.067,
-        "chain": {
-          "from": "s1",
-          "at": 0.386
-        }
+        "branchPoint": {
+          "x": -249,
+          "y": 154
+        },
+        "routeThrough": "b0",
+        "bulge": 0.169
+      },
+      {
+        "id": "f7",
+        "branchOf": "f1",
+        "at": 0.29,
+        "end": "bomb",
+        "speed": 0.0019,
+        "delayFrames": 99999,
+        "branchPoint": {
+          "x": -93,
+          "y": 162
+        },
+        "bulge": 0.307
       }
     ]
   },
   {
     "level_id": 47,
     "layout": "split",
-    "snipsAllowed": 4,
-    "par": 4.5,
+    "snipsAllowed": 6,
+    "par": 11.7,
     "payload": {
       "id": "bomb",
       "x": 0,
@@ -4305,246 +5275,314 @@
     "spawns": [
       {
         "id": "s1",
-        "x": -10,
-        "y": 217
+        "x": 317,
+        "y": 123
       },
       {
         "id": "s2",
-        "x": -112,
-        "y": 294
+        "x": 251,
+        "y": 229
       },
       {
         "id": "s3",
-        "x": -125,
-        "y": 156
+        "x": 89,
+        "y": 310
       },
       {
         "id": "s4",
-        "x": -265,
-        "y": 192
+        "x": -290,
+        "y": -80
       },
       {
         "id": "s5",
-        "x": -34,
-        "y": -234
+        "x": -218,
+        "y": -159
       },
       {
         "id": "s6",
-        "x": 164,
-        "y": -291
+        "x": -194,
+        "y": -261
       },
       {
         "id": "s7",
-        "x": 225,
-        "y": -96
+        "x": -120,
+        "y": -269
       }
     ],
     "intersections": [
       {
         "id": "cut1",
-        "x": -147.82571467926846,
-        "y": 33.41800854012588
+        "x": 5.4430158798803205,
+        "y": 159.86905663478007
       },
       {
         "id": "cut2",
-        "x": -132.9417421490536,
-        "y": -80.30258682030833
+        "x": -178,
+        "y": -28
       },
       {
         "id": "cut3",
-        "x": 151,
-        "y": -85
+        "x": -43.718847368054966,
+        "y": -143.48749905412913
+      },
+      {
+        "id": "b0",
+        "x": 149,
+        "y": 69
+      },
+      {
+        "id": "b1",
+        "x": 113,
+        "y": 119
       }
     ],
     "fuses": [
       {
+        "id": "f0",
         "start": "s1",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.0043,
-        "delayFrames": 7,
-        "bulge": 0.1
+        "speed": 0.0024,
+        "delayFrames": 4,
+        "bulge": 0.11
       },
       {
+        "id": "f1",
         "start": "s2",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.0042,
-        "delayFrames": 54,
-        "bulge": -0.1
+        "speed": 0.0013,
+        "delayFrames": 38,
+        "bulge": 0.103
       },
       {
+        "id": "f2",
         "start": "s3",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.0043,
-        "delayFrames": 81,
-        "bulge": 0.1
+        "speed": 0.0015,
+        "delayFrames": 45,
+        "bulge": 0.079
       },
       {
+        "id": "f3",
         "start": "s4",
         "routeThrough": "cut2",
         "end": "bomb",
-        "speed": 0.004,
-        "delayFrames": 93,
-        "bulge": -0.1
+        "speed": 0.0016,
+        "delayFrames": 72,
+        "bulge": 0.076
       },
       {
+        "id": "f4",
         "start": "s5",
         "routeThrough": "cut2",
         "end": "bomb",
-        "speed": 0.0041,
-        "delayFrames": 113,
-        "bulge": 0.1
+        "speed": 0.0019,
+        "delayFrames": 83,
+        "bulge": 0.071
       },
       {
+        "id": "f5",
         "start": "s6",
         "routeThrough": "cut3",
         "end": "bomb",
-        "speed": 0.0041,
-        "delayFrames": 99999,
-        "bulge": -0.1,
-        "chain": {
-          "from": "s2",
-          "at": 0.394
-        }
+        "speed": 0.0013,
+        "delayFrames": 115,
+        "bulge": 0.078
       },
       {
+        "id": "f6",
         "start": "s7",
         "routeThrough": "cut3",
         "end": "bomb",
-        "speed": 0.0043,
+        "speed": 0.0016,
+        "delayFrames": 129,
+        "bulge": 0.074
+      },
+      {
+        "id": "f7",
+        "branchOf": "f0",
+        "at": 0.194,
+        "end": "bomb",
+        "speed": 0.0019,
         "delayFrames": 99999,
-        "bulge": 0.1,
-        "chain": {
-          "from": "s1",
-          "at": 0.319
-        }
+        "branchPoint": {
+          "x": 148,
+          "y": 145
+        },
+        "routeThrough": "b0",
+        "bulge": 0.173
+      },
+      {
+        "id": "f8",
+        "branchOf": "f1",
+        "at": 0.271,
+        "end": "bomb",
+        "speed": 0.0011,
+        "delayFrames": 99999,
+        "branchPoint": {
+          "x": 83,
+          "y": 185
+        },
+        "routeThrough": "b1",
+        "bulge": 0.173
       }
     ]
   },
   {
     "level_id": 48,
     "layout": "train",
-    "snipsAllowed": 4,
-    "par": 4.7,
+    "snipsAllowed": 6,
+    "par": 10.5,
     "payload": {
       "id": "bomb",
-      "x": -198,
+      "x": -219,
       "y": 0
     },
     "spawns": [
       {
         "id": "s1",
-        "x": 200,
-        "y": -190
+        "x": 210,
+        "y": -178
       },
       {
         "id": "s2",
-        "x": 207,
-        "y": -114
+        "x": 229,
+        "y": -109
       },
       {
         "id": "s3",
-        "x": 192,
-        "y": -35
+        "x": 208,
+        "y": -29
       },
       {
         "id": "s4",
-        "x": 201,
-        "y": 40
+        "x": 221,
+        "y": 34
       },
       {
         "id": "s5",
-        "x": 190,
-        "y": 117
+        "x": 227,
+        "y": 107
       },
       {
         "id": "s6",
-        "x": 199,
-        "y": 192
+        "x": 212,
+        "y": 182
       }
     ],
     "intersections": [
       {
         "id": "cut1",
-        "x": 103,
-        "y": -264
+        "x": 88.73269845868582,
+        "y": -246.05925483833585
       },
       {
         "id": "cut2",
-        "x": 102,
-        "y": -88
+        "x": 90,
+        "y": -82
       },
       {
         "id": "cut3",
-        "x": 98,
-        "y": 88
+        "x": 91,
+        "y": 82
+      },
+      {
+        "id": "b1",
+        "x": -88,
+        "y": -138
       }
     ],
     "fuses": [
       {
+        "id": "f0",
         "start": "s1",
-        "end": "bomb",
-        "speed": 0.004,
-        "delayFrames": 99999,
-        "bulge": 0,
-        "chain": {
-          "from": "s3",
-          "at": 0.319
-        }
-      },
-      {
-        "start": "s2",
-        "routeThrough": "cut3",
-        "end": "bomb",
-        "speed": 0.0026,
-        "delayFrames": 27,
-        "bulge": 0
-      },
-      {
-        "start": "s3",
-        "routeThrough": "cut3",
-        "end": "bomb",
-        "speed": 0.004,
-        "delayFrames": 3,
-        "bulge": 0
-      },
-      {
-        "start": "s4",
         "routeThrough": "cut1",
         "end": "bomb",
         "speed": 0.0022,
-        "delayFrames": 27,
+        "delayFrames": 105,
         "bulge": 0
       },
       {
+        "id": "f1",
+        "start": "s2",
+        "routeThrough": "cut2",
+        "end": "bomb",
+        "speed": 0.0015,
+        "delayFrames": 0,
+        "bulge": 0
+      },
+      {
+        "id": "f2",
+        "start": "s3",
+        "routeThrough": "cut3",
+        "end": "bomb",
+        "speed": 0.0022,
+        "delayFrames": 129,
+        "bulge": 0
+      },
+      {
+        "id": "f3",
+        "start": "s4",
+        "routeThrough": "cut1",
+        "end": "bomb",
+        "speed": 0.0017,
+        "delayFrames": 72,
+        "bulge": 0
+      },
+      {
+        "id": "f4",
         "start": "s5",
-        "routeThrough": "cut1",
+        "routeThrough": "cut2",
         "end": "bomb",
-        "speed": 0.004,
-        "delayFrames": 99999,
-        "bulge": 0,
-        "chain": {
-          "from": "s2",
-          "at": 0.331
-        }
+        "speed": 0.0022,
+        "delayFrames": 80,
+        "bulge": 0
       },
       {
+        "id": "f5",
         "start": "s6",
-        "routeThrough": "cut1",
+        "routeThrough": "cut3",
         "end": "bomb",
-        "speed": 0.003,
-        "delayFrames": 29,
+        "speed": 0.002,
+        "delayFrames": 130,
         "bulge": 0
+      },
+      {
+        "id": "f6",
+        "branchOf": "f1",
+        "at": 0.305,
+        "end": "bomb",
+        "speed": 0.0012,
+        "delayFrames": 99999,
+        "branchPoint": {
+          "x": 146,
+          "y": -95
+        },
+        "bulge": -0.321
+      },
+      {
+        "id": "f7",
+        "branchOf": "f3",
+        "at": 0.34,
+        "end": "bomb",
+        "speed": 0.0014,
+        "delayFrames": 99999,
+        "branchPoint": {
+          "x": 134,
+          "y": -215
+        },
+        "routeThrough": "b1",
+        "bulge": -0.177
       }
     ]
   },
   {
     "level_id": 49,
     "layout": "split",
-    "snipsAllowed": 5,
-    "par": 5.5,
+    "snipsAllowed": 6,
+    "par": 12.4,
     "payload": {
       "id": "bomb",
       "x": 0,
@@ -4602,79 +5640,117 @@
         "id": "cut3",
         "x": 42.97244720200456,
         "y": -163.82006264168953
+      },
+      {
+        "id": "b0",
+        "x": 151,
+        "y": -63
+      },
+      {
+        "id": "b1",
+        "x": 81,
+        "y": 143
       }
     ],
     "fuses": [
       {
+        "id": "f0",
         "start": "s1",
         "routeThrough": "cut3",
         "end": "bomb",
-        "speed": 0.0042,
+        "speed": 0.0023,
         "delayFrames": 2,
         "bulge": 0.1
       },
       {
+        "id": "f1",
         "start": "s2",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.0024,
+        "speed": 0.0013,
         "delayFrames": 9,
         "bulge": -0.1
       },
       {
+        "id": "f2",
         "start": "s3",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.0042,
+        "speed": 0.0023,
         "delayFrames": 46,
         "bulge": 0.1
       },
       {
+        "id": "f3",
         "start": "s4",
         "routeThrough": "cut2",
         "end": "bomb",
-        "speed": 0.0023,
+        "speed": 0.0013,
         "delayFrames": 57,
         "bulge": -0.1
       },
       {
+        "id": "f4",
         "start": "s5",
         "routeThrough": "cut2",
         "end": "bomb",
-        "speed": 0.0042,
+        "speed": 0.0023,
         "delayFrames": 92,
         "bulge": 0.1
       },
       {
+        "id": "f5",
         "start": "s6",
         "routeThrough": "cut3",
         "end": "bomb",
-        "speed": 0.0026,
-        "delayFrames": 99999,
-        "bulge": -0.1,
-        "chain": {
-          "from": "s2",
-          "at": 0.307
-        }
+        "speed": 0.0014,
+        "delayFrames": 98,
+        "bulge": -0.1
       },
       {
+        "id": "f6",
         "start": "s7",
+        "routeThrough": "cut3",
         "end": "bomb",
-        "speed": 0.0042,
+        "speed": 0.0023,
+        "delayFrames": 138,
+        "bulge": 0.1
+      },
+      {
+        "id": "f7",
+        "branchOf": "f0",
+        "at": 0.227,
+        "end": "bomb",
+        "speed": 0.0019,
         "delayFrames": 99999,
-        "bulge": 0.1,
-        "chain": {
-          "from": "s1",
-          "at": 0.408
-        }
+        "branchPoint": {
+          "x": 152,
+          "y": -138
+        },
+        "routeThrough": "b0",
+        "bulge": -0.18
+      },
+      {
+        "id": "f8",
+        "branchOf": "f1",
+        "at": 0.305,
+        "end": "bomb",
+        "speed": 0.001,
+        "delayFrames": 99999,
+        "branchPoint": {
+          "x": 35,
+          "y": 199
+        },
+        "routeThrough": "b1",
+        "bulge": 0.18
       }
     ]
   },
   {
     "level_id": 50,
     "layout": "rings",
-    "snipsAllowed": 6,
-    "par": 6,
+    "snipsAllowed": 8,
+    "par": 10.7,
     "payload": {
       "id": "bomb",
       "x": 0,
@@ -4727,70 +5803,100 @@
         "id": "cut3",
         "x": -145,
         "y": -40
+      },
+      {
+        "id": "b0",
+        "x": 110,
+        "y": 121
       }
     ],
     "fuses": [
       {
+        "id": "f0",
         "start": "s1",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.0044,
+        "speed": 0.0024,
         "delayFrames": 9,
         "bulge": 0
       },
       {
+        "id": "f1",
         "start": "s2",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.0025,
+        "speed": 0.0014,
         "delayFrames": 35,
         "bulge": 0
       },
       {
+        "id": "f2",
         "start": "s3",
         "end": "bomb",
-        "speed": 0.0025,
+        "speed": 0.0013,
         "delayFrames": 47,
         "bulge": 0
       },
       {
+        "id": "f3",
         "start": "s4",
         "routeThrough": "cut2",
         "end": "bomb",
-        "speed": 0.0038,
+        "speed": 0.0021,
         "delayFrames": 77,
         "bulge": 0
       },
       {
+        "id": "f4",
         "start": "s5",
         "routeThrough": "cut3",
         "end": "bomb",
-        "speed": 0.0031,
-        "delayFrames": 99999,
-        "bulge": 0,
-        "chain": {
-          "from": "s2",
-          "at": 0.404
-        }
+        "speed": 0.0017,
+        "delayFrames": 90,
+        "bulge": 0
       },
       {
+        "id": "f5",
         "start": "s6",
         "end": "bomb",
-        "speed": 0.0037,
+        "speed": 0.002,
+        "delayFrames": 123,
+        "bulge": 0
+      },
+      {
+        "id": "f6",
+        "branchOf": "f0",
+        "at": 0.299,
+        "end": "bomb",
+        "speed": 0.0021,
         "delayFrames": 99999,
-        "bulge": 0,
-        "chain": {
-          "from": "s1",
-          "at": 0.404
-        }
+        "branchPoint": {
+          "x": 78,
+          "y": 186
+        },
+        "routeThrough": "b0",
+        "bulge": 0.184
+      },
+      {
+        "id": "f7",
+        "branchOf": "f1",
+        "at": 0.21,
+        "end": "bomb",
+        "speed": 0.0011,
+        "delayFrames": 99999,
+        "branchPoint": {
+          "x": 63,
+          "y": 192
+        },
+        "bulge": 0.335
       }
     ]
   },
   {
     "level_id": 51,
     "layout": "split",
-    "snipsAllowed": 5,
-    "par": 5.3,
+    "snipsAllowed": 6,
+    "par": 10.6,
     "payload": {
       "id": "bomb",
       "x": 0,
@@ -4853,87 +5959,126 @@
         "id": "cut3",
         "x": -54,
         "y": -163
+      },
+      {
+        "id": "b0",
+        "x": 87,
+        "y": 139
+      },
+      {
+        "id": "b1",
+        "x": -109,
+        "y": -123
       }
     ],
     "fuses": [
       {
+        "id": "f0",
         "start": "s1",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.0045,
-        "delayFrames": 99999,
-        "bulge": 0,
-        "chain": {
-          "from": "s8",
-          "at": 0.4
-        }
+        "speed": 0.002,
+        "delayFrames": 145,
+        "bulge": 0
       },
       {
+        "id": "f1",
         "start": "s2",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.0027,
+        "speed": 0.0012,
         "delayFrames": 131,
         "bulge": 0
       },
       {
+        "id": "f2",
         "start": "s3",
+        "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.0045,
-        "delayFrames": 99999,
-        "bulge": 0,
-        "chain": {
-          "from": "s4",
-          "at": 0.354
-        }
+        "speed": 0.002,
+        "delayFrames": 150,
+        "bulge": 0
       },
       {
+        "id": "f3",
         "start": "s4",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.0032,
+        "speed": 0.0014,
         "delayFrames": 1,
         "bulge": 0
       },
       {
+        "id": "f4",
         "start": "s5",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.0045,
+        "speed": 0.002,
         "delayFrames": 88,
         "bulge": 0
       },
       {
+        "id": "f5",
         "start": "s6",
         "routeThrough": "cut2",
         "end": "bomb",
-        "speed": 0.0039,
+        "speed": 0.0017,
         "delayFrames": 112,
         "bulge": 0
       },
       {
+        "id": "f6",
         "start": "s7",
         "routeThrough": "cut2",
         "end": "bomb",
-        "speed": 0.0045,
+        "speed": 0.002,
         "delayFrames": 66,
         "bulge": 0
       },
       {
+        "id": "f7",
         "start": "s8",
         "routeThrough": "cut3",
         "end": "bomb",
-        "speed": 0.0038,
+        "speed": 0.0017,
         "delayFrames": 46,
         "bulge": 0
+      },
+      {
+        "id": "f8",
+        "branchOf": "f3",
+        "at": 0.306,
+        "end": "bomb",
+        "speed": 0.0012,
+        "delayFrames": 99999,
+        "branchPoint": {
+          "x": 45,
+          "y": 204
+        },
+        "routeThrough": "b0",
+        "bulge": 0.187
+      },
+      {
+        "id": "f9",
+        "branchOf": "f7",
+        "at": 0.307,
+        "end": "bomb",
+        "speed": 0.0014,
+        "delayFrames": 99999,
+        "branchPoint": {
+          "x": -85,
+          "y": -210
+        },
+        "routeThrough": "b1",
+        "bulge": 0.187
       }
     ]
   },
   {
     "level_id": 52,
     "layout": "weave",
-    "snipsAllowed": 5,
-    "par": 5,
+    "snipsAllowed": 8,
+    "par": 9.7,
     "payload": {
       "id": "bomb",
       "x": 0,
@@ -4942,128 +6087,164 @@
     "spawns": [
       {
         "id": "s1",
-        "x": 25,
-        "y": 314
+        "x": 322,
+        "y": 81
       },
       {
         "id": "s2",
-        "x": -266,
-        "y": 142
+        "x": 190,
+        "y": 299
       },
       {
         "id": "s3",
-        "x": -271,
-        "y": -172
+        "x": -43,
+        "y": 216
       },
       {
         "id": "s4",
-        "x": 19,
-        "y": -307
+        "x": -168,
+        "y": 119
       },
       {
         "id": "s5",
-        "x": 164,
-        "y": -319
+        "x": -273,
+        "y": -39
       },
       {
         "id": "s6",
-        "x": 237,
-        "y": -194
+        "x": -133,
+        "y": -168
       },
       {
         "id": "s7",
-        "x": 267,
-        "y": -100
+        "x": 25,
+        "y": -280
       }
     ],
     "intersections": [
       {
         "id": "cut1",
-        "x": -149.1628816542015,
-        "y": -160.9656797184338
+        "x": -39.084412245378886,
+        "y": -144.81853720927194
       },
       {
         "id": "cut2",
-        "x": 43,
-        "y": -200
+        "x": -74.03641945244357,
+        "y": 130.45538928944956
       },
       {
         "id": "cut3",
-        "x": 231.69515651928523,
-        "y": 40.01116588222254
+        "x": -145.7544052877139,
+        "y": 35.435199155992294
+      },
+      {
+        "id": "b0",
+        "x": 83,
+        "y": 141
+      },
+      {
+        "id": "b1",
+        "x": 163,
+        "y": -19
       }
     ],
     "fuses": [
       {
+        "id": "f0",
         "start": "s1",
-        "routeThrough": "cut3",
         "end": "bomb",
-        "speed": 0.0045,
-        "delayFrames": 5,
-        "bulge": 0.069
+        "speed": 0.002,
+        "delayFrames": 9,
+        "bulge": 0.065
       },
       {
+        "id": "f1",
         "start": "s2",
-        "routeThrough": "cut1",
-        "end": "bomb",
-        "speed": 0.0034,
-        "delayFrames": 51,
-        "bulge": 0.064
-      },
-      {
-        "start": "s3",
-        "routeThrough": "cut1",
-        "end": "bomb",
-        "speed": 0.0045,
-        "delayFrames": 80,
-        "bulge": 0.097
-      },
-      {
-        "start": "s4",
         "routeThrough": "cut2",
         "end": "bomb",
-        "speed": 0.0028,
-        "delayFrames": 99,
-        "bulge": 0.086
+        "speed": 0.0013,
+        "delayFrames": 5,
+        "bulge": 0.1
       },
       {
+        "id": "f2",
+        "start": "s3",
+        "routeThrough": "cut3",
+        "end": "bomb",
+        "speed": 0.002,
+        "delayFrames": 49,
+        "bulge": 0.101
+      },
+      {
+        "id": "f3",
+        "start": "s4",
+        "end": "bomb",
+        "speed": 0.0016,
+        "delayFrames": 56,
+        "bulge": 0.073
+      },
+      {
+        "id": "f4",
         "start": "s5",
         "routeThrough": "cut2",
         "end": "bomb",
-        "speed": 0.0045,
-        "delayFrames": 115,
-        "bulge": 0.068
+        "speed": 0.002,
+        "delayFrames": 96,
+        "bulge": 0.087
       },
       {
+        "id": "f5",
         "start": "s6",
         "routeThrough": "cut3",
         "end": "bomb",
-        "speed": 0.0034,
-        "delayFrames": 99999,
-        "bulge": 0.105,
-        "chain": {
-          "from": "s2",
-          "at": 0.348
-        }
+        "speed": 0.0017,
+        "delayFrames": 94,
+        "bulge": 0.091
       },
       {
+        "id": "f6",
         "start": "s7",
+        "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.0045,
+        "speed": 0.002,
+        "delayFrames": 137,
+        "bulge": 0.099
+      },
+      {
+        "id": "f7",
+        "branchOf": "f1",
+        "at": 0.207,
+        "end": "bomb",
+        "speed": 0.0012,
         "delayFrames": 99999,
-        "bulge": 0.109,
-        "chain": {
-          "from": "s1",
-          "at": 0.414
-        }
+        "branchPoint": {
+          "x": 39,
+          "y": 205
+        },
+        "routeThrough": "b0",
+        "bulge": 0.187
+      },
+      {
+        "id": "f8",
+        "branchOf": "f0",
+        "at": 0.342,
+        "end": "bomb",
+        "speed": 0.0018,
+        "delayFrames": 99999,
+        "branchPoint": {
+          "x": 202,
+          "y": 46
+        },
+        "routeThrough": "b1",
+        "bulge": 0.187
       }
     ]
   },
   {
     "level_id": 53,
     "layout": "rings",
-    "snipsAllowed": 4,
-    "par": 3.5,
+    "snipsAllowed": 6,
+    "par": 7.9,
     "payload": {
       "id": "bomb",
       "x": 0,
@@ -5126,88 +6307,126 @@
         "id": "cut3",
         "x": -7,
         "y": -171
+      },
+      {
+        "id": "b0",
+        "x": 132,
+        "y": 98
+      },
+      {
+        "id": "b1",
+        "x": 90,
+        "y": 137
       }
     ],
     "fuses": [
       {
+        "id": "f0",
         "start": "s1",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.0041,
+        "speed": 0.0018,
         "delayFrames": 8,
         "bulge": 0
       },
       {
+        "id": "f1",
         "start": "s2",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.0043,
+        "speed": 0.0019,
         "delayFrames": 14,
         "bulge": 0
       },
       {
+        "id": "f2",
         "start": "s3",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.0041,
+        "speed": 0.0018,
         "delayFrames": 20,
         "bulge": 0
       },
       {
+        "id": "f3",
         "start": "s4",
         "routeThrough": "cut2",
         "end": "bomb",
-        "speed": 0.0043,
+        "speed": 0.0019,
         "delayFrames": 42,
         "bulge": 0
       },
       {
+        "id": "f4",
         "start": "s5",
         "routeThrough": "cut2",
         "end": "bomb",
-        "speed": 0.0044,
+        "speed": 0.002,
         "delayFrames": 61,
         "bulge": 0
       },
       {
+        "id": "f5",
         "start": "s6",
         "routeThrough": "cut3",
         "end": "bomb",
-        "speed": 0.0042,
+        "speed": 0.0019,
         "delayFrames": 93,
         "bulge": 0
       },
       {
+        "id": "f6",
         "start": "s7",
         "routeThrough": "cut3",
         "end": "bomb",
-        "speed": 0.0044,
-        "delayFrames": 99999,
-        "bulge": 0,
-        "chain": {
-          "from": "s2",
-          "at": 0.328
-        }
+        "speed": 0.002,
+        "delayFrames": 115,
+        "bulge": 0
       },
       {
+        "id": "f7",
         "start": "s8",
         "routeThrough": "cut3",
         "end": "bomb",
-        "speed": 0.0045,
+        "speed": 0.002,
+        "delayFrames": 144,
+        "bulge": 0
+      },
+      {
+        "id": "f8",
+        "branchOf": "f0",
+        "at": 0.238,
+        "end": "bomb",
+        "speed": 0.0015,
         "delayFrames": 99999,
-        "bulge": 0,
-        "chain": {
-          "from": "s1",
-          "at": 0.333
-        }
+        "branchPoint": {
+          "x": 114,
+          "y": 171
+        },
+        "routeThrough": "b0",
+        "bulge": 0.187
+      },
+      {
+        "id": "f9",
+        "branchOf": "f1",
+        "at": 0.151,
+        "end": "bomb",
+        "speed": 0.0017,
+        "delayFrames": 99999,
+        "branchPoint": {
+          "x": 48,
+          "y": 197
+        },
+        "routeThrough": "b1",
+        "bulge": 0.187
       }
     ]
   },
   {
     "level_id": 54,
     "layout": "split",
-    "snipsAllowed": 4,
-    "par": 4.8,
+    "snipsAllowed": 6,
+    "par": 8.8,
     "payload": {
       "id": "bomb",
       "x": 0,
@@ -5216,271 +6435,346 @@
     "spawns": [
       {
         "id": "s1",
-        "x": -130,
-        "y": -167
+        "x": 198,
+        "y": -219
       },
       {
         "id": "s2",
-        "x": -93,
-        "y": -174
+        "x": 319,
+        "y": -48
       },
       {
         "id": "s3",
-        "x": -18,
-        "y": -176
+        "x": 318,
+        "y": 100
       },
       {
         "id": "s4",
-        "x": 25,
-        "y": -183
+        "x": -257,
+        "y": 158
       },
       {
         "id": "s5",
-        "x": 182,
-        "y": 245
+        "x": -266,
+        "y": 87
       },
       {
         "id": "s6",
-        "x": 93,
-        "y": 313
+        "x": -311,
+        "y": 13
       },
       {
         "id": "s7",
-        "x": -18,
-        "y": 295
+        "x": -307,
+        "y": -123
       }
     ],
     "intersections": [
       {
         "id": "cut1",
-        "x": 111.88737888748534,
-        "y": -136.64330889515227
+        "x": 82.00786023158604,
+        "y": 143.92671695574882
       },
       {
         "id": "cut2",
-        "x": 101,
-        "y": 118
+        "x": -136,
+        "y": 80
       },
       {
         "id": "cut3",
-        "x": -57,
-        "y": 157
+        "x": -88.24258647392872,
+        "y": -153.41350283944246
+      },
+      {
+        "id": "b0",
+        "x": 90,
+        "y": -137
+      },
+      {
+        "id": "b1",
+        "x": 164,
+        "y": -1
       }
     ],
     "fuses": [
       {
+        "id": "f0",
         "start": "s1",
-        "routeThrough": "cut1",
+        "routeThrough": "cut3",
         "end": "bomb",
-        "speed": 0.0045,
-        "delayFrames": 7,
-        "bulge": 0.107
+        "speed": 0.002,
+        "delayFrames": 1,
+        "bulge": 0
       },
       {
+        "id": "f1",
         "start": "s2",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.0032,
-        "delayFrames": 8,
-        "bulge": 0.095
+        "speed": 0.0015,
+        "delayFrames": 12,
+        "bulge": 0
       },
       {
+        "id": "f2",
         "start": "s3",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.004,
-        "delayFrames": 29,
-        "bulge": 0.109
+        "speed": 0.002,
+        "delayFrames": 52,
+        "bulge": 0
       },
       {
+        "id": "f3",
         "start": "s4",
-        "routeThrough": "cut1",
+        "routeThrough": "cut2",
         "end": "bomb",
-        "speed": 0.0024,
-        "delayFrames": 50,
-        "bulge": 0.071
+        "speed": 0.0016,
+        "delayFrames": 51,
+        "bulge": 0
       },
       {
+        "id": "f4",
         "start": "s5",
         "routeThrough": "cut2",
         "end": "bomb",
-        "speed": 0.004,
-        "delayFrames": 70,
-        "bulge": 0.094
+        "speed": 0.002,
+        "delayFrames": 97,
+        "bulge": 0
       },
       {
+        "id": "f5",
         "start": "s6",
-        "routeThrough": "cut2",
+        "routeThrough": "cut3",
         "end": "bomb",
-        "speed": 0.0027,
-        "delayFrames": 99999,
-        "bulge": 0.082,
-        "chain": {
-          "from": "s2",
-          "at": 0.3
-        }
+        "speed": 0.0015,
+        "delayFrames": 99,
+        "bulge": 0
       },
       {
+        "id": "f6",
         "start": "s7",
         "routeThrough": "cut3",
         "end": "bomb",
-        "speed": 0.0035,
+        "speed": 0.002,
+        "delayFrames": 137,
+        "bulge": 0
+      },
+      {
+        "id": "f7",
+        "branchOf": "f0",
+        "at": 0.173,
+        "end": "bomb",
+        "speed": 0.0017,
         "delayFrames": 99999,
-        "bulge": 0.076,
-        "chain": {
-          "from": "s1",
-          "at": 0.318
-        }
+        "branchPoint": {
+          "x": 47,
+          "y": -196
+        },
+        "routeThrough": "b0",
+        "bulge": -0.187
+      },
+      {
+        "id": "f8",
+        "branchOf": "f1",
+        "at": 0.193,
+        "end": "bomb",
+        "speed": 0.0013,
+        "delayFrames": 99999,
+        "branchPoint": {
+          "x": 194,
+          "y": 68
+        },
+        "routeThrough": "b1",
+        "bulge": 0.187
       }
     ]
   },
   {
     "level_id": 55,
     "layout": "train",
-    "snipsAllowed": 5,
-    "par": 3.6,
+    "snipsAllowed": 7,
+    "par": 8.2,
     "payload": {
       "id": "bomb",
-      "x": -220,
+      "x": -206,
       "y": 0
     },
     "spawns": [
       {
         "id": "s1",
-        "x": 224,
-        "y": -185
+        "x": 204,
+        "y": -217
       },
       {
         "id": "s2",
-        "x": 217,
-        "y": -136
+        "x": 209,
+        "y": -159
       },
       {
         "id": "s3",
-        "x": 213,
-        "y": -85
+        "x": 214,
+        "y": -91
       },
       {
         "id": "s4",
-        "x": 214,
-        "y": -30
+        "x": 199,
+        "y": -31
       },
       {
         "id": "s5",
-        "x": 218,
-        "y": 24
+        "x": 216,
+        "y": 36
       },
       {
         "id": "s6",
-        "x": 224,
-        "y": 83
+        "x": 200,
+        "y": 99
       },
       {
         "id": "s7",
-        "x": 229,
-        "y": 133
+        "x": 203,
+        "y": 156
       },
       {
         "id": "s8",
-        "x": 220,
-        "y": 183
+        "x": 200,
+        "y": 227
       }
     ],
     "intersections": [
       {
         "id": "cut1",
-        "x": 83,
-        "y": -259
+        "x": 69.51868520231051,
+        "y": -287.63306021683263
       },
       {
         "id": "cut2",
-        "x": 97,
-        "y": -86
+        "x": 103,
+        "y": -103
       },
       {
         "id": "cut3",
-        "x": 82,
-        "y": 86
+        "x": 102,
+        "y": 103
+      },
+      {
+        "id": "b0",
+        "x": -30,
+        "y": -161
+      },
+      {
+        "id": "b1",
+        "x": -88.08900588730027,
+        "y": 121.44863666947015
       }
     ],
     "fuses": [
       {
+        "id": "f0",
         "start": "s1",
-        "routeThrough": "cut3",
+        "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.0044,
+        "speed": 0.0019,
         "delayFrames": 4,
-        "bulge": 0.087
+        "bulge": 0
       },
       {
+        "id": "f1",
         "start": "s2",
-        "routeThrough": "cut3",
+        "routeThrough": "cut2",
         "end": "bomb",
-        "speed": 0.0044,
-        "delayFrames": 11,
-        "bulge": 0.074
+        "speed": 0.0019,
+        "delayFrames": 14,
+        "bulge": 0
       },
       {
+        "id": "f2",
         "start": "s3",
         "end": "bomb",
-        "speed": 0.0042,
-        "delayFrames": 29,
-        "bulge": 0.092
+        "speed": 0.0018,
+        "delayFrames": 27,
+        "bulge": 0
       },
       {
+        "id": "f3",
         "start": "s4",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.0041,
-        "delayFrames": 46,
-        "bulge": 0.108
+        "speed": 0.0019,
+        "delayFrames": 42,
+        "bulge": 0
       },
       {
+        "id": "f4",
         "start": "s5",
-        "routeThrough": "cut1",
+        "routeThrough": "cut2",
         "end": "bomb",
-        "speed": 0.0043,
-        "delayFrames": 61,
-        "bulge": 0.11
+        "speed": 0.0019,
+        "delayFrames": 68,
+        "bulge": 0
       },
       {
+        "id": "f5",
         "start": "s6",
         "end": "bomb",
-        "speed": 0.0045,
-        "delayFrames": 89,
-        "bulge": 0.085
+        "speed": 0.0019,
+        "delayFrames": 94,
+        "bulge": 0
       },
       {
+        "id": "f6",
         "start": "s7",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.0043,
-        "delayFrames": 99999,
-        "bulge": 0.086,
-        "chain": {
-          "from": "s2",
-          "at": 0.397
-        }
+        "speed": 0.0019,
+        "delayFrames": 116,
+        "bulge": 0
       },
       {
+        "id": "f7",
         "start": "s8",
-        "routeThrough": "cut1",
+        "routeThrough": "cut2",
         "end": "bomb",
-        "speed": 0.0043,
+        "speed": 0.0019,
+        "delayFrames": 147,
+        "bulge": 0
+      },
+      {
+        "id": "f8",
+        "branchOf": "f0",
+        "at": 0.346,
+        "end": "bomb",
+        "speed": 0.0017,
         "delayFrames": 99999,
-        "bulge": 0.104,
-        "chain": {
-          "from": "s1",
-          "at": 0.403
-        }
+        "branchPoint": {
+          "x": 112,
+          "y": -296
+        },
+        "routeThrough": "b0",
+        "bulge": -0.187
+      },
+      {
+        "id": "f9",
+        "branchOf": "f1",
+        "at": 0.272,
+        "end": "bomb",
+        "speed": 0.0015,
+        "delayFrames": 99999,
+        "branchPoint": {
+          "x": 158,
+          "y": -127
+        },
+        "routeThrough": "b1",
+        "bulge": -0.187
       }
     ]
   },
   {
     "level_id": 56,
     "layout": "rings",
-    "snipsAllowed": 5,
-    "par": 3.4,
+    "snipsAllowed": 7,
+    "par": 8.4,
     "payload": {
       "id": "bomb",
       "x": 0,
@@ -5548,88 +6842,126 @@
         "id": "cut4",
         "x": -13.0377190838449,
         "y": -149.4323187302223
+      },
+      {
+        "id": "b0",
+        "x": 162,
+        "y": 28
+      },
+      {
+        "id": "b1",
+        "x": 41,
+        "y": 159
       }
     ],
     "fuses": [
       {
+        "id": "f0",
         "start": "s1",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.0045,
+        "speed": 0.0017,
         "delayFrames": 5,
         "bulge": 0
       },
       {
+        "id": "f1",
         "start": "s2",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.0047,
+        "speed": 0.0018,
         "delayFrames": 8,
         "bulge": 0
       },
       {
+        "id": "f2",
         "start": "s3",
         "routeThrough": "cut2",
         "end": "bomb",
-        "speed": 0.0047,
+        "speed": 0.0018,
         "delayFrames": 25,
         "bulge": 0
       },
       {
+        "id": "f3",
         "start": "s4",
         "routeThrough": "cut2",
         "end": "bomb",
-        "speed": 0.0043,
+        "speed": 0.0016,
         "delayFrames": 41,
         "bulge": 0
       },
       {
+        "id": "f4",
         "start": "s5",
         "routeThrough": "cut3",
         "end": "bomb",
-        "speed": 0.0046,
+        "speed": 0.0017,
         "delayFrames": 65,
         "bulge": 0
       },
       {
+        "id": "f5",
         "start": "s6",
         "routeThrough": "cut3",
         "end": "bomb",
-        "speed": 0.0044,
+        "speed": 0.0016,
         "delayFrames": 85,
         "bulge": 0
       },
       {
+        "id": "f6",
         "start": "s7",
         "routeThrough": "cut4",
         "end": "bomb",
-        "speed": 0.0048,
-        "delayFrames": 99999,
-        "bulge": 0,
-        "chain": {
-          "from": "s2",
-          "at": 0.44
-        }
+        "speed": 0.0018,
+        "delayFrames": 117,
+        "bulge": 0
       },
       {
+        "id": "f7",
         "start": "s8",
         "routeThrough": "cut4",
         "end": "bomb",
-        "speed": 0.0047,
+        "speed": 0.0018,
+        "delayFrames": 152,
+        "bulge": 0
+      },
+      {
+        "id": "f8",
+        "branchOf": "f0",
+        "at": 0.314,
+        "end": "bomb",
+        "speed": 0.0016,
         "delayFrames": 99999,
-        "bulge": 0,
-        "chain": {
-          "from": "s1",
-          "at": 0.392
-        }
+        "branchPoint": {
+          "x": 175,
+          "y": 98
+        },
+        "routeThrough": "b0",
+        "bulge": 0.187
+      },
+      {
+        "id": "f9",
+        "branchOf": "f1",
+        "at": 0.204,
+        "end": "bomb",
+        "speed": 0.0016,
+        "delayFrames": 99999,
+        "branchPoint": {
+          "x": 114,
+          "y": 168
+        },
+        "routeThrough": "b1",
+        "bulge": -0.187
       }
     ]
   },
   {
     "level_id": 57,
     "layout": "hub",
-    "snipsAllowed": 5,
-    "par": 4.5,
+    "snipsAllowed": 7,
+    "par": 14,
     "payload": {
       "id": "bomb",
       "x": 0,
@@ -5638,147 +6970,185 @@
     "spawns": [
       {
         "id": "s1",
-        "x": 333,
-        "y": 123
+        "x": 211,
+        "y": 50
       },
       {
         "id": "s2",
-        "x": 246,
-        "y": 103
+        "x": 21,
+        "y": 285
       },
       {
         "id": "s3",
-        "x": 232,
-        "y": 156
+        "x": -135,
+        "y": 159
       },
       {
         "id": "s4",
-        "x": 169,
-        "y": 259
+        "x": -322,
+        "y": 103
       },
       {
         "id": "s5",
-        "x": -28,
-        "y": 377
+        "x": -219,
+        "y": -56
       },
       {
         "id": "s6",
-        "x": -235,
-        "y": 148
+        "x": -195,
+        "y": -246
       },
       {
         "id": "s7",
-        "x": -180,
-        "y": -147
+        "x": 23,
+        "y": -241
       },
       {
         "id": "s8",
-        "x": 150,
-        "y": -177
+        "x": 227,
+        "y": -258
       }
     ],
     "intersections": [
       {
         "id": "cut1",
-        "x": 103,
-        "y": 156
+        "x": 124,
+        "y": 151
       },
       {
         "id": "cut2",
-        "x": -97.34427840327535,
-        "y": 237.45815762538382
+        "x": -86,
+        "y": 123
       },
       {
         "id": "cut3",
-        "x": -228.3363118820541,
-        "y": 53.171056411942914
+        "x": -141.374352253478,
+        "y": -50.13274902605603
       },
       {
         "id": "cut4",
-        "x": 13,
-        "y": -183
+        "x": 12,
+        "y": -169
+      },
+      {
+        "id": "b0",
+        "x": 150,
+        "y": 66
+      },
+      {
+        "id": "b1",
+        "x": 38,
+        "y": 160
       }
     ],
     "fuses": [
       {
+        "id": "f0",
         "start": "s1",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.0048,
-        "delayFrames": 0,
-        "bulge": 0.103
+        "speed": 0.0018,
+        "delayFrames": 5,
+        "bulge": 0.07
       },
       {
+        "id": "f1",
         "start": "s2",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.0027,
-        "delayFrames": 54,
-        "bulge": 0.078
-      },
-      {
-        "start": "s3",
-        "routeThrough": "cut2",
-        "end": "bomb",
-        "speed": 0.0048,
-        "delayFrames": 73,
-        "bulge": 0.091
-      },
-      {
-        "start": "s4",
-        "routeThrough": "cut2",
-        "end": "bomb",
-        "speed": 0.0033,
-        "delayFrames": 94,
-        "bulge": 0.077
-      },
-      {
-        "start": "s5",
-        "routeThrough": "cut3",
-        "end": "bomb",
-        "speed": 0.0048,
-        "delayFrames": 114,
-        "bulge": 0.072
-      },
-      {
-        "start": "s6",
-        "routeThrough": "cut3",
-        "end": "bomb",
-        "speed": 0.0036,
-        "delayFrames": 125,
+        "speed": 0.0012,
+        "delayFrames": 57,
         "bulge": 0.073
       },
       {
+        "id": "f2",
+        "start": "s3",
+        "routeThrough": "cut2",
+        "end": "bomb",
+        "speed": 0.0013,
+        "delayFrames": 80,
+        "bulge": 0.074
+      },
+      {
+        "id": "f3",
+        "start": "s4",
+        "routeThrough": "cut2",
+        "end": "bomb",
+        "speed": 0.0011,
+        "delayFrames": 97,
+        "bulge": 0.062
+      },
+      {
+        "id": "f4",
+        "start": "s5",
+        "routeThrough": "cut3",
+        "end": "bomb",
+        "speed": 0.0015,
+        "delayFrames": 113,
+        "bulge": 0.071
+      },
+      {
+        "id": "f5",
+        "start": "s6",
+        "routeThrough": "cut3",
+        "end": "bomb",
+        "speed": 0.0012,
+        "delayFrames": 126,
+        "bulge": 0.103
+      },
+      {
+        "id": "f6",
         "start": "s7",
         "routeThrough": "cut4",
         "end": "bomb",
-        "speed": 0.0048,
-        "delayFrames": 99999,
-        "bulge": 0.101,
-        "chain": {
-          "from": "s2",
-          "at": 0.305
-        }
+        "speed": 0.0016,
+        "delayFrames": 135,
+        "bulge": 0.094
       },
       {
+        "id": "f7",
         "start": "s8",
         "routeThrough": "cut4",
         "end": "bomb",
-        "speed": 0.004,
+        "speed": 0.0011,
+        "delayFrames": 145,
+        "bulge": 0.064
+      },
+      {
+        "id": "f8",
+        "branchOf": "f0",
+        "at": 0.335,
+        "end": "bomb",
+        "speed": 0.0015,
         "delayFrames": 99999,
-        "bulge": 0.098,
-        "chain": {
-          "from": "s1",
-          "at": 0.388
-        }
+        "branchPoint": {
+          "x": 150,
+          "y": 140
+        },
+        "routeThrough": "b0",
+        "bulge": 0.187
+      },
+      {
+        "id": "f9",
+        "branchOf": "f1",
+        "at": 0.342,
+        "end": "bomb",
+        "speed": 0.001,
+        "delayFrames": 99999,
+        "branchPoint": {
+          "x": 120,
+          "y": 185
+        },
+        "routeThrough": "b1",
+        "bulge": -0.187
       }
     ]
   },
   {
     "level_id": 58,
     "layout": "weave",
-    "snipsAllowed": 4,
-    "par": 5.1,
+    "snipsAllowed": 5,
+    "par": 12.8,
     "payload": {
       "id": "bomb",
       "x": 0,
@@ -5846,187 +7216,243 @@
         "id": "cut4",
         "x": 204.14817931215543,
         "y": 67.18625492255185
+      },
+      {
+        "id": "b0",
+        "x": -164,
+        "y": 11
       }
     ],
     "fuses": [
       {
+        "id": "f0",
         "start": "s1",
         "routeThrough": "cut4",
         "end": "bomb",
-        "speed": 0.0048,
+        "speed": 0.0018,
         "delayFrames": 0,
         "bulge": 0
       },
       {
+        "id": "f1",
         "start": "s2",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.0035,
+        "speed": 0.0013,
         "delayFrames": 58,
         "bulge": 0
       },
       {
+        "id": "f2",
         "start": "s3",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.0042,
+        "speed": 0.0016,
         "delayFrames": 75,
         "bulge": 0
       },
       {
+        "id": "f3",
         "start": "s4",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.0028,
+        "speed": 0.001,
         "delayFrames": 93,
         "bulge": 0
       },
       {
+        "id": "f4",
         "start": "s5",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.0036,
+        "speed": 0.0014,
         "delayFrames": 113,
         "bulge": 0
       },
       {
+        "id": "f5",
         "start": "s6",
         "routeThrough": "cut4",
         "end": "bomb",
-        "speed": 0.0028,
+        "speed": 0.001,
         "delayFrames": 128,
         "bulge": 0
       },
       {
+        "id": "f6",
         "start": "s7",
         "routeThrough": "cut4",
         "end": "bomb",
-        "speed": 0.004,
-        "delayFrames": 99999,
-        "bulge": 0,
-        "chain": {
-          "from": "s2",
-          "at": 0.356
-        }
+        "speed": 0.0015,
+        "delayFrames": 135,
+        "bulge": 0
       },
       {
+        "id": "f7",
         "start": "s8",
+        "routeThrough": "cut4",
         "end": "bomb",
-        "speed": 0.0033,
+        "speed": 0.0012,
+        "delayFrames": 150,
+        "bulge": 0
+      },
+      {
+        "id": "f8",
+        "branchOf": "f0",
+        "at": 0.14,
+        "end": "bomb",
+        "speed": 0.0015,
         "delayFrames": 99999,
-        "bulge": 0,
-        "chain": {
-          "from": "s1",
-          "at": 0.341
-        }
+        "branchPoint": {
+          "x": 82,
+          "y": 143
+        },
+        "bulge": -0.34
+      },
+      {
+        "id": "f9",
+        "branchOf": "f1",
+        "at": 0.379,
+        "end": "bomb",
+        "speed": 0.0012,
+        "delayFrames": 99999,
+        "branchPoint": {
+          "x": -210,
+          "y": -59
+        },
+        "routeThrough": "b0",
+        "bulge": 0.187
       }
     ]
   },
   {
     "level_id": 59,
     "layout": "offset",
-    "snipsAllowed": 3,
-    "par": 7.1,
+    "snipsAllowed": 5,
+    "par": 15.7,
     "payload": {
       "id": "bomb",
-      "x": -138,
-      "y": -50
+      "x": 124,
+      "y": -8
     },
     "spawns": [
       {
         "id": "s1",
-        "x": 78,
-        "y": -306
+        "x": 260,
+        "y": 149
       },
       {
         "id": "s2",
-        "x": 106,
-        "y": -266
+        "x": -228,
+        "y": 223
       },
       {
         "id": "s3",
-        "x": 234,
-        "y": -182
+        "x": -183,
+        "y": 57
       },
       {
         "id": "s4",
-        "x": 251,
-        "y": 101
+        "x": -222,
+        "y": -38
       },
       {
         "id": "s5",
-        "x": -121,
-        "y": 256
+        "x": -269,
+        "y": -202
       }
     ],
     "intersections": [
       {
         "id": "cut1",
-        "x": 147,
-        "y": -78
+        "x": -20.365066635763107,
+        "y": 167.89473925136167
       },
       {
         "id": "cut2",
-        "x": 57,
-        "y": 139
+        "x": -54,
+        "y": -145
       }
     ],
     "fuses": [
       {
+        "id": "f0",
         "start": "s1",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.0032,
-        "delayFrames": 8,
-        "bulge": 0.1
+        "speed": 0.002,
+        "delayFrames": 0,
+        "bulge": 0
       },
       {
+        "id": "f1",
         "start": "s2",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.0026,
-        "delayFrames": 38,
-        "bulge": -0.1
+        "speed": 0.0011,
+        "delayFrames": 104,
+        "bulge": 0
       },
       {
+        "id": "f2",
         "start": "s3",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.0021,
-        "delayFrames": 134,
-        "bulge": 0.1
+        "speed": 0.002,
+        "delayFrames": 170,
+        "bulge": 0
       },
       {
+        "id": "f3",
         "start": "s4",
         "routeThrough": "cut2",
         "end": "bomb",
-        "speed": 0.0021,
-        "delayFrames": 99999,
-        "bulge": -0.1,
-        "chain": {
-          "from": "s2",
-          "at": 0.383
-        }
+        "speed": 0.0014,
+        "delayFrames": 246,
+        "bulge": 0
       },
       {
+        "id": "f4",
         "start": "s5",
         "routeThrough": "cut2",
         "end": "bomb",
-        "speed": 0.0018,
+        "speed": 0.002,
+        "delayFrames": 305,
+        "bulge": 0
+      },
+      {
+        "id": "f5",
+        "branchOf": "f0",
+        "at": 0.33,
+        "end": "bomb",
+        "speed": 0.0016,
         "delayFrames": 99999,
-        "bulge": 0.1,
-        "chain": {
-          "from": "s1",
-          "at": 0.437
-        }
+        "branchPoint": {
+          "x": 22,
+          "y": 177
+        },
+        "bulge": 0.34
+      },
+      {
+        "id": "f6",
+        "branchOf": "f1",
+        "at": 0.309,
+        "end": "bomb",
+        "speed": 0.0009,
+        "delayFrames": 99999,
+        "branchPoint": {
+          "x": -78,
+          "y": 194
+        },
+        "bulge": -0.34
       }
     ]
   },
   {
     "level_id": 60,
     "layout": "rings",
-    "snipsAllowed": 5,
-    "par": 7.9,
+    "snipsAllowed": 7,
+    "par": 11.3,
     "payload": {
       "id": "bomb",
       "x": 0,
@@ -6074,62 +7500,92 @@
         "id": "cut2",
         "x": -20.28654880364072,
         "y": -151.1491160273054
+      },
+      {
+        "id": "b0",
+        "x": 20,
+        "y": 163
       }
     ],
     "fuses": [
       {
+        "id": "f0",
         "start": "s1",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.003,
+        "speed": 0.0019,
         "delayFrames": 8,
         "bulge": 0.1
       },
       {
+        "id": "f1",
         "start": "s2",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.0031,
+        "speed": 0.002,
         "delayFrames": 99,
         "bulge": -0.1
       },
       {
+        "id": "f2",
         "start": "s3",
         "end": "bomb",
-        "speed": 0.0031,
+        "speed": 0.002,
         "delayFrames": 215,
         "bulge": 0.1
       },
       {
+        "id": "f3",
         "start": "s4",
         "routeThrough": "cut1",
         "end": "bomb",
-        "speed": 0.003,
+        "speed": 0.0019,
         "delayFrames": 310,
         "bulge": -0.1
       },
       {
+        "id": "f4",
         "start": "s5",
         "routeThrough": "cut2",
         "end": "bomb",
-        "speed": 0.0031,
-        "delayFrames": 99999,
-        "bulge": 0.1,
-        "chain": {
-          "from": "s1",
-          "at": 0.349
-        }
+        "speed": 0.002,
+        "delayFrames": 425,
+        "bulge": 0.1
       },
       {
+        "id": "f5",
         "start": "s6",
         "end": "bomb",
-        "speed": 0.0031,
+        "speed": 0.0019,
+        "delayFrames": 397,
+        "bulge": -0.1
+      },
+      {
+        "id": "f6",
+        "branchOf": "f0",
+        "at": 0.202,
+        "end": "bomb",
+        "speed": 0.0016,
         "delayFrames": 99999,
-        "bulge": -0.1,
-        "chain": {
-          "from": "s2",
-          "at": 0.376
-        }
+        "branchPoint": {
+          "x": -44,
+          "y": 197
+        },
+        "routeThrough": "b0",
+        "bulge": 0.187
+      },
+      {
+        "id": "f7",
+        "branchOf": "f1",
+        "at": 0.14,
+        "end": "bomb",
+        "speed": 0.0018,
+        "delayFrames": 99999,
+        "branchPoint": {
+          "x": -88,
+          "y": 175
+        },
+        "bulge": 0.34
       }
     ]
   }

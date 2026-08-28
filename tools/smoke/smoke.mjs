@@ -290,7 +290,9 @@ check(swept === levels.length, `winnability sweep: all ${levels.length} levels w
         const iMap = Object.fromEntries(c.intersections.map((i) => [i.id, i]));
         for (const f of c.fuses) {
             if (!f.routeThrough) continue;
-            const u = proj(sMap[f.start], c.payload, iMap[f.routeThrough]);
+            const s = f.branchOf ? f.branchPoint : sMap[f.start];
+            if (!s) continue;
+            const u = proj(s, c.payload, iMap[f.routeThrough]);
             if (u < 0.02 || u > 0.98) folds++;
         }
     }
@@ -301,7 +303,10 @@ check(swept === levels.length, `winnability sweep: all ${levels.length} levels w
         const sMap = Object.fromEntries(c.spawns.map((s) => [s.id, s]));
         const pts = c.intersections.map((i) => ({ x: i.x, y: i.y }));
         for (const f of c.fuses) {
-            if (!f.routeThrough) pts.push({ x: (sMap[f.start].x + c.payload.x) / 2, y: (sMap[f.start].y + c.payload.y) / 2 });
+            if (!f.routeThrough) {
+                const s = f.branchOf ? f.branchPoint : sMap[f.start];
+                if (s) pts.push({ x: (s.x + c.payload.x) / 2, y: (s.y + c.payload.y) / 2 });
+            }
         }
         for (let i = 0; i < pts.length; i++)
             for (let j = i + 1; j < pts.length; j++)
@@ -372,39 +377,59 @@ check(swept === levels.length, `winnability sweep: all ${levels.length} levels w
     check(noSlack.length === 0, "Stars: every level has >= 1 spare snip (3★ always reachable)", noSlack.join(", "));
 }
 
-// Chain ignition: a chained wick stays dark until its parent's spark crosses the
-// trigger point. The trigger sits BEFORE the parent's cut target (t=0.5), so a
-// normal chokepoint cut CANNOT silently erase the child — it lights first and
-// demands its own cut. To PREVENT the child the player must cut the parent
-// EARLY (before the trigger), saving that snip.
+// Fork ignition: a branch wick splits off its parent's wick at the fork point.
+// The wick renders like any live wick (an unmarked Y-split); its spark only
+// exists once the parent's burn crosses the fork (`at`), then it races down the
+// branch. The fork sits BEFORE the parent's cut target (t=0.5), so a normal
+// chokepoint cut CANNOT silently erase the branch — it lights first and
+// demands its own cut. To PREVENT the branch the player must cut the parent
+// EARLY (before the fork), saving that snip.
 {
-    const chainLvls = levels.filter((l) => l.fuses.some((f) => f.chain));
-    const firstChain = levels.find((l) => l.fuses.some((f) => f.chain));
-    check(firstChain?.level_id === 8, "chains begin at L8 (right after the shared-chokepoint tutorial)", `first chain level = ${firstChain?.level_id}`);
-    check(chainLvls.length >= 20, "chains are present through the rest of the ladder", `${chainLvls.length} chain levels`);
+    const forkLvls = levels.filter((l) => l.fuses.some((f) => f.branchOf));
+    const firstFork = levels.find((l) => l.fuses.some((f) => f.branchOf));
+    check(firstFork?.level_id === 8, "forks begin at L8 (right after the shared-chokepoint tutorial)", `first fork level = ${firstFork?.level_id}`);
+    check(forkLvls.length >= 20, "forks are present through the rest of the ladder", `${forkLvls.length} fork levels`);
     const before = levels.find((l) => l.level_id === 7);
-    check(!before.fuses.some((f) => f.chain), "L7 has no chains (pure chokepoint tutorial)");
+    check(!before.fuses.some((f) => f.branchOf), "L7 has no forks (pure chokepoint tutorial)");
 
     const cfg = levels.find((l) => l.level_id === 8);
-    const chainFuses = cfg.fuses.filter((f) => f.chain);
-    check(chainFuses.length === 1, "L8 has exactly one chained wick", JSON.stringify(chainFuses[0]?.chain));
+    const branchFuses = cfg.fuses.filter((f) => f.branchOf);
+    check(branchFuses.length === 1, "L8 has exactly one branch wick", JSON.stringify(branchFuses[0]));
 
     const level = buildLevel(cfg, { width: 1280, height: 720 });
     const childSpark = level.sparks.find((s) => s.chain);
     const parentSpark = level.sparks[childSpark.chain.fromFuseIndex];
+    const branchFuse = level.fuses[childSpark.fuseIndex];
     check(
-        parentSpark && level.fuses[parentSpark.fuseIndex].start === chainFuses[0].chain.from,
-        "chain wiring: child points at the parent fuse's spark"
+        branchFuse.startNode.type === "branch",
+        "fork wiring: branch starts at a synthetic fork node (no matchstick drawn there)"
+    );
+    check(
+        parentSpark && parentSpark.fuseIndex === childSpark.chain.fromFuseIndex,
+        "fork wiring: child points at the parent fuse's spark"
     );
     check(childSpark.delay === 99999 && childSpark.triggered === false,
-        "chain wiring: chained spark has no timer and starts dark");
+        "fork wiring: branch spark has no timer and starts unlit");
     check(childSpark.chain.at < 0.5,
-        "chain wiring: trigger fires before the parent's chokepoint cut", `at=${childSpark.chain.at}`);
+        "fork wiring: the fork fires before the parent's cut target", `at=${childSpark.chain.at}`);
+
+    // The fork node must sit ON the parent's wick at `at` — same point the
+    // generator pinned as branchPoint.
+    {
+        const parentFuse = level.fuses[parentSpark.fuseIndex];
+        const P = getBezierXY(childSpark.chain.at, parentFuse.startNode, parentFuse.cp1, parentFuse.cp2, parentFuse.endNode);
+        const N = branchFuse.startNode;
+        check(
+            Math.hypot(P.x - N.x, P.y - N.y) < 1,
+            "fork geometry: the fork node lands on the parent's wick at `at`",
+            `Δ=${Math.hypot(P.x - N.x, P.y - N.y).toFixed(2)}`
+        );
+    }
 
     const run = (cuts) => {
         const g = new GameLoop({ canvas: null, ...makeStubs() });
         g.loadLevel(buildLevel(cfg, { width: 1280, height: 720 }), 0);
-        for (const c of cuts) g.cuts.push({ x: c.x, y: c.y, radius: 15, angle: 0, fuseId: null });
+        for (const c of cuts) g.cuts.push({ x: c.x, y: c.y, radius: 15, angle: 0, fuseId: c.fuseId ?? null });
         for (let i = 0; i < 6000 && g.gameState === STATE.PLAYING; i++) {
             g.frameCount++;
             g._update();
@@ -413,68 +438,145 @@ check(swept === levels.length, `winnability sweep: all ${levels.length} levels w
     };
 
     // Regression for the "early win" bug: cutting every chokepoint (including a
-    // parent's shared cross point) must NOT erase the chained side — the child
-    // lights before the parent dies, then dies at its own cut. Level still won.
+    // parent's shared cross point) must NOT erase the branch — it lights before
+    // the parent dies, then dies at its own cut. Level still won.
     const allCuts = level.fuses.map((f) => f.intersectionPt).filter((p, i, a) => !a.some((q, j) => j < i && Math.hypot(q.x - p.x, q.y - p.y) < 30));
     const gNormal = run(allCuts);
     const childNormal = gNormal.sparks.find((s) => s.chain);
     check(
         gNormal.gameState === STATE.WON && childNormal.ignited && childNormal.triggered,
-        "chain: cutting all chokepoints still lets the child light (no early win) — it dies at its own cut"
+        "fork: cutting all chokepoints still lets the branch light (no early win) — it dies at its own cut"
     );
 
-    // Prevention: cut the parent's wick BEFORE the trigger → the chain breaks
-    // and the child never lights.
+    // Prevention: cut the parent's wick BEFORE the fork → the branch duds and
+    // never lights.
     const parentFuse = level.fuses[parentSpark.fuseIndex];
     const early = getBezierXY(childSpark.chain.at - 0.1, parentFuse.startNode, parentFuse.cp1, parentFuse.cp2, parentFuse.endNode);
-    const gPrev = run([...allCuts, { x: early.x, y: early.y, radius: 15, angle: 0, fuseId: null }]);
+    const gPrev = run([...allCuts, { x: early.x, y: early.y, radius: 15, angle: 0, fuseId: parentFuse.id }]);
     const childPrev = gPrev.sparks.find((s) => s.chain);
     check(
         gPrev.gameState === STATE.WON && !childPrev.ignited && !childPrev.active,
-        "chain: cutting the parent BEFORE the trigger breaks the chain (child never lights)"
+        "fork: cutting the parent BEFORE the fork breaks the branch (never lights)"
     );
 
-    // A parent that dies AFTER crossing the trigger must still light the child:
-    // cut every chokepoint EXCEPT the child's own. The child lights (its parent
-    // died at a normal cut, downstream of the trigger), burns un-snuffed to the
-    // payload, and the level is LOST — proving a normal parent cut can't
-    // silently erase the chained side, regardless of spark array order.
-    const childFuse = level.fuses[childSpark.fuseIndex];
-    const withoutChildCut = allCuts.filter((p) => Math.hypot(p.x - childFuse.intersectionPt.x, p.y - childFuse.intersectionPt.y) > 30);
-    const gDown = run(withoutChildCut);
+    // A parent that dies AFTER crossing the fork must still light the branch:
+    // cut every chokepoint EXCEPT the branch's own. The branch lights (its
+    // parent died at a normal cut, downstream of the fork), burns un-snuffed to
+    // the payload, and the level is LOST — proving a normal parent cut can't
+    // silently erase the branch, regardless of spark array order.
+    const withoutBranchCut = allCuts.filter((p) => Math.hypot(p.x - branchFuse.intersectionPt.x, p.y - branchFuse.intersectionPt.y) > 30);
+    const gDown = run(withoutBranchCut);
     const childDown = gDown.sparks.find((s) => s.chain);
     check(
         childDown.ignited && childDown.triggered && gDown.gameState === STATE.LOST,
-        "chain: a parent cut after the trigger still lights the child (lit child is a real threat)"
+        "fork: a parent cut after the fork still lights the branch (lit branch is a real threat)"
     );
 
-    // Design invariant (the "early win" regression): NO chained child may have a
-    // trigger at/after its parent's cut target, or the normal cut would silently
-    // erase the chained side. Verify across all 60 levels.
+    // Design invariant (the "early win" regression): NO fork may sit at/after
+    // its parent's cut target, or the normal cut would silently erase the
+    // branch. Verify across all 60 levels.
     {
         const bad = [];
         for (const c of levels) {
             for (const f of c.fuses) {
-                if (f.chain && f.chain.at >= 0.5) bad.push(`L${c.level_id}:${f.start}@${f.chain.at}`);
+                if (f.branchOf && (f.at >= 0.5 || f.at <= 0)) bad.push(`L${c.level_id}:${f.id}@${f.at}`);
             }
         }
-        check(bad.length === 0, "chain invariant: no level has a trivially breakable chain (trigger before parent's cut)", bad.join(", "));
+        check(bad.length === 0, "fork invariant: no level has a trivially breakable fork (fires before parent's cut)", bad.join(", "));
+    }
+
+    // Fork showcase: every fork sits clear of the bomb art (visible Y-split),
+    // and every routed branch's cross-section sits ON its wick (so the cut
+    // target isn't floating in mid-air next to the wick).
+    {
+        const hiddenForks = [];
+        const offWick = [];
+        for (const c of levels) {
+            for (const f of c.fuses) {
+                if (!f.branchOf) continue;
+                const r = Math.hypot(f.branchPoint.x - c.payload.x, f.branchPoint.y - c.payload.y);
+                if (r < 160) hiddenForks.push(`L${c.level_id}:${f.id}@r${Math.round(r)}`);
+                if (f.routeThrough) {
+                    const cp = c.intersections.find((x) => x.id === f.routeThrough);
+                    if (!cp) continue;
+                    const wx = c.payload.x - f.branchPoint.x, wy = c.payload.y - f.branchPoint.y;
+                    const L2 = wx * wx + wy * wy;
+                    const m = { x: (cp.x - 0.125 * (f.branchPoint.x + c.payload.x)) / 0.75, y: (cp.y - 0.125 * (f.branchPoint.y + c.payload.y)) / 0.75 };
+                    const u = ((m.x - f.branchPoint.x) * wx + (m.y - f.branchPoint.y) * wy) / L2;
+                    if (u < 0.02 || u > 0.98) offWick.push(`L${c.level_id}:${f.id}@u${u.toFixed(2)}`);
+                }
+            }
+        }
+        check(hiddenForks.length === 0, "fork showcase: every fork is visible outside the bomb art", hiddenForks.join(", "));
+        check(offWick.length === 0, "fork showcase: routed branch cross-sections sit on the branch wick", offWick.join(", "));
     }
 }
 
-// Difficulty profile: the burn pace must actually climb across the ladder, and
-// the new decision mechanics (chains, partial/direct fuses) appear in act 1.
+// Anti-cheat: a cut only kills sparks on ITS OWN wick, or sparks crossing a
+// shared chokepoint (the intended crossroads multi-kill). Without the fuse
+// guard, every wick converges on the bomb — waiting until sparks bunch at the
+// banana and snipping there killed several fuses with one snip.
+{
+    const cfg = levels.find((l) => l.level_id === 4); // 2 fuses, both end at the bomb
+    const level = buildLevel(cfg, { width: 1280, height: 720 });
+    const g = new GameLoop({ canvas: null, ...makeStubs() });
+    g.loadLevel(level, 0);
+
+    // A cut placed right at the bomb, on fuse 0 (as if the player waited for
+    // the sparks to bunch up at the banana and swiped there).
+    const f0 = level.fuses[0];
+    const bomb = Object.values(level.nodeMap).find((n) => n.type === "payload");
+    g.cuts.push({ x: bomb.x, y: bomb.y, radius: 15, angle: 0, fuseId: f0.id });
+
+    let f0DiedFrame = -1;
+    for (let i = 0; i < 6000 && g.gameState === STATE.PLAYING; i++) {
+        g.frameCount++;
+        g._update();
+        if (!g.sparks[0].active) { f0DiedFrame = g.frameCount; break; }
+    }
+    const s1 = g.sparks[1];
+    check(f0DiedFrame > 0, "anti-cheat: the cut at the bomb kills the fuse it was placed on", `died frame ${f0DiedFrame}`);
+    check(s1.active && s1.progress < 1,
+        "anti-cheat: a converging spark on ANOTHER wick survives the same cut (no multi-kill at the bomb)",
+        `progress=${s1.progress.toFixed(2)} active=${s1.active}`);
+    check(g.gameState === STATE.PLAYING,
+        "anti-cheat: level still in play — the surviving spark is a real threat (waiting at the bomb no longer wins)", g.gameState);
+}
+
+// Difficulty profile: the burn pace is a READ-TIME budget, not a speed race.
+// Simple teaching levels can burn briskly; the dense late mazes (many wicks +
+// forks) burn the SLOWEST so the player has time to read the lines and place
+// every cut. Difficulty in act 3 comes from the web of routes, not panic.
 {
     const fastest = (id) => Math.max(...levels.find((l) => l.level_id === id).fuses.map((f) => f.speed));
     const secs = (speed) => Math.round((1 / speed / 60) * 10) / 10;
     const l8 = secs(fastest(8)), l20 = secs(fastest(20)), l40 = secs(fastest(40)), l55 = secs(fastest(55));
-    check(l8 < 16, "L8 fastest fuse burns in under 16s (was ~13s, was 17s pre-ramp)", `${l8}s`);
+    check(l8 < 16, "L8 fastest fuse burns in under 16s (gentle showcase)", `${l8}s`);
     check(l20 < 10, "L20 fastest fuse burns in under 10s", `${l20}s`);
-    check(l40 < 7, "L40 fastest fuse burns in under 7s", `${l40}s`);
-    check(l55 < 5, "L55 fastest fuse burns in under 5s (was 8-9s)", `${l55}s`);
+    check(l40 < 7, "L40 act-2 peak burns in under 7s (fastest band)", `${l40}s`);
+    check(l55 > 6, "L55 dense maze burns SLOWER than 6s (readable, not a panic)", `${l55}s`);
 
-    const partialLvls = levels.filter((l) => l.level_id > 3 && l.fuses.some((f) => !f.routeThrough && !f.chain));
-    const firstPartial = levels.find((l) => l.level_id > 3 && l.fuses.some((f) => !f.routeThrough && !f.chain));
+    // Read-time floor: no fuse anywhere burns a full wick in under ~5.9s, or
+    // the player can't track all the sparks at once.
+    let tooFast = [];
+    for (const c of levels) {
+        const f = Math.max(...c.fuses.map((x) => x.speed));
+        if (f > 0.0028) tooFast.push(`L${c.level_id}=${(1 / f / 60).toFixed(1)}s`);
+    }
+    check(tooFast.length === 0, "read-time floor: no fuse burns faster than ~5.9s/wick", tooFast.join(", "));
+
+    // Complexity-slow correlation: the densest late mazes must burn slower
+    // than the act-2 peak (difficulty via geometry, not speed).
+    const sparkCount = (id) => {
+        const l = levels.find((x) => x.level_id === id);
+        return l.spawns.length + l.fuses.filter((f) => f.branchOf).length;
+    };
+    check(sparkCount(55) >= 9 && l55 > l40, "complexity slow-burn: L55 (10 sparks) burns slower than the L40 peak", `L55 ${l55}s @ ${sparkCount(55)} sparks vs L40 ${l40}s`);
+    const boss = secs(fastest(57));
+    check(boss >= 6, "boss levels burn at or above 6s/wick (calm placement puzzles)", `${boss}s`);
+
+    const partialLvls = levels.filter((l) => l.level_id > 3 && l.fuses.some((f) => !f.routeThrough && !f.branchOf));
+    const firstPartial = levels.find((l) => l.level_id > 3 && l.fuses.some((f) => !f.routeThrough && !f.branchOf));
     check(firstPartial?.level_id === 14, "partial (direct) fuses begin at L14", `first = L${firstPartial?.level_id}`);
     check(partialLvls.length >= 15, "direct fuses appear throughout the rest of the ladder", `${partialLvls.length} levels`);
 

@@ -409,10 +409,20 @@ export class GameLoop {
 
             const pos = getBezierXY(spark.progress, fuse.startNode, fuse.cp1, fuse.cp2, fuse.endNode);
 
-            // Cut-circle collision: a spark dies if it travels inside a cut.
+            // Cut-circle collision: a spark dies if it travels inside a cut —
+            // but only when that cut belongs to ITS fuse, or the cut sits at a
+            // chokepoint its fuse routes through (the intended crossroads
+            // multi-kill: one well-placed cut at a shared crossing snips them
+            // all). Without the fuse guard, every wick converges on the bomb,
+            // so waiting until the sparks bunch up at the banana and snipping
+            // there killed several fuses with ONE snip — a cheat. A cut placed
+            // on another wick now passes a converging spark by harmlessly.
             let fellIntoGap = false;
             for (const cut of this.cuts) {
-                if (Math.hypot(pos.x - cut.x, pos.y - cut.y) < cut.radius) {
+                const d = Math.hypot(pos.x - cut.x, pos.y - cut.y);
+                const atOwnWick = cut.fuseId === fuse.id;
+                const atChokepoint = Math.hypot(cut.x - fuse.intersectionPt.x, cut.y - fuse.intersectionPt.y) < cut.radius;
+                if (d < cut.radius && (atOwnWick || atChokepoint)) {
                     fellIntoGap = true;
                     break;
                 }

@@ -257,7 +257,7 @@ game.onLevelComplete = (levelId, stars, won) => {
         const seconds = Math.round((game.clearFrames / 60) * 10) / 10;
         const isRecord = save.setBestTime(levelId, seconds);
         const config = levels.find((l) => l.level_id === levelId);
-        winTime.textContent = `${seconds.toFixed(1)}s`;
+        winTime.textContent = `TIME ${seconds.toFixed(1)}s`;
         winPar.textContent = config?.par != null ? `PAR ${config.par.toFixed(1)}s` : "";
         winRecord.style.display = isRecord ? "inline-block" : "none";
         if (perfect > 0) {

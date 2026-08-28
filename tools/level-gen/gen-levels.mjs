@@ -21,6 +21,7 @@ import { writeFileSync, mkdirSync, readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import path from "node:path";
 import { validateLevel } from "../../src/engine/LevelManager.js";
+import { getBezierXY } from "../../src/engine/MathUtils.js";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 const OUT = path.join(ROOT, "src", "data", "levels.json");
@@ -65,10 +66,11 @@ function knobsForLevel(n) {
                 delay: "stagger", speed: 0.0011,
             });
         } else if (n <= 10) {
-            // Shared chokepoint (L7 teaches it); chains arrive at L8.
+            // Shared chokepoint (L7 teaches it); the first fork arrives at L8
+            // as a clean 2-wick showcase, then density returns.
             Object.assign(k, {
-                spawns: 3 + (n % 2), chokepoints: 1, share: true,
-                delay: "close", speed: 0.0013,
+                spawns: n === 8 ? 2 : 3 + (n % 2), chokepoints: 1, share: true,
+                delay: "close", speed: n === 8 ? 0.0011 : 0.0013,
             });
         } else if (n <= 14) {
             // Snip economy: split across 2 chokepoints, tighter timing.
@@ -84,62 +86,67 @@ function knobsForLevel(n) {
             });
         }
     } else if (act === 2) {
-        // Planning depth. Wave math drives it; the whole act is ~2x the burn
-        // pace of the old ladder so two sparks can threaten at once.
-        Object.assign(k, { spawns: 4, chokepoints: 2, share: false, delay: "close", speed: 0.002 });
+        // Planning depth. Speed stays moderate through the act (sparks must be
+        // readable while the routing gets busier); the cap is ~0.0025 so even
+        // the act-2 peak leaves ~6.5s to react per wick.
+        Object.assign(k, { spawns: 4, chokepoints: 2, share: false, delay: "close", speed: 0.0018 });
         k.spawns = 4 + wave + (relief ? 0 : wpos >= 2 ? 1 : 0);
         k.chokepoints = 2 + (wave >= 1 ? 1 : 0) - (relief ? 1 : 0);
         k.delay = wave >= 2 ? "overlap" : "close";
-        k.speed = 0.002 + wave * 0.0003;
+        k.speed = 0.0018 + wave * 0.0002; // 0.0018–0.0024
         // Level 21-24: speed variance focus.
-        if (n <= 24) { k.spawns = 4 + (n % 2); k.chokepoints = 2; k.speed = 0.002 + (n % 3) * 0.0001; }
+        if (n <= 24) { k.spawns = 4 + (n % 2); k.chokepoints = 2; k.speed = 0.0018 + (n % 3) * 0.0001; }
         // 25-28: multi-chokepoint routing + the jump to two chains.
         if (n >= 25 && n <= 28) { k.spawns = 6; k.chokepoints = 3; k.delay = "close"; }
         // 29-33: overlapping timing pressure.
         if (n >= 29 && n <= 33) { k.spawns = 6; k.chokepoints = 2; k.delay = "overlap"; }
         // 34-37: partial coverage (some fuses direct).
         if (n >= 34 && n <= 37) { k.spawns = 6 + (n % 2); k.chokepoints = 2; k.partial = true; }
-        // 38-40: peak.
-        if (n >= 38) { k.spawns = 6; k.chokepoints = 3; k.speed = 0.0032; k.delay = "overlap"; }
+        // 38-40: peak — the only act-2 band that pushes the pace.
+        if (n >= 38) { k.spawns = 6; k.chokepoints = 3; k.speed = 0.0025; k.delay = "overlap"; }
     } else {
-        // Act 3 — mastery. Snips derive from the geometry (min cuts, no slack).
-        // Fast enough that a single misread costs the level.
-        const base = { spawns: 6, chokepoints: 2, share: false, delay: "close", speed: 0.0035 };
-        Object.assign(k, base);
+        // Act 3 — mastery via COMPLEXITY, not speed. The most tangled mazes
+        // (many wicks, two forks, ten sparks) burn the SLOWEST so the player
+        // has time to read the lines and place every cut; difficulty comes from
+        // the web of routes, branches, and chokepoints, never from panic.
+        // Full-wick burn stays above ~6s everywhere, and the boss levels
+        // (L56-58, every chokepoint must be cut) get the calmest burn of all.
+        Object.assign(k, { spawns: 6, chokepoints: 2, share: false, delay: "close", speed: 0.0024 });
         if (n <= 44) {
-            // Minimal snips: single shared chokepoint, faster.
-            Object.assign(k, { spawns: 6, chokepoints: 1, share: true, delay: "overlap", speed: 0.0038 });
+            // Minimal snips: single shared chokepoint, still brisk.
+            Object.assign(k, { spawns: 6, chokepoints: 1, share: true, delay: "overlap", speed: 0.0024 });
         } else if (n <= 50) {
             // Full nets: many spawns funneled through a few chokepoints.
             Object.assign(k, {
                 spawns: 6 + (n % 2), chokepoints: 3, share: false,
-                delay: "overlap", speed: 0.004 + (n % 3) * 0.0002,
+                delay: "overlap", speed: 0.0022 + (n % 3) * 0.0001,
             });
         } else if (n <= 55) {
-            // Wave peak escalation.
+            // Wave peak escalation — but the maze is densest here, so the burn
+            // SLOWS: 8 spawns + 2 forks ≈ 10 sparks to track.
             Object.assign(k, {
                 spawns: 7 + (n % 2), chokepoints: 3, share: false,
-                delay: "overlap", speed: 0.0045,
+                delay: "overlap", speed: 0.002,
             });
         } else if (n <= 58) {
-            // Boss levels: every chokepoint must be cut, zero slack (plateau, no climb).
+            // Boss levels: every chokepoint must be cut, zero slack. Calmest
+            // burn in the act — the puzzle is the placement, not the race.
             Object.assign(k, {
                 spawns: 8, chokepoints: 4, share: false,
-                delay: "overlap", speed: 0.0048,
+                delay: "overlap", speed: 0.0018,
             });
         } else {
             // 59-60 finale + relief.
             Object.assign(k, {
                 spawns: 6 - (n % 2), chokepoints: 2, share: false,
-                delay: "stagger", speed: 0.0032,
+                delay: "stagger", speed: 0.002,
             });
         }
     }
-    // Chain ignition: introduced at L8 (right after the shared-chokepoint
-    // tutorial), one chain through L24, two chains from L25. Some wicks light
-    // OTHER wicks mid-burn (parent reaches a trigger point → the child wick
-    // ignites). Cutting the parent before the trigger breaks the chain and
-    // saves a snip.
+    // Fork ignition: introduced at L8 (right after the shared-chokepoint
+    // tutorial), one fork through L24, two forks from L25. Some wicks FORK —
+    // the burn reaches a point on a wick and lights a NEW wick there. Cutting
+    // the parent before the fork stops it and saves a snip.
     if (n >= 8 && n <= 24) k.chains = 1;
     else if (n >= 25) k.chains = 2;
     // Partial coverage (some fuses route straight, no chokepoint) — taught at
@@ -159,6 +166,25 @@ function knobsForLevel(n) {
  */
 function slackForLevel(n) {
     return n <= 3 ? 2 : 1;
+}
+
+/**
+ * Branch burn pace: the wick a fork lights is the newest threat the player
+ * hasn't planned for, so later acts let it burn slower (more reaction time).
+ * Combined with the curvier branch arcs (branchCurveMag), late branches read
+ * as long, slow snake burns instead of short fast dashes.
+ */
+function branchSpeedFactor(n) {
+    if (n < 25) return 1.0;
+    if (n < 40) return 0.9;
+    return 0.8;
+}
+
+/** Branch arc intensity ramps with the ladder: early forks are gentle
+ *  Y-splits; late forks sweep into long snake bows — longer burn along the
+ *  arc, and the maze reads as a tangle of curves at first glance. */
+function branchCurveMag(n) {
+    return n >= 25 ? Math.min(0.34, 0.16 + (n - 25) * 0.007) : 0.12;
 }
 
 // ---- placement --------------------------------------------------------------
@@ -512,6 +538,10 @@ const PAYLOAD_CLEARANCE = 150;
 // Spawns sit at radius ~300-450, so anything past 480 is a drift artifact.
 const MAX_CP_DISTANCE = 480;
 
+// A fork closer than this leaves a stubby, half-hidden branch wick; the fork
+// is pushed earlier along the parent until the branch has this much span.
+const FORK_MIN_LENGTH = 200;
+
 // Relaxation target (good-looking, well-balanced arcs).
 const HAIRPIN_MARGIN = 0.08; // u pushed toward [margin, 1-margin]
 // Actual fold threshold: u outside (0,1) reverses the spark — u in [0,1] is a
@@ -566,12 +596,16 @@ function deHairpin(level) {
     const routed = {}; // chokepoint id -> [{ start, end }]
     for (const f of level.fuses) {
         if (!f.routeThrough) continue;
-        (routed[f.routeThrough] ??= []).push({ start: sMap[f.start], end: bomb });
+        const start = f.branchOf ? f.branchPoint : sMap[f.start];
+        if (!start) continue;
+        (routed[f.routeThrough] ??= []).push({ start, end: bomb });
     }
     // Direct fuses' cut points: the midpoint of their spawn->bomb segment.
+    // Branch fuses have no spawn and no chokepoint (always direct) — their cut
+    // points are validated after positionBranches pins the fork.
     const directMidpoints = [];
     for (const f of level.fuses) {
-        if (f.routeThrough) continue;
+        if (f.routeThrough || f.branchOf) continue;
         directMidpoints.push({ x: (sMap[f.start].x + bomb.x) / 2, y: (sMap[f.start].y + bomb.y) / 2 });
     }
 
@@ -642,7 +676,9 @@ function deHairpin(level) {
     for (const f of level.fuses) {
         if (!f.routeThrough) continue;
         const I = iMap[f.routeThrough];
-        const u = projectionU(sMap[f.start], bomb, I);
+        const st = f.branchOf ? f.branchPoint : sMap[f.start];
+        if (!st) continue;
+        const u = projectionU(st, bomb, I);
         if (u < FOLD_THRESHOLD || u > 1 - FOLD_THRESHOLD) {
             delete f.routeThrough;
         }
@@ -660,12 +696,16 @@ function validatePlacement({ payload, spawns, intersections, fuses }) {
     spawns.forEach((s) => (sMap[s.id] = s));
     const iMap = {};
     intersections.forEach((c) => (iMap[c.id] = c));
+    const byId = new Map(fuses.map((f) => [f.id, f]));
 
-    // No wick may fold (spark reversal).
+    // No wick may fold (spark reversal). Branch wicks route through their own
+    // cross-section, so their start is the fork point, not a spawn.
     for (const f of fuses) {
         if (!f.routeThrough) continue;
-        const u = projectionU(sMap[f.start], payload, iMap[f.routeThrough]);
-        if (u < FOLD_THRESHOLD || u > 1 - FOLD_THRESHOLD) return { ok: false, reason: `fold on ${f.start}` };
+        const st = f.branchOf ? f.branchPoint : sMap[f.start];
+        if (!st) return { ok: false, reason: `fuse ${f.id} has no start` };
+        const u = projectionU(st, payload, iMap[f.routeThrough]);
+        if (u < FOLD_THRESHOLD || u > 1 - FOLD_THRESHOLD) return { ok: false, reason: `fold on ${f.start || f.id}` };
     }
     // Chokepoints must sit clear of the payload's visible art.
     for (const c of intersections) {
@@ -679,19 +719,60 @@ function validatePlacement({ payload, spawns, intersections, fuses }) {
             if (Math.hypot(c.x - s.x, c.y - s.y) < 60) return { ok: false, reason: "chokepoint too close to a spawn" };
         }
     }
-    // Every cut point (chokepoint or direct-fuse midpoint) must be separately placeable.
+    // Every cut point (chokepoint or direct-fuse midpoint) must be separately
+    // placeable. Branch fuses contribute their fork->payload midpoint.
     const pts = intersections.slice();
     for (const f of fuses) {
         if (f.routeThrough) continue;
-        pts.push({ x: (sMap[f.start].x + payload.x) / 2, y: (sMap[f.start].y + payload.y) / 2 });
+        const st = f.branchOf ? f.branchPoint : sMap[f.start];
+        if (!st) return { ok: false, reason: `fuse ${f.id} has no start` };
+        pts.push({ x: (st.x + payload.x) / 2, y: (st.y + payload.y) / 2 });
     }
     for (let i = 0; i < pts.length; i++) {
         for (let j = i + 1; j < pts.length; j++) {
             if (Math.hypot(pts[i].x - pts[j].x, pts[i].y - pts[j].y) < CUT_SEPARATION) return { ok: false, reason: "cut points too close" };
         }
     }
+
+    // The fork is the puzzle: a cut placed at a chokepoint — or at the parent's
+    // own cut target — snuffs ANY spark within its ~15px radius, so a branch
+    // wick threading within that radius would be killed by the parent's normal
+    // cut and the fork would be decorative. Keep the branch's whole path clear
+    // of every OTHER chokepoint and of a direct parent's cut target. (Its own
+    // cross-section is the exception — the branch passes through that one.)
+    for (const f of fuses) {
+        if (!f.branchOf || !f.branchPoint) continue;
+        const st = f.branchPoint;
+        const cpI = f.routeThrough ? iMap[f.routeThrough] : { x: (st.x + payload.x) / 2, y: (st.y + payload.y) / 2 };
+        const [cp1, cp2] = forcedFuseCPs(st, payload, cpI, f.bulge || 0);
+        const samples = [];
+        for (let u = 0; u <= 1; u += 0.04) samples.push(getBezierXY(u, st, cp1, cp2, payload));
+        for (const s of samples) {
+            for (const c of intersections) {
+                if (c.id === f.routeThrough) continue; // the branch's own cross-section
+                if (Math.hypot(s.x - c.x, s.y - c.y) < BRANCH_CUT_CLEARANCE) {
+                    return { ok: false, reason: `branch ${f.id} passes near chokepoint ${c.id}` };
+                }
+            }
+        }
+        const parent = byId.get(f.branchOf);
+        if (parent && !parent.routeThrough) {
+            const parentCut = { x: (sMap[parent.start].x + payload.x) / 2, y: (sMap[parent.start].y + payload.y) / 2 };
+            for (const s of samples) {
+                if (Math.hypot(s.x - parentCut.x, s.y - parentCut.y) < BRANCH_CUT_CLEARANCE) {
+                    return { ok: false, reason: `branch ${f.id} passes near its parent's cut` };
+                }
+            }
+        }
+    }
     return { ok: true };
 }
+
+/** A branch wick must stay this far from any chokepoint and from its parent's
+ *  cut target. Cuts snuff every spark within their ~15px radius, so this is the
+ *  kill radius plus a safety margin (and it keeps the fork from colliding with
+ *  the parent's own cut point when both converge near the payload). */
+const BRANCH_CUT_CLEARANCE = 26;
 
 /** Assign a layout archetype deterministically, varying it across the ladder.
  *  Single-shared-chokepoint levels need the spawns on ONE side of the bomb
@@ -763,6 +844,172 @@ function routeFor(i, spawn, k, look, intersections, rng) {
     }
 }
 
+/** Control points for the forced-intersection fuse (mirrors
+ *  createForcedIntersectionFuse) so the generator can sample the parent's wick
+ *  at the chain trigger point and anchor the branch tie-in there. */
+function forcedFuseCPs(start, end, intersection, bulge = 0) {
+    const mX = (intersection.x - 0.125 * (start.x + end.x)) / 0.75;
+    const mY = (intersection.y - 0.125 * (start.y + end.y)) / 0.75;
+    if (!bulge) return [{ x: mX, y: mY }, { x: mX, y: mY }];
+    const wx = end.x - start.x, wy = end.y - start.y;
+    const L = Math.hypot(wx, wy) || 1;
+    const d = bulge * L;
+    const perpX = -wy / L, perpY = wx / L;
+    return [
+        { x: mX + perpX * d, y: mY + perpY * d },
+        { x: mX - perpX * d, y: mY - perpY * d },
+    ];
+}
+
+/** BRANCH SHOWCASE: a forked wick is a branch fuse whose start is a point on
+ *  its parent's wick (the fork). Runs AFTER de-hairpin relaxation so the fork
+ *  uses the final geometry. Each branch gets its OWN cross-section (a fresh
+ *  chokepoint placed just past the branch's midpoint, offset to the side away
+ *  from the parent's wick) — so the branch has a real cut target that a normal
+ *  parent cut can't touch, and the layout reads as a branching tree.
+ *  The branch cross-sections are relaxed by a second de-hairpin pass. */
+function positionBranches(level) {
+    const { payload, spawns, intersections, fuses } = level;
+    const sMap = {};
+    spawns.forEach((s) => (sMap[s.id] = s));
+    const iMap = {};
+    intersections.forEach((c) => (iMap[c.id] = c));
+    const byId = new Map(fuses.map((f) => [f.id, f]));
+    const toRemove = [];
+    const curveMag = branchCurveMag(level.n ?? 0);
+    let branchIdx = 0;
+    for (const f of fuses) {
+        if (!f.branchOf) continue;
+        const parent = byId.get(f.branchOf);
+        if (!parent) continue;
+        const ps = sMap[parent.start];
+        const pCp = iMap[parent.routeThrough] || { x: (ps.x + payload.x) / 2, y: (ps.y + payload.y) / 2 };
+        const [cp1, cp2] = forcedFuseCPs(ps, payload, pCp, parent.bulge || 0);
+
+        // A fork too close to the payload leaves a stubby, half-hidden branch
+        // wick. Push the fork earlier along the parent until the branch has a
+        // real span (the parent's cut is still at t=0.5, so the fork always
+        // fires before a normal cut can stop it). If even the earliest `at`
+        // can't clear the bomb art, the parent's wick never leaves the bomb's
+        // footprint — drop the branch rather than emit a hidden stub.
+        let at = f.at;
+        let P = getBezierXY(at, ps, cp1, cp2, payload);
+        let L = Math.hypot(payload.x - P.x, payload.y - P.y);
+        for (let guard = 0; guard < 8 && L < FORK_MIN_LENGTH; guard++) {
+            at = Math.max(0.14, at - 0.025);
+            P = getBezierXY(at, ps, cp1, cp2, payload);
+            L = Math.hypot(payload.x - P.x, payload.y - P.y);
+        }
+        if (L < 160) {
+            toRemove.push(f);
+            continue;
+        }
+        f.at = Math.round(at * 1000) / 1000;
+        f.branchPoint = { x: Math.round(P.x), y: Math.round(P.y) };
+
+        // Long wicks get the branch a real cross-section: ~55% along the
+        // fork->payload chord, offset to the side away from the parent's
+        // mid-curve (flipped if that side crowds another cut point), then
+        // pushed out of the payload clearance ring. Short-wick forks can't
+        // host a chokepoint inside the clearance ring — those stay direct
+        // (their midpoint is the cut target) with a bulge so the fork still
+        // reads as a Y.
+        const wx = payload.x - P.x, wy = payload.y - P.y;
+        const perpX = -wy / L, perpY = wx / L;
+        const parentMid = getBezierXY(0.5, ps, cp1, cp2, payload);
+        let side = perpX * (parentMid.x - P.x) + perpY * (parentMid.y - P.y) > 0 ? -1 : 1;
+        if (L < 185) {
+            delete f.routeThrough;
+            f.bulge = Math.round(side * curveMag * 1000) / 1000;
+            continue;
+        }
+        const MIN_R = PAYLOAD_CLEARANCE + 14;
+        let placed = false;
+        for (let guard = 0; guard < 4 && !placed; guard++) {
+            const oc = 0.16 + guard * 0.05; // widen the offset if the first side is crowded
+            let cx = P.x + wx * 0.55 + perpX * side * L * oc;
+            let cy = P.y + wy * 0.55 + perpY * side * L * oc;
+            const r = Math.hypot(cx, cy);
+            if (r < MIN_R && r > 0.001) {
+                const k = MIN_R / r;
+                cx *= k;
+                cy *= k;
+            }
+            const crowded = intersections.some((q) => Math.hypot(q.x - cx, q.y - cy) < 52);
+            if (crowded) {
+                side = -side;
+                continue;
+            }
+            const cid = `b${branchIdx++}`;
+            intersections.push({ id: cid, x: Math.round(cx), y: Math.round(cy) });
+            f.routeThrough = cid;
+            // Routed branches also bow (softer than direct ones — they already
+            // bend through their own cross-section). Still passes exactly
+            // through the chokepoint at t=0.5.
+            f.bulge = Math.round(side * curveMag * 0.55 * 1000) / 1000;
+            placed = true;
+        }
+        if (!placed) {
+            delete f.routeThrough;
+            f.bulge = Math.round(side * curveMag * 1000) / 1000;
+        }
+    }
+    if (toRemove.length) {
+        for (const f of toRemove) {
+            const i = level.fuses.indexOf(f);
+            if (i >= 0) level.fuses.splice(i, 1);
+        }
+    }
+}
+
+/** Safety net: after the branch cross-sections are relaxed against the final
+ *  fork geometry, a routed branch whose cross-section ended up too close to
+ *  the bomb or to another cut point is downgraded to a direct wick — same
+ *  fork, still a Y. Keeps dense levels from inheriting chokepoints that
+ *  validatePlacement would reject. */
+function settleBranches(level) {
+    const { payload, spawns, intersections, fuses } = level;
+    const sMap = {};
+    spawns.forEach((s) => (sMap[s.id] = s));
+    const iMap = {};
+    intersections.forEach((c) => (iMap[c.id] = c));
+    const byId = new Map(fuses.map((f) => [f.id, f]));
+    const curveMag = branchCurveMag(level.n ?? 0);
+    const drop = new Set();
+
+    for (const f of fuses) {
+        if (!f.branchOf || !f.routeThrough) continue;
+        const cp = iMap[f.routeThrough];
+        if (!cp) continue;
+        const r = Math.hypot(cp.x - payload.x, cp.y - payload.y);
+        const near = intersections.some((q) => q.id !== f.routeThrough && Math.hypot(q.x - cp.x, q.y - cp.y) < 48);
+        if (r < PAYLOAD_CLEARANCE + 6 || near) drop.add(f.routeThrough);
+    }
+    if (!drop.size) return;
+
+    for (const f of fuses) {
+        if (!f.branchOf || !f.routeThrough || !drop.has(f.routeThrough)) continue;
+        const parent = byId.get(f.branchOf);
+        delete f.routeThrough;
+        let side = 1;
+        if (parent) {
+            const ps = sMap[parent.start];
+            if (ps) {
+                const pCp = iMap[parent.routeThrough] || { x: (ps.x + payload.x) / 2, y: (ps.y + payload.y) / 2 };
+                const [cp1, cp2] = forcedFuseCPs(ps, payload, pCp, parent.bulge || 0);
+                const P = f.branchPoint || getBezierXY(f.at, ps, cp1, cp2, payload);
+                const wx = payload.x - P.x, wy = payload.y - P.y;
+                const L = Math.hypot(wx, wy) || 1;
+                const perpX = -wy / L, perpY = wx / L;
+                const parentMid = getBezierXY(0.5, ps, cp1, cp2, payload);
+                side = perpX * (parentMid.x - P.x) + perpY * (parentMid.y - P.y) > 0 ? -1 : 1;
+            }
+        }
+        f.bulge = Math.round(side * curveMag * 1000) / 1000;
+    }
+    level.intersections = intersections.filter((c) => !drop.has(c.id));
+}
+
 function placeLevel(n, k, seedOffset = 0, salt = 0) {
     const rng = makeRng(1000 + n * 137 + seedOffset * 7919);
     const look = lookForLevel(n, k, seedOffset, salt);
@@ -773,6 +1020,7 @@ function placeLevel(n, k, seedOffset = 0, salt = 0) {
     const fuses = spawns.map((s, i) => {
         const routeThrough = routeFor(i, s, k, look, intersections, rng);
         const f = {
+            id: `f${i}`,
             start: s.id,
             ...(routeThrough ? { routeThrough } : {}),
             end: PAYLOAD_ID,
@@ -786,19 +1034,19 @@ function placeLevel(n, k, seedOffset = 0, salt = 0) {
         return f;
     });
 
-    // Chain ignition: pair the earliest-burning fuses (parents) with the
-    // latest (children). A child's wick stays DARK until its parent's spark
-    // crosses the trigger point (`at`).
+    // Fork ignition: attach branch fuses to the earliest-burning wicks. A
+    // branch wick starts AT a fork point on its parent's wick and stays DARK
+    // until the parent's spark crosses the fork (`at`), then a new spark races
+    // down it — so the layout reads as a branching tree.
     //
     // `at` sits BEFORE the parent's cut target (chokepoint or direct midpoint,
-    // both at t=0.5), so the child lights BEFORE a normal cut on the parent can
-    // stop it — the chain actually fires and the child is a real second threat
-    // that needs its own cut. To PREVENT the child the player must cut the
-    // parent EARLY (before the trigger), which saves that snip. (Trigger points
+    // both at t=0.5), so the branch lights BEFORE a normal cut on the parent
+    // can stop it — the fork actually fires and the branch is a real second
+    // threat that needs its own cut. To PREVENT the branch the player must cut
+    // the parent EARLY (before the fork), which saves that snip. (Forks
     // downstream of the cut made every chain trivially breakable by the normal
-    // chokepoint cut — the child never ignited and whole sections of a level
-    // became pointless, which read as an "early win".)
-    // Cap chains by available fuses (each chain needs a parent + a child).
+    // chokepoint cut — the branch never ignited and sections of a level became
+    // pointless, which read as an "early win".)
     const nChains = Math.min(k.chains || 0, Math.max(0, Math.floor(k.spawns / 2)));
     if (nChains > 0) {
         const ordered = fuses
@@ -806,21 +1054,19 @@ function placeLevel(n, k, seedOffset = 0, salt = 0) {
             .sort((a, b) => a.f.delayFrames - b.f.delayFrames || a.i - b.i);
         for (let c = 0; c < nChains; c++) {
             const parent = ordered[c];
-            const child = ordered[ordered.length - 1 - c];
-            if (parent.i === child.i) continue;
-            const at = Math.round((0.3 + rng() * 0.14) * 1000) / 1000; // 0.30–0.44, before t=0.5
-            child.f.chain = { from: parent.f.start, at };
-            child.f.delayFrames = 99999; // no timer — lit by the parent's burn
-            // If the child would share its parent's cut point (same chokepoint),
-            // one snip would handle both and the chain would be decorative —
-            // make it a direct fuse so it demands its own cut.
-            if (parent.f.routeThrough && child.f.routeThrough === parent.f.routeThrough) {
-                delete child.f.routeThrough;
-            }
+            const at = Math.round((0.26 + rng() * 0.12) * 1000) / 1000; // 0.26–0.38, before t=0.5
+            fuses.push({
+                id: `f${fuses.length}`,
+                branchOf: parent.f.id,
+                at,
+                end: PAYLOAD_ID,
+                speed: Math.round(Math.max(0.0007, Math.min(0.0045, parent.f.speed * (branchSpeedFactor(n) + rng() * 0.12))) * 10000) / 10000,
+                delayFrames: 99999, // no timer — lit when the parent's burn reaches `at`
+            });
         }
     }
 
-    return { payload, spawns, intersections, fuses, k, style, look };
+    return { n, payload, spawns, intersections, fuses, k, style, look };
 }
 
 /** PAR time: the clear time if every fuse is cut at its ideal point (its
@@ -829,17 +1075,18 @@ function placeLevel(n, k, seedOffset = 0, salt = 0) {
  *  gap, so the level clears when the LAST spark crosses its cut. Beating par
  *  means cutting sparks close-in (fast play), which spends extra snips — the
  *  speed-vs-economy trade-off that keeps both strategies meaningful.
- *  Chained children have no timer (delay 99999): they light when their parent
- *  crosses the trigger, then burn to their own cut. */
+ *  Branch sparks have no timer: they light when their parent crosses the fork,
+ *  then burn to their own cut. */
 function parSeconds(fuses) {
     let par = 0;
+    const byId = new Map(fuses.map((f) => [f.id, f]));
     for (const f of fuses) {
         let ign = f.delayFrames >= 99999 ? 0 : f.delayFrames;
-        if (f.chain) {
-            const parent = fuses.find((p) => p.start === f.chain.from);
+        if (f.branchOf) {
+            const parent = byId.get(f.branchOf);
             if (parent) {
                 const pDelay = parent.delayFrames >= 99999 ? 0 : parent.delayFrames;
-                ign = pDelay + (f.chain.at / parent.speed);
+                ign = pDelay + (f.at / parent.speed);
             }
         }
         par = Math.max(par, ign + 0.5 / f.speed);
@@ -863,7 +1110,8 @@ function buildLevels() {
         // separation) are structural, and the look must differ from the previous
         // level — so try several geometry seeds AND look salts before giving up.
         let placed = null;
-        let validation = { ok: false };
+        let validation = { ok: false, reason: "none attempted" };
+        const reasonCounts = {};
         for (let salt = 0; salt < 8 && !placed; salt++) {
             for (let seed = 0; seed < 12; seed++) {
                 const p = placeLevel(n, k, seed, salt);
@@ -871,8 +1119,22 @@ function buildLevels() {
                 // chokepoint hides under the payload. Runs before snips are computed
                 // (a fuse may be un-routed by the safety net, changing min cuts).
                 deHairpin({ payload: p.payload, spawns: p.spawns, intersections: p.intersections, fuses: p.fuses });
+                // Pin the fork points + branch cross-sections (uses the relaxed
+                // geometry, so the fork lands on the wick the player sees).
+                positionBranches(p);
+                // Relax the fresh branch cross-sections against the final fork
+                // geometry (fold-free + payload clearance + cut separation).
+                deHairpin({ payload: p.payload, spawns: p.spawns, intersections: p.intersections, fuses: p.fuses });
+                // Downgrade routed branches whose cross-sections couldn't hold
+                // a clean spot after relaxation (dense levels). Runs before
+                // validation so the retry loop sees the real geometry.
+                settleBranches(p);
                 const v = validatePlacement(p);
-                if (!v.ok) continue;
+                validation = v;
+                if (!v.ok) {
+                    reasonCounts[v.reason] = (reasonCounts[v.reason] || 0) + 1;
+                    continue;
+                }
                 if (lookSignature(p.look) === prevSig) continue; // visually identical to last level → new look
                 placed = p;
                 validation = v;
@@ -881,8 +1143,15 @@ function buildLevels() {
         }
         if (!placed) {
             console.error(`  ! L${n}: no clean distinct placement found (last: ${validation.reason})`);
+            if (process.env.GEN_DEBUG) {
+                const top = Object.entries(reasonCounts).sort((a, b) => b[1] - a[1]).slice(0, 4);
+                console.error(`      reasons: ${top.map(([r, c]) => `${r}×${c}`).join(", ")}`);
+            }
             placed = placeLevel(n, k, 0, 0);
             deHairpin({ payload: placed.payload, spawns: placed.spawns, intersections: placed.intersections, fuses: placed.fuses });
+            positionBranches(placed);
+            deHairpin({ payload: placed.payload, spawns: placed.spawns, intersections: placed.intersections, fuses: placed.fuses });
+            settleBranches(placed);
         }
         const { payload, spawns, intersections, fuses, style, look } = placed;
         prevSig = lookSignature(look);
@@ -926,13 +1195,13 @@ function buildLevels() {
             };
         } else if (n === 25) {
             level.tutorial = {
-                text: "TWO wicks light other wicks now. Cut a parent EARLY to stop its chain — or be ready to snip every new wick it lights.",
+                text: "TWO wicks fork now. Cut a parent EARLY to stop both — or be ready to snip every new wick it lights.",
                 focus: "spawn",
                 highlight: "s1",
             };
         } else if (n === 8) {
             level.tutorial = {
-                text: "This wick lights ANOTHER wick mid-burn! Snip the first fuse EARLY to stop it — or cut the new wick it lights.",
+                text: "See that fork in the wick? When the fire reaches it, a NEW wick lights from that point! Snip the first fuse EARLY to stop it — or be ready to cut the new wick.",
                 focus: "spawn",
                 highlight: "s1",
             };
