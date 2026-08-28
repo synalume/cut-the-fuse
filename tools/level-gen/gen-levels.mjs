@@ -205,9 +205,10 @@ const PAYLOAD_ID = "bomb";
  *                   cut can stay fold-free for every wick.
  *   radiusProfile - even | tiered | mixed | random  (spawn distance from center)
  *   cpDist        - chokepoint ring distance factor (tight funnel vs loose net)
- *   routePattern  - nearest | braid | cross | fan  (how multi-chokepoint fuses
- *                  connect: straight to the nearest point, alternating braids,
- *                  diagonals that genuinely cross, or spread in sequence)
+ *   routePattern  - nearest | braid | cross | fan  (how much the per-sector
+ *                  cross-sections bend: nearest/fan sit subtle on the spawn→
+ *                  bomb line, braid/cross offset tangentially so wicks arc and
+ *                  genuinely cross the middle)
  *   delayPattern  - stagger | frontload | backload | alternate | paired | rain
  *                  (which spark ignites when — the *rhythm* of the timer)
  *   speedPattern  - even | lead | tide  (burn pace: all equal, one scout that
@@ -314,6 +315,123 @@ function spawnAngles(count, look, rng) {
     return u.map((v) => startDeg + v * look.fanDeg);
 }
 
+/** Angular position of a point around an origin, normalized to [0, 360). */
+function angleOf(p, o) {
+    let d = Math.atan2(p.y - o.y, p.x - o.x) * (180 / Math.PI);
+    return d < 0 ? d + 360 : d;
+}
+
+/** Circular mean of angles (degrees) — wraps correctly across 0/360. */
+function circularMean(degArray) {
+    if (!degArray.length) return 0;
+    let sx = 0, sy = 0;
+    for (const d of degArray) {
+        sx += Math.cos((d * Math.PI) / 180);
+        sy += Math.sin((d * Math.PI) / 180);
+    }
+    let m = Math.atan2(sy, sx) * (180 / Math.PI);
+    return m < 0 ? m + 360 : m;
+}
+
+/**
+ * Full-circle spawn angles (degrees, sorted ascending). Matchsticks scatter
+ * around the bomb instead of lining up in a wedge; the distribution pattern
+ * only MODIFIES the scatter (clusters, gaps, pairs, bias) rather than forcing
+ * a one-sided fan. Shared-single-chokepoint levels keep the one-sided wedge
+ * via spawnAngles() — a single shared cut can't stay fold-free for wicks that
+ * approach from all sides of the bomb.
+ */
+function spawnAnglesFull(count, look, rng) {
+    const n = Math.max(1, count - 1);
+    let u = Array.from({ length: count }, (_, i) => i / n);
+    switch (look.distPattern) {
+        case "clustered": {
+            // Cluster centers spread around the circle (≥ ~110° apart) so the
+            // level keeps full-circle coverage even when wicks are bunched.
+            const clusters = count <= 3 ? 2 : rng() < 0.45 ? 2 : 3;
+            const c0 = rng();
+            const centers = [];
+            for (let c = 0; c < clusters; c++) centers.push((c0 + (c + rng() * 0.28) / clusters) % 1);
+            centers.sort((a, b) => a - b);
+            const per = Math.ceil(count / clusters);
+            u = [];
+            for (let c = 0; c < clusters; c++) {
+                const start = c * per;
+                const end = Math.min(count, start + per);
+                const size = end - start;
+                for (let i = start; i < end; i++) {
+                    const t = size === 1 ? 0.5 : (i - start) / (size - 1);
+                    const halfW = 0.05 + rng() * 0.06; // cluster half-width
+                    u.push(Math.min(1, Math.max(0, centers[c] + (t - 0.5) * halfW * 2)));
+                }
+            }
+            break;
+        }
+        case "paired": {
+            const gap = 0.035 + rng() * 0.03;
+            u = [];
+            for (let i = 0; i < count; i++) {
+                const base = Math.floor(i / 2) / Math.max(1, Math.ceil((count - 1) / 2));
+                u.push(Math.min(1, base + (i % 2 === 0 ? 0 : gap)));
+            }
+            break;
+        }
+        case "asym": {
+            // Density biased toward one arc, but the circle is still covered.
+            const skew = 1.5 + rng() * 1.2;
+            u = Array.from({ length: count }, (_, i) => Math.pow(i / n, skew));
+            break;
+        }
+        case "void": {
+            // One empty wedge; every spawn still lands on the remaining arc.
+            const gapStart = rng() * 360;
+            const gapW = 55 + rng() * 75;
+            u = Array.from({ length: count }, (_, i) => {
+                const p = i / n;
+                return (gapStart + gapW + p * (360 - gapW)) / 360;
+            });
+            break;
+        }
+    }
+    // To degrees with per-spawn jitter, wrapped + sorted.
+    return u
+        .map((v) => (v * 360 + rng() * 12 - 6 + 360) % 360)
+        .sort((a, b) => a - b);
+}
+
+/**
+ * Per-sector chokepoints: spawns are partitioned by angular rank into `m`
+ * contiguous sectors; each sector gets ONE chokepoint at its centroid angle,
+ * on a ring between the spawns and the bomb. Cross-sections therefore spread
+ * AROUND the bomb instead of stacking on one side, and wicks enter the banana
+ * from different directions. A small tangential offset bends the wick through
+ * the cut so it reads as a crossing (deHairpin still resolves any folds).
+ */
+function chokepointsForSectors(spawns, payload, m, look, rng) {
+    if (m === 0) return [];
+    const byAngle = spawns
+        .map((s) => ({ s, a: angleOf(s, payload) }))
+        .sort((p, q) => p.a - q.a);
+    const count = spawns.length;
+    const out = [];
+    for (let j = 0; j < m; j++) {
+        const members = byAngle.filter((_, idx) => Math.min(m - 1, Math.floor((idx * m) / count)) === j);
+        const meanA = circularMean(members.map((e) => e.a));
+        const meanR = members.reduce((sum, e) => sum + Math.hypot(e.s.x - payload.x, e.s.y - payload.y), 0) / members.length;
+        const r = Math.max(PAYLOAD_CLEARANCE + 25, meanR * (0.48 + rng() * 0.14));
+        // Tangential bend: braid/cross reads as a real crossing, others subtle.
+        const braid = look.routePattern === "braid" || look.routePattern === "cross";
+        const tang = (braid ? 40 + rng() * 45 : 12 + rng() * 34) * (rng() < 0.5 ? -1 : 1);
+        const rad = (meanA * Math.PI) / 180;
+        out.push({
+            id: `cut${j + 1}`,
+            x: Math.round(Math.cos(rad) * r + Math.cos(rad + Math.PI / 2) * tang),
+            y: Math.round(Math.sin(rad) * r + Math.sin(rad + Math.PI / 2) * tang),
+        });
+    }
+    return out;
+}
+
 /** Per-spawn distance from center, per the radius profile. */
 function spawnRadius(i, count, look, rng) {
     const base = 300 + rng() * 60;
@@ -393,45 +511,85 @@ function speedFor(k, index, look, rng) {
  * level. The style decides the GLOBAL skeleton (where the bomb sits and how the
  * spawn band relates to it); the look fills in the per-level arrangement.
  *
- *  hub    - classic sunburst: bomb dead-center, spawns fanned around it.
- *  offset - bomb pushed to one side, spawns fanned on the far side.
- *  train  - bomb on one edge, spawns lined up in a row opposite it.
- *  split  - bomb in the middle, two spawn clusters flanking it, chokepoints
- *           between the clusters -> fuses genuinely cross the middle.
- *  weave  - spawns on a band, chokepoints swung off-axis so the fuses arc
- *           and cross each other in different sections.
+ * Shared-single-chokepoint levels (one cut snips every wick) MUST keep their
+ * spawns on one side of the bomb — a single cross-section can only stay
+ * fold-free for wicks approaching from the same direction. Those levels use
+ * the one-sided fan (hub/offset/train). Everything else scatters the
+ * matchsticks AROUND the bomb and spreads the cross-sections per sector, so
+ * wicks enter the banana from different sides and no wick shares another's
+ * curve.
+ *
+ *  hub    - bomb dead-center, matchsticks scattered around it.
+ *  offset - bomb pushed to one side, matchsticks scattered around it.
+ *  train  - one-sided row (shared-single levels only).
+ *  split  - two angular clusters flanking the bomb, cross-sections between.
+ *  weave  - full-circle scatter with alternating near/far radii (layered).
+ *  rings  - concentric rings: spawns alternate outer/inner radius.
  */
+
+/** Scatter `count` matchsticks around `payload` at full-circle angles with a
+ *  per-spawn radius (default: the look's radius profile). */
+function scatteredSpawns(count, look, rng, payload, radiusFn) {
+    const angles = spawnAnglesFull(count, look, rng);
+    return angles.map((deg, i) => {
+        const a = (deg * Math.PI) / 180;
+        const radius = radiusFn ? radiusFn(i, count, look, rng) : spawnRadius(i, count, look, rng);
+        return {
+            id: `s${i + 1}`,
+            x: Math.round(payload.x + Math.cos(a) * radius),
+            y: Math.round(payload.y + Math.sin(a) * radius),
+        };
+    });
+}
+
+/** One-sided spawn fan + chokepoints on the fan arc (shared-single levels). */
+function oneSidedFan(n, k, rng, look, payload, fanMid) {
+    const angles = spawnAngles(k.spawns, look, rng);
+    const spawns = angles.map((deg, i) => {
+        const a = (deg * Math.PI) / 180;
+        const radius = spawnRadius(i, k.spawns, look, rng);
+        return { id: `s${i + 1}`, x: Math.round(payload.x + Math.cos(a) * radius), y: Math.round(payload.y + Math.sin(a) * radius) };
+    });
+    const intersections = chokepointsBetween(k, rng, Math.min(...angles), look.fanDeg, fanMid);
+    return { spawns, intersections };
+}
+
 const PLACEMENTS = {
     hub(n, k, rng, look) {
         const payload = { id: PAYLOAD_ID, x: 0, y: 0 };
-        const angles = spawnAngles(k.spawns, look, rng);
-        const spawns = angles.map((deg, i) => {
-            const a = (deg * Math.PI) / 180;
-            const radius = spawnRadius(i, k.spawns, look, rng);
-            return { id: `s${i + 1}`, x: Math.round(Math.cos(a) * radius), y: Math.round(Math.sin(a) * radius) };
-        });
-        const intersections = chokepointsBetween(k, rng, Math.min(...angles), look.fanDeg, 200 * look.cpDist);
-        return { payload, spawns, intersections };
+        if (k.share && k.chokepoints === 1) {
+            const { spawns, intersections } = oneSidedFan(n, k, rng, look, payload, 200 * look.cpDist);
+            return { payload, spawns, intersections };
+        }
+        const spawns = scatteredSpawns(k.spawns, look, rng, payload);
+        return { payload, spawns, intersections: chokepointsForSectors(spawns, payload, k.chokepoints, look, rng) };
     },
 
     offset(n, k, rng, look) {
         const angle = rng() * Math.PI * 2;
         const dist = 90 + rng() * 60;
         const payload = { id: PAYLOAD_ID, x: Math.round(Math.cos(angle) * dist), y: Math.round(Math.sin(angle) * dist) };
-        const centerDeg = (angle * 180) / Math.PI + 180; // opposite side of the bomb
-        const raw = spawnAngles(k.spawns, look, rng);
-        const baseStart = raw[0];
-        const rot = centerDeg - look.fanDeg / 2;
-        const spawns = raw.map((deg, i) => {
-            const a = ((deg - baseStart + rot) * Math.PI) / 180;
-            const radius = spawnRadius(i, k.spawns, look, rng);
-            return { id: `s${i + 1}`, x: Math.round(Math.cos(a) * radius), y: Math.round(Math.sin(a) * radius) };
-        });
-        const intersections = chokepointsBetween(k, rng, rot, look.fanDeg, 185 * look.cpDist);
-        return { payload, spawns, intersections };
+        if (k.share && k.chokepoints === 1) {
+            // Far-side fan: spawns sit opposite the bomb's offset.
+            const centerDeg = (angle * 180) / Math.PI + 180;
+            const raw = spawnAngles(k.spawns, look, rng);
+            const baseStart = raw[0];
+            const rot = centerDeg - look.fanDeg / 2;
+            const spawns = raw.map((deg, i) => {
+                const a = ((deg - baseStart + rot) * Math.PI) / 180;
+                const radius = spawnRadius(i, k.spawns, look, rng);
+                return { id: `s${i + 1}`, x: Math.round(Math.cos(a) * radius), y: Math.round(Math.sin(a) * radius) };
+            });
+            const intersections = chokepointsBetween(k, rng, rot, look.fanDeg, 185 * look.cpDist);
+            return { payload, spawns, intersections };
+        }
+        const spawns = scatteredSpawns(k.spawns, look, rng, payload);
+        return { payload, spawns, intersections: chokepointsForSectors(spawns, payload, k.chokepoints, look, rng) };
     },
 
     train(n, k, rng, look) {
+        // One-sided row — kept only for single-fuse practice and shared
+        // chokepoints, where the wicks must approach from one side.
         const horiz = rng() < 0.5; // spawn row runs horizontally (bomb above) or vertically
         const half = (Math.max(1, k.spawns - 1) * (52 + rng() * 24)) / 2;
         const line = 190 + rng() * 45;
@@ -477,51 +635,34 @@ const PLACEMENTS = {
             const side = i < perSide ? 0 : 1;
             const idx = side === 0 ? i : i - perSide;
             const count = side === 0 ? perSide : k.spawns - perSide;
-            const spreadDeg = (52 + rng() * 26) * (look.distPattern === "uniform" ? 1 : 0.6 + rng() * 0.5);
+            const spreadDeg = (45 + rng() * 30) * (look.distPattern === "uniform" ? 1 : 0.7 + rng() * 0.4);
             const a = axis + side * Math.PI + (idx / Math.max(1, count - 1) - 0.5) * ((spreadDeg * Math.PI) / 180);
             const radius = spawnRadius(i, k.spawns, look, rng);
             spawns.push({ id: `s${i + 1}`, x: Math.round(Math.cos(a) * radius), y: Math.round(Math.sin(a) * radius) });
         }
-        const intersections = [];
-        for (let c = 0; c < k.chokepoints; c++) {
-            const a = axis + Math.PI / 2 + c * (Math.PI / Math.max(1, k.chokepoints)) + (rng() - 0.5) * 0.3;
-            const r = 130 + rng() * 60 * look.cpDist;
-            intersections.push({ id: `cut${c + 1}`, x: Math.round(Math.cos(a) * r), y: Math.round(Math.sin(a) * r) });
-        }
+        const intersections = chokepointsForSectors(spawns, payload, k.chokepoints, look, rng);
         return { payload, spawns, intersections };
     },
 
     weave(n, k, rng, look) {
+        // Full-circle scatter with alternating near/far radii → layered, woven
+        // look; cross-sections spread per sector.
         const payload = { id: PAYLOAD_ID, x: 0, y: 0 };
-        const angles = spawnAngles(k.spawns, look, rng);
-        const spawns = angles.map((deg, i) => {
-            const a = (deg * Math.PI) / 180;
-            const radius = spawnRadius(i, k.spawns, look, rng);
-            return { id: `s${i + 1}`, x: Math.round(Math.cos(a) * radius), y: Math.round(Math.sin(a) * radius) };
+        const spawns = scatteredSpawns(k.spawns, look, rng, payload, (i, count, l, r) => {
+            const base = 300 + rng() * 60;
+            return (i % 2 === 0 ? 0.7 : 1.0) * base * (0.9 + rng() * 0.14);
         });
-        // Chokepoints swung ~150° off the spawn band -> the forced-intersection
-        // curves bow sideways and cross each other in different sections.
-        const intersections = [];
-        for (let c = 0; c < k.chokepoints; c++) {
-            const a = ((angles[0] + 150 + (140 * c) / Math.max(1, k.chokepoints)) * Math.PI) / 180;
-            const r = 190 + rng() * 60 * look.cpDist;
-            intersections.push({ id: `cut${c + 1}`, x: Math.round(Math.cos(a) * r), y: Math.round(Math.sin(a) * r) });
-        }
+        const intersections = chokepointsForSectors(spawns, payload, k.chokepoints, look, rng);
         return { payload, spawns, intersections };
     },
 
     rings(n, k, rng, look) {
         // Concentric tiers: spawns alternate between an outer and inner ring,
-        // chokepoints sit on an intermediate ring. Reads as a mini-maze rather
-        // than a sunburst — no two wicks look like they meet at the same point.
+        // cross-sections sit per sector on an intermediate ring. Reads as a
+        // mini-maze — no two wicks look like they meet at the same point.
         const payload = { id: PAYLOAD_ID, x: 0, y: 0 };
-        const angles = spawnAngles(k.spawns, look, rng);
-        const spawns = angles.map((deg, i) => {
-            const a = (deg * Math.PI) / 180;
-            const ring = (i % 2 === 0 ? 1 : 0.72) * (300 + rng() * 55);
-            return { id: `s${i + 1}`, x: Math.round(Math.cos(a) * ring), y: Math.round(Math.sin(a) * ring) };
-        });
-        const intersections = chokepointsBetween(k, rng, Math.min(...angles), look.fanDeg, 205 * look.cpDist);
+        const spawns = scatteredSpawns(k.spawns, look, rng, payload, (i, count, l, r) => (i % 2 === 0 ? 1 : 0.72) * (300 + rng() * 55));
+        const intersections = chokepointsForSectors(spawns, payload, k.chokepoints, look, rng);
         return { payload, spawns, intersections };
     },
 };
@@ -790,8 +931,8 @@ function styleForLevel(n, k) {
     const pool = simple || sharedSingle
         ? ["hub", "offset", "train"]
         : act >= 2
-            ? ["hub", "offset", "train", "split", "weave", "rings"]
-            : ["hub", "offset", "train", "split"];
+            ? ["hub", "offset", "split", "weave", "rings"]
+            : ["hub", "offset", "split"];
     const rng = makeRng(2000 + n * 911);
     let idx = Math.floor(rng() * pool.length);
     // Never repeat the previous level's style.
@@ -800,49 +941,21 @@ function styleForLevel(n, k) {
     return pool[idx];
 }
 
-/** Route a spawn through the chokepoint that sits "in its path" (nearest to the
- *  spawn). This keeps bends between the spawn and the bomb — avoiding folds —
- *  while still grouping spawns across multiple chokepoints for planning depth. */
-function nearestChokepoint(spawn, intersections) {
-    let best = null, bestD = Infinity;
-    for (const c of intersections) {
-        const d = Math.hypot(spawn.x - c.x, spawn.y - c.y);
-        if (d < bestD) { bestD = d; best = c.id; }
-    }
-    return best;
-}
-
-/** Route a spawn through a chokepoint per the routing topology pattern. */
-function routeFor(i, spawn, k, look, intersections, rng) {
+/** Route a spawn through the chokepoint of its ANGLE SECTOR around the bomb.
+ *  Spawns sorted by angular rank partition into contiguous sectors, so each
+ *  cross-section serves at most ~ceil(spawns/chokepoints) wicks and the cut
+ *  points spread around the bomb instead of piling on one side. */
+function routeFor(i, spawn, k, look, intersections, spawns, payload, rng) {
     if (k.chokepoints === 0) return undefined; // direct fuse (tutorial)
     if (k.share) return "cut1";
     if (k.partial && i % 3 === 2) return undefined; // some fuses direct (partial coverage)
-    const cps = intersections;
-    switch (look.routePattern) {
-        case "nearest":
-            return nearestChokepoint(spawn, cps);
-        case "braid":
-            return cps[i % cps.length].id; // alternating = braided wicks
-        case "fan": {
-            const idx = Math.min(cps.length - 1, Math.floor((i / Math.max(1, k.spawns)) * cps.length));
-            return cps[idx].id; // spread in sequence = wicks fan outward
-        }
-        case "cross": {
-            // Route to the chokepoint OPPOSITE the spawn so the wicks genuinely
-            // cross each other through the middle.
-            const a = Math.atan2(spawn.y, spawn.x);
-            let best = null, bestScore = -Infinity;
-            for (const c of cps) {
-                const ca = Math.atan2(c.y, c.x);
-                const dot = Math.cos(a) * Math.cos(ca) + Math.sin(a) * Math.sin(ca);
-                const score = -dot + rng() * 0.35; // tiebreak jitter
-                if (score > bestScore) { bestScore = score; best = c.id; }
-            }
-            return best;
-        }
-        default:
-            return nearestChokepoint(spawn, cps);
-    }
+    const byAngle = spawns
+        .map((s, idx) => ({ idx, a: angleOf(s, payload) }))
+        .sort((p, q) => p.a - q.a);
+    const rank = byAngle.findIndex((e) => e.idx === i);
+    const m = Math.max(1, intersections.length);
+    const sector = Math.min(m - 1, Math.floor((rank * m) / Math.max(1, spawns.length)));
+    return intersections[sector].id;
 }
 
 /** Control points for the forced-intersection fuse (mirrors
@@ -1017,9 +1130,9 @@ function placeLevel(n, k, seedOffset = 0, salt = 0) {
     const style = styleForLevel(n, k);
     const { payload, spawns, intersections } = PLACEMENTS[style](n, k, rng, look);
 
-    // Fuses: route spawns through chokepoints (shared vs grouped vs partial).
+    // Fuses: route spawns through chokepoints (shared vs sector vs partial).
     const fuses = spawns.map((s, i) => {
-        const routeThrough = routeFor(i, s, k, look, intersections, rng);
+        const routeThrough = routeFor(i, s, k, look, intersections, spawns, payload, rng);
         const f = {
             id: `f${i}`,
             start: s.id,
@@ -1075,6 +1188,14 @@ function placeLevel(n, k, seedOffset = 0, salt = 0) {
                 f.bulge = Math.round(Math.max(-0.3, Math.min(0.3, v)) * 1000) / 1000;
             });
         }
+    }
+
+    // Direct fuses: give each a small UNIQUE bow too, so no two wicks — even
+    // wicks that never share a crossroad — follow the same curve shape.
+    for (const f of fuses) {
+        if (f.routeThrough) continue;
+        const base = f.bulge ?? 0;
+        f.bulge = Math.round(Math.max(-0.16, Math.min(0.16, base + (rng() - 0.5) * 0.14)) * 1000) / 1000;
     }
 
     // Every level ignites its FIRST spark immediately on load — the burn

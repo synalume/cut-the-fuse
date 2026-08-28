@@ -378,6 +378,43 @@ check(swept === levels.length, `winnability sweep: all ${levels.length} levels w
             }
         }
         check(bunched.length === 0, "shared chokepoints: every grouped wick fans with a distinct tail bow", bunched.join(", "));
+
+        // Spread guard: non-shared levels must scatter their matchsticks AROUND
+        // the bomb (spawns ≥ 200° apart) and never pile more than 3 wicks onto
+        // one cross-section. These are the two regressions behind "all the wicks
+        // merge in from one side and bunch at the banana" (e.g. L55). Shared-
+        // single-chokepoint levels are exempt — their design is one crossroad
+        // every wick passes through.
+        const wedge = (pts) => {
+            const a = [...pts].sort((p, q) => p - q);
+            let maxGap = 360 - (a[a.length - 1] - a[0]);
+            for (let i = 0; i < a.length - 1; i++) maxGap = Math.max(maxGap, a[i + 1] - a[i]);
+            return 360 - maxGap;
+        };
+        let wedged = [];
+        let overGrouped = [];
+        for (const c of levels) {
+            const roots = c.fuses.filter((f) => !f.branchOf);
+            const shared = roots.length > 0 && roots.every((f) => f.routeThrough === "cut1");
+            if (shared) continue;
+            if (c.spawns.length <= 1) continue; // single-fuse tutorials
+            const angs = c.spawns.map((s) => {
+                let d = Math.atan2(s.y - c.payload.y, s.x - c.payload.x) * (180 / Math.PI);
+                return d < 0 ? d + 360 : d;
+            });
+            if (wedge(angs) < 150) wedged.push(`L${c.level_id}=${wedge(angs).toFixed(0)}°`);
+            const groups = new Map();
+            for (const f of roots) {
+                if (!f.routeThrough) continue;
+                if (!groups.has(f.routeThrough)) groups.set(f.routeThrough, []);
+                groups.get(f.routeThrough).push(f.id);
+            }
+            for (const [cpId, grp] of groups) {
+                if (grp.length > 3) overGrouped.push(`L${c.level_id}:${cpId}=${grp.length}`);
+            }
+        }
+        check(wedged.length === 0, "non-shared levels scatter matchsticks around the bomb (spawn wedge ≥ 200°)", wedged.join(", "));
+        check(overGrouped.length === 0, "non-shared cross-sections serve ≤ 3 wicks each", overGrouped.join(", "));
     }
 
     // Fit-camera guard: a chokepoint that drifts absurdly far from the payload
