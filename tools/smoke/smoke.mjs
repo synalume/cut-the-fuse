@@ -314,21 +314,45 @@ check(swept === levels.length, `winnability sweep: all ${levels.length} levels w
     }
     check(tooClose === 0, `cut points separated: every chokepoint/direct-midpoint cut is placeable (${tooClose} collisions)`);
 
-    // Tail fan: wicks must bow their final leg into the bomb from their own
-    // side, or the tails bundle into one line at the banana and can't be read
-    // apart. The bulge keeps the t=0.5 pass-through but bends the tail to a
-    // distinct approach angle — so nearly every wick should carry a real bow.
+    // Single endpoint + in-frame tails: every wick must end at the payload
+    // CENTER (one continuous line into the banana), and its curve must stay
+    // on the viewport. The bomb-side "entry" anchors made some wicks end on a
+    // hidden ring — thin parts of the banana silhouette exposed the tips (the
+    // "disconnect" at the banana) and big tail bows swung past the bomb and
+    // off-screen. Both are regressions to guard against.
     {
-        let flat = 0;
-        let total = 0;
+        let badEnds = [];
         for (const c of levels) {
             for (const f of c.fuses) {
-                if (f.branchOf) continue; // branches bow to their own side already
-                total++;
-                if (Math.abs(f.bulge || 0) < 0.08) flat++;
+                if (f.end !== c.payload.id) badEnds.push(`L${c.level_id}:${f.id}->${f.end}`);
             }
         }
-        check(flat / total < 0.1, "tail fan: 90%+ of wicks bow their final leg (no bundled straight tails)", `${flat}/${total} flat`);
+        check(badEnds.length === 0, "single endpoint: every wick ends at the payload center", badEnds.join(", "));
+
+        let offWicks = [];
+        let farWicks = [];
+        for (const c of levels) {
+            const lvl = buildLevel(c, { width: 1280, height: 720 });
+            const cam = computeFitCamera(lvl, { width: 1280, height: 720 });
+            const toX = (p) => 640 + cam.zoom * (p.x - (640 - cam.x));
+            const toY = (p) => 360 + cam.zoom * (p.y - (360 - cam.y));
+            const pay = lvl.nodeMap[c.payload.id];
+            for (const f of lvl.fuses) {
+                let maxD = 0;
+                for (let t = 0; t <= 1; t += 0.02) {
+                    const p = getBezierXY(t, f.startNode, f.cp1, f.cp2, f.endNode);
+                    maxD = Math.max(maxD, Math.hypot(p.x - pay.x, p.y - pay.y));
+                    const X = toX(p), Y = toY(p);
+                    if (X < -8 || X > 1288 || Y < -8 || Y > 728) {
+                        offWicks.push(`L${c.level_id}:${f.id}@t${t.toFixed(2)}(${Math.round(X)},${Math.round(Y)})`);
+                        break;
+                    }
+                }
+                if (maxD > 560) farWicks.push(`L${c.level_id}:${f.id}=${Math.round(maxD)}px`);
+            }
+        }
+        check(offWicks.length === 0, "no wick curve leaves the viewport (tail bows stay in-frame)", offWicks.join(", "));
+        check(farWicks.length === 0, "no wick curve drifts past the bomb (single-endpoint tails)", farWicks.join(", "));
     }
 
     // Fit-camera guard: a chokepoint that drifts absurdly far from the payload

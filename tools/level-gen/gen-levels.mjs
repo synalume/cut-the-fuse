@@ -1028,23 +1028,16 @@ function placeLevel(n, k, seedOffset = 0, salt = 0) {
             speed: speedFor(k, i, look, rng),
             delayFrames: delayFor(k, i, k.spawns, look, rng),
         };
-        // Curve shape variety + TAIL FAN: split control points bow the arc
-        // without moving the chokepoint pass-through (see
-        // createForcedIntersectionFuse). The bulge offsets the two control
-        // points symmetrically, so it keeps the chokepoint exactly at t=0.5
-        // while bending the final leg (t=0.5 → bomb center) to a distinct
-        // approach angle. Every wick gets a fan component spread around the
-        // compass (even "flat" ones) so the tails fan apart near the banana
-        // instead of all straight-lining into one bundle.
+        // Curve shape variety: split control points bow the arc without moving
+        // the chokepoint pass-through (see createForcedIntersectionFuse). The
+        // bulge offsets the two control points symmetrically, so it keeps the
+        // chokepoint exactly at t=0.5 while bending the final leg to a gentle
+        // curve. The magnitudes stay small (max ±0.1): the wick must still read
+        // as one continuous line to the SINGLE payload endpoint, so the tail
+        // near the bomb stays tight — big bows made the last legs swirl and
+        // drift off past the banana.
         const curve = look.curvePattern || "flat";
-        const base = curve === "flat" ? 0 : curve === "arc" ? Math.round((0.06 + rng() * 0.05) * 1000) / 1000 : i % 2 === 0 ? 0.1 : -0.1;
-        // TAIL FAN: evenly-spaced compass slots give each wick its own side to
-        // bow toward. Sign-driven with a magnitude floor (0.2–0.3) so the fan
-        // never cancels out — even against the weave/arc base every wick's
-        // final leg ends up visibly bowed to its own approach angle.
-        const slot = ((i + 0.5 + (rng() - 0.5) * 0.6) / Math.max(1, spawns.length)) * Math.PI * 2;
-        const fan = (Math.sin(slot) >= 0 ? 1 : -1) * (0.2 + rng() * 0.1); // ±0.2–0.3
-        f.bulge = Math.round(Math.max(-0.3, Math.min(0.3, base + fan)) * 1000) / 1000;
+        f.bulge = curve === "flat" ? 0 : curve === "arc" ? Math.round((0.06 + rng() * 0.05) * 1000) / 1000 : i % 2 === 0 ? 0.1 : -0.1;
         return f;
     });
 
