@@ -145,6 +145,7 @@ export class Renderer {
         if (game.gameState === "lost") this._drawComicText(game, "KABOOM!", "#ef4444", game.lostAt);
         if (game.gameState === "won") this._drawComicText(game, "PHEW!", "#22c55e", game.wonAt);
         this._drawSwipePreview(game);
+        this._drawSnipFeedback(game);
         // Onboarding demo hand rides on top of everything while the tutorial is up.
         this._drawTutorialDemo(game);
 
@@ -751,6 +752,96 @@ export class Renderer {
                 ctx.stroke();
             }
         }
+    }
+
+    /** Onboarding for the snip budget. Two cues:
+     *  - Grey denied slash + "NO MORE SNIPS!" when the player swipes with nothing
+     *    left — the swipe visibly registers but reads as "no cut", so hitting
+     *    the limit never feels like the game stopped responding.
+     *  - A brief "LAST SNIP!" heads-up right after spending the second-to-last cut. */
+    _drawSnipFeedback(game) {
+        const ctx = this.ctx;
+
+        if (game.deniedSlash && game.deniedSlash.life > 0.02) {
+            const d = game.deniedSlash;
+            const mx = (d.start.x + d.end.x) / 2;
+            const my = (d.start.y + d.end.y) / 2;
+            ctx.save();
+            ctx.lineCap = "round";
+            // Grey slash, clearly not a live cut.
+            ctx.globalAlpha = 0.4 * d.life;
+            ctx.lineWidth = 14 * d.life;
+            ctx.strokeStyle = "#9ca3af";
+            ctx.beginPath();
+            ctx.moveTo(d.start.x, d.start.y);
+            ctx.lineTo(d.end.x, d.end.y);
+            ctx.stroke();
+            // Red X at the middle of the swipe marks it as denied.
+            ctx.lineWidth = 4;
+            ctx.strokeStyle = `rgba(220, 38, 38, ${(0.9 * d.life).toFixed(3)})`;
+            const r = 7 * d.life;
+            ctx.beginPath();
+            ctx.moveTo(mx - r, my - r);
+            ctx.lineTo(mx + r, my + r);
+            ctx.moveTo(mx + r, my - r);
+            ctx.lineTo(mx - r, my + r);
+            ctx.stroke();
+            ctx.restore();
+        }
+
+        if (game.noSnipsAt) {
+            this._drawPopupWord(
+                game, "NO MORE SNIPS!", "#ef4444",
+                game.noSnipsAt.x, game.noSnipsAt.y - 26, 24,
+                game.noSnipsAt.at, 85
+            );
+        }
+
+        if (game.lastSnipAt != null) {
+            const last = game.cuts[game.cuts.length - 1];
+            if (last) {
+                this._drawPopupWord(
+                    game, "LAST SNIP!", "#d97706",
+                    last.x, last.y - 34, 22,
+                    game.lastSnipAt, 70
+                );
+            }
+        }
+    }
+
+    /** Small comic word popping at an arbitrary world point — same poster style
+     *  as the KABOOM!/PHEW! words but smaller, for game-state messages like the
+     *  snip budget. Fades in, holds with a wobble, fades out. */
+    _drawPopupWord(game, text, color, x, y, size, atFrame, duration) {
+        if (atFrame == null) return;
+        const elapsed = game.frameCount - atFrame;
+        if (elapsed < 0 || elapsed > duration) return;
+        const ctx = this.ctx;
+
+        // Clamp to the visible frame like the comic words.
+        let ty = y;
+        const cam = game.camera;
+        const sy = this.height / 2 + (ty - (this.height / 2 - cam.y)) * cam.zoom;
+        if (sy < 70) ty += (70 - sy) / cam.zoom;
+
+        const pop = 1.5 - 0.5 * Math.exp(-elapsed * 5);
+        const wobble = Math.sin(game.frameCount * 0.16) * 0.05 * Math.min(1, elapsed / 10);
+
+        ctx.save();
+        ctx.globalAlpha = Math.min(1, elapsed / 6) * Math.min(1, (duration - elapsed) / 12);
+        ctx.translate(x, ty);
+        ctx.rotate(-0.06 + wobble);
+        ctx.scale(pop, pop);
+        ctx.font = `${size}px 'Luckiest Guy', 'Courier New', Courier, monospace`;
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.lineJoin = "round";
+        ctx.lineWidth = Math.max(5, size * 0.24);
+        ctx.strokeStyle = "#1c1917";
+        ctx.strokeText(text, 0, 0);
+        ctx.fillStyle = color;
+        ctx.fillText(text, 0, 0);
+        ctx.restore();
     }
 
     /** Level-1 onboarding: a red cut line across the wick shows where to snip,

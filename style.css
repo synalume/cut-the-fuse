@@ -67,14 +67,31 @@ canvas { display: block; position: absolute; z-index: 10; }
     background: url('assets/ui/ui-icon-star.png') no-repeat center / contain;
 }
 #snips-counter {
-    display: inline-flex; align-items: center; gap: 6px;
+    display: inline-flex; align-items: center; gap: 5px;
     line-height: 1;
+    padding: 2px 6px;
+    border-radius: 10px;
+    transition: color 0.2s ease;
 }
-#snips-counter::before {
-    content: ""; display: inline-block;
-    width: 20px; height: 20px;
-    margin-top: -5px; /* Luckiest Guy numerals sit high; lift the icon to match */
-    background: url('assets/ui/ui-icon-scissors.png') no-repeat center / contain;
+#snips-counter .snips-label { font-size: 0.9em; }
+#snips-counter .snip-icon {
+    width: 18px; height: 18px; object-fit: contain;
+    margin-top: -5px; /* Luckiest Guy numerals sit high; lift the icons to match */
+    transition: opacity 0.25s ease, filter 0.25s ease;
+}
+#snips-counter .snip-icon.spent { opacity: 0.22; filter: grayscale(1); }
+#snips-counter.last-snip { color: #d97706; animation: snip-pulse 1s ease-in-out infinite; }
+#snips-counter.depleted { color: #dc2626; }
+#snips-counter.shake { animation: snip-shake 0.45s ease; }
+@keyframes snip-pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.55; }
+}
+@keyframes snip-shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-5px) rotate(-3deg); }
+    50% { transform: translateX(5px) rotate(3deg); }
+    75% { transform: translateX(-3px); }
 }
 
 .controls {

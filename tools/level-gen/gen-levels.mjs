@@ -784,7 +784,7 @@ function buildLevels() {
         // One-skill-at-a-time tutorial (CHI PLAY learning curve).
         if (n === 1) {
             level.tutorial = {
-                text: "Swipe across a fuse to snip it before the spark reaches the bomb!",
+                text: "Swipe across a fuse to snip it! You have a limited number of snips, so make each cut count.",
                 focus: "swipe",
                 highlight: "s1",
             };

@@ -81,7 +81,25 @@ async function loadLevel(index) {
 }
 
 function updateUi() {
-    snipsCounter.textContent = `SNIPS: ${game.snipsRemaining}`;
+    // Snip counter: a scissors icon per remaining cut. Spent icons dim so the
+    // limited budget is visible at a glance; the whole pill turns amber on the
+    // last snip and red once it's empty.
+    snipsCounter.textContent = "";
+    const label = document.createElement("span");
+    label.className = "snips-label";
+    label.textContent = "SNIPS";
+    snipsCounter.appendChild(label);
+    const allowed = game.level?.snipsAllowed ?? 0;
+    for (let i = 0; i < allowed; i++) {
+        const img = document.createElement("img");
+        img.className = "snip-icon" + (i < game.snipsRemaining ? "" : " spent");
+        img.src = "assets/ui/ui-icon-scissors.png";
+        img.alt = "✂";
+        snipsCounter.appendChild(img);
+    }
+    snipsCounter.classList.toggle("depleted", game.snipsRemaining <= 0);
+    snipsCounter.classList.toggle("last-snip", game.snipsRemaining === 1 && allowed > 1);
+
     starDisplay.textContent = `${save.getStarBank()}`;
     btnHint.classList.toggle("active", game.hintActive);
     btnMute.classList.toggle("muted", audio.muted);
@@ -194,6 +212,13 @@ function showStars(stars) {
 }
 
 game.onSnipsChange = () => updateUi();
+game.onNoSnips = () => {
+    // Shake the snips counter so running out never feels like the game stopped
+    // responding. The canvas draws the "NO MORE SNIPS!" bubble as well.
+    snipsCounter.classList.remove("shake");
+    void snipsCounter.offsetWidth; // restart the CSS animation
+    snipsCounter.classList.add("shake");
+};
 game.onLevelComplete = (levelId, stars, won) => {
     if (won) {
         save.setStars(levelId, stars);

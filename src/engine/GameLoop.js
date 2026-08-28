@@ -42,6 +42,7 @@ export class GameLoop {
         this.onLevelComplete = null;
         this.onDdaTierChanged = null;
         this.onTutorialStep = null;
+        this.onNoSnips = null;
 
         this._rafId = null;
         this._lastT = 0;
@@ -75,6 +76,11 @@ export class GameLoop {
         this.nodes = this.level.nodes;
         this.fuses = this.level.fuses;
         this.sparks = this.level.sparks;
+        // Out-of-snips feedback: the denied swipe slash + the "NO MORE SNIPS!"
+        // popup, and a one-time "LAST SNIP!" heads-up when dropping to 1.
+        this.deniedSlash = null; // { start, end, life }
+        this.noSnipsAt = null;   // { at, x, y }
+        this.lastSnipAt = null;  // frameCount when the final snip warning fired
         // Reset fuse burn + sparks to fresh.
         for (const f of this.fuses) f.burntProgress = 0;
         for (const s of this.sparks) {
@@ -176,6 +182,11 @@ export class GameLoop {
 
             this.snipsRemaining--;
             this.snipsUsed++;
+            // Heads-up that the budget is nearly spent (only worth saying when
+            // the level started with more than one cut).
+            if (this.snipsRemaining === 1 && this.level.snipsAllowed > 1) {
+                this.lastSnipAt = this.frameCount;
+            }
             if (this.onSnipsChange) this.onSnipsChange(this.snipsRemaining);
             if (this.audio) this.audio.play("snip");
             if (this.analytics) this.analytics.track("snips_used", { level: this.level.level_id });
@@ -189,6 +200,21 @@ export class GameLoop {
             }
             return true;
         }
+    }
+
+    /** Feedback when the player tries to cut with no snips left. The swipe must
+     *  visibly "do something" (grey denied slash + NO MORE SNIPS! bubble + the
+     *  counter shaking red), otherwise hitting the limit feels like the game
+     *  stopped responding. Throttled so frantic swiping doesn't spam popups. */
+    notifyNoSnips(swipeStart, swipeEnd) {
+        if (this.gameState !== STATE.PLAYING) return false;
+        if (this.noSnipsAt && this.frameCount - this.noSnipsAt.at < 45) return false;
+        const end = { x: swipeEnd.x, y: swipeEnd.y };
+        this.deniedSlash = { start: { ...swipeStart }, end, life: 1 };
+        this.noSnipsAt = { at: this.frameCount, x: end.x, y: end.y };
+        if (this.audio) this.audio.play("dud");
+        if (this.onNoSnips) this.onNoSnips();
+        return true;
     }
 
     // ---- DDA: adaptive difficulty tier ladder --------------------------------
@@ -388,6 +414,12 @@ export class GameLoop {
         for (let i = this.cutFlashes.length - 1; i >= 0; i--) {
             this.cutFlashes[i].life -= 0.1;
             if (this.cutFlashes[i].life <= 0) this.cutFlashes.splice(i, 1);
+        }
+
+        // Denied slash (out-of-snips swipe) fades out quickly too.
+        if (this.deniedSlash) {
+            this.deniedSlash.life -= 0.09;
+            if (this.deniedSlash.life <= 0) this.deniedSlash = null;
         }
 
         // Win condition: all sparks snuffed (or all delays not yet fired is still playable).

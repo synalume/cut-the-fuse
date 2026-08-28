@@ -131,6 +131,37 @@ check(swept === levels.length, `winnability sweep: all ${levels.length} levels w
         "L4: 3rd snip is rejected (both fuses already cut + budget spent)");
 }
 
+// Snip-budget onboarding: the LAST SNIP! heads-up fires when dropping to 1, and
+// a swipe with 0 snips spawns denied feedback instead of silently doing nothing.
+{
+    const cfg = levels.find((l) => l.level_id === 1);
+    const g = new GameLoop({ canvas: null, ...makeStubs() });
+    g.loadLevel(buildLevel(cfg, { width: 1280, height: 720 }), 0);
+    const f = g.fuses[0];
+    const mid = f.intersectionPt;
+    const swipe = () => g.tryCut({ x: mid.x - 20, y: mid.y }, { x: mid.x + 20, y: mid.y }, []);
+
+    g.snipsRemaining = 2; // one cut away from the final snip
+    check(swipe() === true && g.snipsRemaining === 1 && g.lastSnipAt != null,
+        "budget: dropping to 1 snip fires the LAST SNIP! heads-up");
+    check(g.noSnipsAt == null,
+        "budget: no NO-MORE-SNIPS feedback while snips remain");
+
+    g.frameCount = 50;
+    g.snipsRemaining = 0;
+    check(g.notifyNoSnips({ x: 0, y: 0 }, { x: 50, y: 50 }) === true
+        && g.deniedSlash && g.noSnipsAt,
+        "budget: swipe with 0 snips spawns denied feedback");
+    g.frameCount = 51;
+    g._update(); // denied slash decays
+    check(g.deniedSlash.life < 1,
+        "budget: denied slash decays over frames");
+
+    g.frameCount = 80; // 30 frames after the last cue — inside the 45-frame throttle
+    check(g.notifyNoSnips({ x: 0, y: 0 }, { x: 50, y: 50 }) === false,
+        "budget: denied feedback throttled (~0.75s)");
+}
+
 // Asset resolution: placeholder reuse when a level's art file is missing
 // (placeholder-first: banana bomb + matchstick on every level until art exists).
 {
@@ -298,7 +329,7 @@ class El {
     constructor(id) {
         this.id = id;
         this.style = {};
-        this.textContent = "";
+        this._textContent = "";
         this.title = "";
         this.className = "";
         this._innerHTML = "";
@@ -308,6 +339,12 @@ class El {
         this.height = 800;
         this.width = 800;
         this._src = "";
+    }
+    // Match real DOM: assigning textContent replaces all children.
+    get textContent() { return this._textContent; }
+    set textContent(v) {
+        this._textContent = v;
+        if (v === "") this.children = [];
     }
     get innerHTML() { return this._innerHTML; }
     set innerHTML(v) { this._innerHTML = v; }
@@ -383,7 +420,10 @@ check(!bootError, "main.js boots without exceptions", bootError ? String(bootErr
 
 if (!bootError) {
     check(elements["level-label"].textContent === "LEVEL 1", "Boot: resumes at Level 1");
-    check(/SNIPS: 3/.test(elements["snips-counter"].textContent), "Boot: snips counter = 3 (geometry-derived)", elements["snips-counter"].textContent);
+    const snipIconsLeft = () =>
+        elements["snips-counter"].children.filter((c) =>
+            (c.className || "").includes("snip-icon") && !(c.className || "").includes("spent")).length;
+    check(snipIconsLeft() === 3, "Boot: snips counter = 3 scissors (geometry-derived)", String(snipIconsLeft()));
     check(elements["tutorial-overlay"].style.display === "flex", "Boot: Level 1 tutorial overlay shown");
 
     // Dismiss the tutorial, then swipe through the fuse's chokepoint (screen center).
@@ -394,7 +434,7 @@ if (!bootError) {
     canvasEl.dispatch("pointerdown", mk(620, 360));
     canvasEl.dispatch("pointermove", mk(660, 360));
     canvasEl.dispatch("pointerup", mk(660, 360));
-    check(/SNIPS: 2/.test(elements["snips-counter"].textContent), "Boot: swipe cut consumed a snip", elements["snips-counter"].textContent);
+    check(snipIconsLeft() === 2, "Boot: swipe cut consumed a snip (2 scissors left)", String(snipIconsLeft()));
 
     // Drive the real loop: spark burns toward the cut, dies, all sparks snuffed → WON.
     let frame = 0;
