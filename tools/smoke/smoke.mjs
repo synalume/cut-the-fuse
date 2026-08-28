@@ -642,6 +642,65 @@ check(swept === levels.length, `winnability sweep: all ${levels.length} levels w
         "level clears — no spark sneaks through the visible cut mark", g.gameState);
 }
 
+// Multi-cut banking: a single snip placed at a shared chokepoint severs every
+// live wick that crosses it (L4's two fuses share cut1). N>=2 spawns the "+N"
+// popup, an ascending coin-chime queue, and banks a bonus star per extra wick
+// at level clear.
+{
+    const cfg = levels.find((l) => l.level_id === 4);
+    const played = [];
+    const recAudio = {
+        play: (id, o = {}) => played.push({ id, rate: o.rate }),
+        startLoop() {},
+        stopLoop() {},
+    };
+    const g = new GameLoop({ canvas: null, ...makeStubs(), audio: recAudio });
+    g.loadLevel(buildLevel(cfg, { width: 1280, height: 720 }), 0);
+    const cp = g.level.intersectionMap.cut1;
+    const swipe = () => g.tryCut(
+        { x: cp.x - 26, y: cp.y }, { x: cp.x + 26, y: cp.y },
+        [{ x: cp.x - 26, y: cp.y }, { x: cp.x + 26, y: cp.y }]
+    );
+    check(swipe() === true, "multikill: snip lands at the shared chokepoint");
+    check(g.multikills.length === 1 && g.multikills[0].count === 2,
+        "multikill: one snip counts 2 severed wicks", JSON.stringify(g.multikills[0]));
+    check(g.multikillStars === 1, "multikill: banks 1 bonus star for the extra wick", String(g.multikillStars));
+    check(g._chime && g._chime.total === 1, "multikill: coin-chime queue armed", JSON.stringify(g._chime));
+
+    // Advance frames: the queued ascending note fires and the queue drains.
+    await new Promise((r) => setTimeout(r, 250));
+    for (let i = 0; i < 12; i++) { g.frameCount++; g._update(); }
+    const chimes = played.filter((p) => p.id === "win_star");
+    check(chimes.length === 2 && chimes[1].rate > chimes[0].rate,
+        "multikill: ascending coin chime (2 notes, rising pitch)",
+        JSON.stringify(chimes.map((c) => c.rate)));
+    check(g._chime === null, "multikill: chime queue drains", JSON.stringify(g._chime));
+
+    // Single-wick snip: no popup, no chime.
+    const g1 = new GameLoop({ canvas: null, ...makeStubs() });
+    g1.loadLevel(lvl1, 0);
+    const mid = g1.fuses[0].intersectionPt;
+    g1.tryCut({ x: mid.x - 20, y: mid.y }, { x: mid.x + 20, y: mid.y }, []);
+    check(g1.multikills.length === 0 && g1._chime === null,
+        "multikill: single-wick snip is not a multi-cut");
+}
+
+// Efficiency score: fewer snips used → more points; perfects and multi-cuts add.
+{
+    const g = new GameLoop({ canvas: null, ...makeStubs() });
+    g.loadLevel(lvl1, 0);
+    const allowed = lvl1.snipsAllowed;
+    check(g.computeScore() === 100 + 100 * allowed,
+        "score: clearing with all snips unused scores 100 + 100/snip", `got ${g.computeScore()}`);
+    g.snipsUsed = allowed;
+    check(g.computeScore() === 100, "score: clearing with the full budget used scores base 100", String(g.computeScore()));
+    g.snipsUsed = allowed - 1;
+    g.perfectSnips = 2;
+    g.multikills.push({ count: 3 }); // two extra wicks sliced
+    check(g.computeScore() === 100 + 100 + 25 * (2 + 2),
+        "score: perfects + multi-cut wicks add to the efficiency score", String(g.computeScore()));
+}
+
 // Difficulty profile: the burn pace is a READ-TIME budget, not a speed race.
 // Simple teaching levels can burn briskly; the dense late mazes (many wicks +
 // forks) burn the SLOWEST so the player has time to read the lines and place
@@ -765,6 +824,12 @@ check(swept === levels.length, `winnability sweep: all ${levels.length} levels w
     save.depositStars(0);
     save.depositStars(-3);
     check(save.getStarBank() === 2, "records: non-positive deposits are ignored");
+
+    check(save.getBestScore(3) === 0, "records: no best score before first clear");
+    check(save.setBestScore(3, 400) === true, "records: first clear sets a best score");
+    check(save.setBestScore(3, 350) === false, "records: lower score is not a new best");
+    check(save.setBestScore(3, 500) === true, "records: higher score sets a new best");
+    check(save.getBestScore(3) === 500, "records: best score kept");
 }
 
 // Daily challenge: date-seeded pick + streak accounting.
@@ -975,6 +1040,7 @@ if (!bootError) {
     check(lit === 3, "Boot: all 3 stars light on a 3-star clear", String(lit));
     // Star icon is now a CSS background image; the counter text is the number only.
     check(elements["star-display"].textContent.trim() === "3", "Boot: star bank credited 3★", elements["star-display"].textContent);
+    check(/^SCORE \d+$/.test(elements["win-score"].textContent), "Boot: win modal shows the efficiency score", elements["win-score"].textContent);
 
     // Armory: opens from the star counter, shows 10 payload skins.
     elements["star-display"].dispatch("click", {});

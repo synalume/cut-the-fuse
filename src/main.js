@@ -60,6 +60,8 @@ const winPar = $("win-par");
 const winRecord = $("win-record");
 const winPerfect = $("win-perfect");
 const winPerfectCount = $("win-perfect-count");
+const winScore = $("win-score");
+const winBest = $("win-best");
 const winStreak = $("win-streak");
 const btnNext = $("btn-next");
 const ddaText = $("dda-text");
@@ -291,9 +293,12 @@ game.onLevelComplete = (levelId, stars, won) => {
         if (unlockProgressRewards() > 0) {
             starDisplay.classList.add("new-unlock");
         }
-        // Speed reward: PERFECT SNIPs bank a star each (capped by snips spent).
+        // Speed reward: PERFECT SNIPs + multi-cut bonus stars (one per extra
+        // wick sliced by a single snip) bank at level clear.
         const perfect = game.perfectSnips;
-        if (perfect > 0) save.depositStars(perfect);
+        const multi = game.multikillStars;
+        const earned = perfect + multi;
+        if (earned > 0) save.depositStars(earned);
         updateUi();
         showStars(stars);
 
@@ -304,6 +309,13 @@ game.onLevelComplete = (levelId, stars, won) => {
         winTime.textContent = `TIME ${seconds.toFixed(1)}s`;
         winPar.textContent = config?.par != null ? `PAR ${config.par.toFixed(1)}s` : "";
         winRecord.style.display = isRecord ? "inline-block" : "none";
+
+        // Efficiency score: fewer snips used → higher. Fewest snips = most
+        // thinking about where to cut, so it scores highest.
+        const score = game.computeScore();
+        const scoreRecord = save.setBestScore(levelId, score);
+        winScore.textContent = `SCORE ${score}`;
+        winBest.style.display = scoreRecord ? "inline-block" : "none";
         if (perfect > 0) {
             winPerfectCount.textContent = `×${perfect}`;
             winPerfect.style.display = "inline-block";

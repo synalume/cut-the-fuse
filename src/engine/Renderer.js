@@ -880,6 +880,12 @@ export class Renderer {
                 p.at, 65
             );
         }
+
+        // MULTI-CUT banking numbers — a Big Fluff-style "+N" pops where one snip
+        // sliced several wicks at once: gold, bouncy, floats up as it fades.
+        for (const mk of game.multikills || []) {
+            this._drawBankCount(game, mk);
+        }
     }
 
     /** Small comic word popping at an arbitrary world point — same poster style
@@ -914,6 +920,42 @@ export class Renderer {
         ctx.strokeText(text, 0, 0);
         ctx.fillStyle = color;
         ctx.fillText(text, 0, 0);
+        ctx.restore();
+    }
+
+    /** Big Fluff-style banking counter for a multi-cut: a big gold "+N" that
+     *  pops in with overshoot, floats up, and fades — the dopamine hit for
+     *  slicing several wicks with one snip. */
+    _drawBankCount(game, mk) {
+        if (mk.at == null) return;
+        const elapsed = game.frameCount - mk.at;
+        if (elapsed < 0 || elapsed > 55) return;
+        const ctx = this.ctx;
+
+        let ty = mk.y;
+        const cam = game.camera;
+        const sy = this.height / 2 + (ty - (this.height / 2 - cam.y)) * cam.zoom;
+        if (sy < 70) ty += (70 - sy) / cam.zoom;
+
+        const pop = 1.9 - 0.9 * Math.exp(-elapsed * 5);
+        const float = Math.min(22, elapsed * 0.45); // rises as it fades
+        const wobble = Math.sin(game.frameCount * 0.14) * 0.06 * Math.min(1, elapsed / 10);
+        const size = 30 + mk.count * 5;
+
+        ctx.save();
+        ctx.globalAlpha = Math.min(1, elapsed / 5) * Math.min(1, (55 - elapsed) / 14);
+        ctx.translate(mk.x, ty - 56 - float);
+        ctx.rotate(-0.05 + wobble);
+        ctx.scale(pop, pop);
+        ctx.font = `${size}px 'Luckiest Guy', 'Courier New', Courier, monospace`;
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.lineJoin = "round";
+        ctx.lineWidth = Math.max(6, size * 0.22);
+        ctx.strokeStyle = "#1c1917";
+        ctx.strokeText(`+${mk.count}`, 0, 0);
+        ctx.fillStyle = "#f59e0b";
+        ctx.fillText(`+${mk.count}`, 0, 0);
         ctx.restore();
     }
 

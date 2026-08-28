@@ -17,6 +17,7 @@ const freshDefaults = () => ({
     igniters: {}, // igniter typeId -> true (unlocked)
     selectedIgniter: null,
     bestTimes: {}, // levelId -> best clear seconds (float)
+    bestScores: {}, // levelId -> best efficiency score (int)
     dailyStreak: 0, // consecutive days with a completed daily challenge
     lastDailyDay: null, // "YYYY-MM-DD" of the last completed daily
     dailyCompleted: {}, // "YYYY-MM-DD" -> true
@@ -166,6 +167,25 @@ export class SaveManager {
         if (typeof n !== "number" || n <= 0) return;
         this.data.starBank += Math.floor(n);
         this._save();
+    }
+
+    // ---- efficiency score ------------------------------------------------------
+
+    /** Best efficiency score, or 0 if never recorded. */
+    getBestScore(levelId) {
+        return this.data.bestScores[String(levelId)] || 0;
+    }
+
+    /** Store a new best efficiency score. Returns true if it was a new best. */
+    setBestScore(levelId, score) {
+        levelId = String(levelId);
+        const prev = this.data.bestScores[levelId] || 0;
+        if (typeof score === "number" && isFinite(score) && score > prev) {
+            this.data.bestScores[levelId] = Math.floor(score);
+            this._save();
+            return true;
+        }
+        return false;
     }
 
     // ---- daily challenge ---------------------------------------------------

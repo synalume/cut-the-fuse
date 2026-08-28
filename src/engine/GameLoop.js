@@ -4,6 +4,11 @@ import { getBezierXY, distToSegment, clamp } from "./MathUtils.js";
 
 export const STATE = { PLAYING: "playing", WON: "won", LOST: "lost", PAUSED: "paused" };
 
+// Radius of the cut circle. Sparks die when they travel within this distance
+// of a cut point; wick-severing counts use the same value so the "+N" popup
+// always matches what actually happens in _update.
+const CUT_RADIUS = 15;
+
 export class GameLoop {
     constructor({ canvas, renderer, audio, analytics, platform }) {
         this.canvas = canvas;
@@ -37,6 +42,8 @@ export class GameLoop {
         this.lostAt = null; // frameCount when the bomb detonated (drives the blast FX)
         this.wonAt = null; // frameCount when the level was defused (drives the win text)
         this.tutorialActive = false;
+        this.multikills = []; // { x, y, count, at } — one snip severed N wicks (banking popup)
+        this._chime = null; // ascending coin-chime queue for multi-cuts
 
         // Callbacks (wired by main.js).
         this.onSnipsChange = null;
@@ -87,6 +94,8 @@ export class GameLoop {
         // economy and the speed race stay in tension).
         this.perfectSnips = 0;
         this.perfectSnipsAt = []; // { x, y, at } — drive the PERFECT! popups
+        this.multikills = [];
+        this._chime = null;
         // Reset fuse burn + sparks to fresh.
         for (const f of this.fuses) f.burntProgress = 0;
         for (const s of this.sparks) {
@@ -183,7 +192,7 @@ export class GameLoop {
 
         {
             const swipeAngle = Math.atan2(swipeEnd.y - swipeStart.y, swipeEnd.x - swipeStart.x);
-            this.cuts.push({ x: snipPoint.x, y: snipPoint.y, radius: 15, angle: swipeAngle, fuseId: snipFuse.id, snipT });
+            this.cuts.push({ x: snipPoint.x, y: snipPoint.y, radius: CUT_RADIUS, angle: swipeAngle, fuseId: snipFuse.id, snipT });
             this.cutFlashes.push({ x: snipPoint.x, y: snipPoint.y, angle: swipeAngle, life: 1 });
 
             // The fading blade-trail slash follows the finger path (Cut-the-Rope
@@ -205,6 +214,29 @@ export class GameLoop {
                     this.perfectSnips++;
                     this.perfectSnipsAt.push({ x: snipPoint.x, y: snipPoint.y, at: this.frameCount });
                 }
+            }
+            // MULTI-CUT: count the live wicks this one snip severs. A wick counts
+            // when its curve passes within the cut circle AHEAD of its spark —
+            // those sparks die as they burn into the gap (same rule _update uses).
+            // N>=2 is the dopamine moment: a banking "+N" popup, an ascending coin
+            // chime, and a bonus star per extra wick banked at level clear.
+            let severed = 0;
+            for (let i = 0; i < this.sparks.length; i++) {
+                const s = this.sparks[i];
+                if (!s.active) continue;
+                const fuse = this.fuses[s.fuseIndex];
+                let minD = Infinity, minT = 0;
+                for (let t = s.progress; t <= 1; t += 0.02) {
+                    const pt = getBezierXY(t, fuse.startNode, fuse.cp1, fuse.cp2, fuse.endNode);
+                    const d = Math.hypot(pt.x - snipPoint.x, pt.y - snipPoint.y);
+                    if (d < minD) { minD = d; minT = t; }
+                }
+                if (minD < CUT_RADIUS && minT > s.progress + 0.005) severed++;
+            }
+            if (severed >= 2) {
+                this.multikills.push({ x: snipPoint.x, y: snipPoint.y, count: severed, at: this.frameCount });
+                if (this.audio) this.audio.play("win_star", { rate: 1.0 });
+                this._chime = { total: severed - 1, step: 0, next: performance.now() + 70 };
             }
             // Heads-up that the budget is nearly spent (only worth saying when
             // the level started with more than one cut).
@@ -287,6 +319,19 @@ export class GameLoop {
         return 2;
     }
 
+    /** Efficiency score: fewer snips used → more points. 100 for a clear, +100
+     *  per snip left over, +25 per perfect snip and per extra wick sliced in a
+     *  multi-cut — both reward reading the maze and placing fewer, smarter cuts. */
+    computeScore() {
+        const snipsLeft = Math.max(0, (this.level?.snipsAllowed ?? 0) - this.snipsUsed);
+        return 100 + 100 * snipsLeft + 25 * (this.perfectSnips + this.multikillStars);
+    }
+
+    /** Total bonus stars from multi-cuts this attempt (one per extra wick). */
+    get multikillStars() {
+        return (this.multikills || []).reduce((a, m) => a + (m.count - 1), 0);
+    }
+
     /** Level-clear duration in frames (start → win/lose), for the speed record. */
     get clearFrames() {
         return this.frameCount - this.startedAt;
@@ -306,6 +351,7 @@ export class GameLoop {
                 this.analytics.track("level_win", {
                     level: this.level.level_id, stars, attempts: this.attempts,
                     duration: this.frameCount - this.startedAt, snips_used: this.snipsUsed,
+                    multikills: this.multikills.length, score: this.computeScore(),
                     mode: this.levelMode,
                 });
             }
@@ -487,6 +533,19 @@ export class GameLoop {
         if (this.deniedSlash) {
             this.deniedSlash.life -= 0.09;
             if (this.deniedSlash.life <= 0) this.deniedSlash = null;
+        }
+
+        // Multi-cut coin chime: one ascending note per extra wick sliced. Time-
+        // based (not frame-based) so the spacing clears AudioManager's 60ms
+        // rate limit on every refresh rate.
+        if (this._chime) {
+            const now = performance.now();
+            while (this._chime.step < this._chime.total && now >= this._chime.next) {
+                this._chime.step++;
+                this._chime.next = now + 70;
+                if (this.audio) this.audio.play("win_star", { rate: 1.0 + this._chime.step * 0.25 });
+            }
+            if (this._chime.step >= this._chime.total) this._chime = null;
         }
 
         // Win condition: all sparks snuffed (or all delays not yet fired is still playable).
