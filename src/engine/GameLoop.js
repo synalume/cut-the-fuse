@@ -81,6 +81,11 @@ export class GameLoop {
         this.deniedSlash = null; // { start, end, life }
         this.noSnipsAt = null;   // { at, x, y }
         this.lastSnipAt = null;  // frameCount when the final snip warning fired
+        // PERFECT SNIP: a cut placed right ahead of a burning spark. Reward for
+        // the fast-clear playstyle (each close-cut spends a snip, so the snip
+        // economy and the speed race stay in tension).
+        this.perfectSnips = 0;
+        this.perfectSnipsAt = []; // { x, y, at } — drive the PERFECT! popups
         // Reset fuse burn + sparks to fresh.
         for (const f of this.fuses) f.burntProgress = 0;
         for (const s of this.sparks) {
@@ -183,6 +188,17 @@ export class GameLoop {
 
             this.snipsRemaining--;
             this.snipsUsed++;
+            // PERFECT SNIP: the cut landed just ahead of a spark that's burning
+            // right now (within ~42 world px of it). The spark dies in a few
+            // frames, clearing that fuse faster — the reward for speed.
+            const spark = this.sparks[this.fuses.indexOf(snipFuse)];
+            if (spark && spark.ignited && spark.active) {
+                const sparkPos = getBezierXY(spark.progress, snipFuse.startNode, snipFuse.cp1, snipFuse.cp2, snipFuse.endNode);
+                if (snipT > spark.progress + 0.005 && Math.hypot(snipPoint.x - sparkPos.x, snipPoint.y - sparkPos.y) < 42) {
+                    this.perfectSnips++;
+                    this.perfectSnipsAt.push({ x: snipPoint.x, y: snipPoint.y, at: this.frameCount });
+                }
+            }
             // Heads-up that the budget is nearly spent (only worth saying when
             // the level started with more than one cut).
             if (this.snipsRemaining === 1 && this.level.snipsAllowed > 1) {
@@ -262,6 +278,11 @@ export class GameLoop {
         // achievable: 3★ = finish with a snip left, 2★ = used the whole budget.
         if (this.snipsRemaining >= 1) return 3;
         return 2;
+    }
+
+    /** Level-clear duration in frames (start → win/lose), for the speed record. */
+    get clearFrames() {
+        return this.frameCount - this.startedAt;
     }
 
     // ---- State transitions ------------------------------------------------------

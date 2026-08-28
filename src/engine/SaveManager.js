@@ -11,6 +11,7 @@ const DEFAULT_SAVE = {
     selectedSkin: null,
     igniters: {}, // igniter typeId -> true (unlocked)
     selectedIgniter: null,
+    bestTimes: {}, // levelId -> best clear seconds (float)
 };
 
 export class SaveManager {
@@ -129,5 +130,33 @@ export class SaveManager {
 
     getUnlockedIgniters() {
         return Object.keys(this.data.igniters);
+    }
+
+    // ---- speed records -----------------------------------------------------
+
+    /** Best clear time in seconds, or null if the level has never been cleared. */
+    getBestTime(levelId) {
+        const t = this.data.bestTimes[String(levelId)];
+        return typeof t === "number" ? t : null;
+    }
+
+    /** Store a new best clear time. Returns true if it was a new record. */
+    setBestTime(levelId, seconds) {
+        levelId = String(levelId);
+        const prev = this.data.bestTimes[levelId];
+        if (typeof seconds !== "number" || !isFinite(seconds) || seconds <= 0) return false;
+        if (prev == null || seconds < prev) {
+            this.data.bestTimes[levelId] = seconds;
+            this._save();
+            return true;
+        }
+        return false;
+    }
+
+    /** Add a star-bank bonus (PERFECT SNIPs). Never negative. */
+    depositStars(n) {
+        if (typeof n !== "number" || n <= 0) return;
+        this.data.starBank += Math.floor(n);
+        this._save();
     }
 }

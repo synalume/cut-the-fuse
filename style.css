@@ -190,9 +190,22 @@ canvas { display: block; position: absolute; z-index: 10; }
     padding: 20px 24px;
 }
 
-.win-stars { display: flex; justify-content: center; gap: 12px; margin: 4px 0 16px; }
+.win-stars { display: flex; justify-content: center; gap: 12px; margin: 4px 0 10px; }
 .win-stars img { width: 46px; height: 46px; object-fit: contain; }
 .win-stars img.dim { filter: grayscale(1) brightness(0.7); opacity: 0.4; }
+#win-stats {
+    display: flex; flex-wrap: wrap; justify-content: center; gap: 6px 14px;
+    margin: 0 0 16px; font-family: 'Luckiest Guy', 'Baloo 2', 'Courier New', Courier, monospace;
+}
+#win-stats .stat {
+    background: #1c1917; color: #f5f5f4;
+    border-radius: 999px; padding: 3px 12px 5px;
+    font-size: 0.9rem; letter-spacing: 0.05em; line-height: 1;
+    text-transform: uppercase;
+}
+#win-stats .stat.record { background: #d97706; color: #fff7ed; animation: win-record-pulse 0.9s ease-in-out infinite alternate; }
+#win-stats .stat.perfect { background: #16a34a; color: #f0fdf4; }
+@keyframes win-record-pulse { from { transform: scale(1); } to { transform: scale(1.08); } }
 
 /* Tutorial overlay */
 #tutorial-overlay {
@@ -328,6 +341,7 @@ canvas { display: block; position: absolute; z-index: 10; }
 .level-cell:hover:not(.locked) { background: #e7e5e4; transform: translateY(-1px); }
 .level-cell .num { font-size: 1.05rem; font-weight: bold; line-height: 1; font-family: 'Luckiest Guy', 'Baloo 2', 'Courier New', Courier, monospace; }
 .level-cell .stars { font-size: 0.7rem; color: #d97706; letter-spacing: 1px; line-height: 1; }
+.level-cell .time { font-size: 0.58rem; color: #78716c; line-height: 1; min-height: 0.6rem; }
 .level-cell.current { background: #fef08a; box-shadow: 0 0 0 3px #d97706; }
 .level-cell.locked { opacity: 0.45; cursor: not-allowed; }
 .level-cell.locked .stars { visibility: hidden; }
@@ -353,6 +367,7 @@ canvas { display: block; position: absolute; z-index: 10; }
     #modal-win {
         padding: 14px 18px;
     }
+    #win-stats .stat { font-size: 0.72rem; padding: 2px 9px 4px; }
     .message-box.skins { width: min(92vw, 520px); }
     .header { font-size: 1.15rem; }
     .controls { bottom: 14px; right: 14px; gap: 8px; }
@@ -381,6 +396,8 @@ canvas { display: block; position: absolute; z-index: 10; }
     .message-box.level-select { max-height: 94vh; }
     #level-grid { max-height: 62vh; }
     .win-stars { gap: 8px; margin: 2px 0 10px; }
+    #win-stats { margin: 0 0 12px; }
+    #win-stats .stat { font-size: 0.72rem; padding: 2px 9px 4px; }
     #modal-lose, #modal-win { padding: 10px 16px; }
     /* Center the armory vertically so its tabs stay on screen. */
     .message-box.skins {

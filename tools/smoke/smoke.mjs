@@ -37,6 +37,7 @@ globalThis.cancelAnimationFrame = () => {};
 import { buildLevel, validateLevel, computeFitCamera, resolveAssets } from "../../src/engine/LevelManager.js";
 import { GameLoop, STATE } from "../../src/engine/GameLoop.js";
 import { getBezierXY } from "../../src/engine/MathUtils.js";
+import { SaveManager } from "../../src/engine/SaveManager.js";
 
 function makeStubs() {
     const renderer = {
@@ -377,9 +378,16 @@ check(swept === levels.length, `winnability sweep: all ${levels.length} levels w
 // demands its own cut. To PREVENT the child the player must cut the parent
 // EARLY (before the trigger), saving that snip.
 {
-    const cfg = levels.find((l) => l.level_id === 27);
+    const chainLvls = levels.filter((l) => l.fuses.some((f) => f.chain));
+    const firstChain = levels.find((l) => l.fuses.some((f) => f.chain));
+    check(firstChain?.level_id === 8, "chains begin at L8 (right after the shared-chokepoint tutorial)", `first chain level = ${firstChain?.level_id}`);
+    check(chainLvls.length >= 20, "chains are present through the rest of the ladder", `${chainLvls.length} chain levels`);
+    const before = levels.find((l) => l.level_id === 7);
+    check(!before.fuses.some((f) => f.chain), "L7 has no chains (pure chokepoint tutorial)");
+
+    const cfg = levels.find((l) => l.level_id === 8);
     const chainFuses = cfg.fuses.filter((f) => f.chain);
-    check(chainFuses.length === 1, "L27 has a chained wick", JSON.stringify(chainFuses[0]?.chain));
+    check(chainFuses.length === 1, "L8 has exactly one chained wick", JSON.stringify(chainFuses[0]?.chain));
 
     const level = buildLevel(cfg, { width: 1280, height: 720 });
     const childSpark = level.sparks.find((s) => s.chain);
@@ -452,6 +460,86 @@ check(swept === levels.length, `winnability sweep: all ${levels.length} levels w
         }
         check(bad.length === 0, "chain invariant: no level has a trivially breakable chain (trigger before parent's cut)", bad.join(", "));
     }
+}
+
+// Difficulty profile: the burn pace must actually climb across the ladder, and
+// the new decision mechanics (chains, partial/direct fuses) appear in act 1.
+{
+    const fastest = (id) => Math.max(...levels.find((l) => l.level_id === id).fuses.map((f) => f.speed));
+    const secs = (speed) => Math.round((1 / speed / 60) * 10) / 10;
+    const l8 = secs(fastest(8)), l20 = secs(fastest(20)), l40 = secs(fastest(40)), l55 = secs(fastest(55));
+    check(l8 < 16, "L8 fastest fuse burns in under 16s (was ~13s, was 17s pre-ramp)", `${l8}s`);
+    check(l20 < 10, "L20 fastest fuse burns in under 10s", `${l20}s`);
+    check(l40 < 7, "L40 fastest fuse burns in under 7s", `${l40}s`);
+    check(l55 < 5, "L55 fastest fuse burns in under 5s (was 8-9s)", `${l55}s`);
+
+    const partialLvls = levels.filter((l) => l.level_id > 3 && l.fuses.some((f) => !f.routeThrough && !f.chain));
+    const firstPartial = levels.find((l) => l.level_id > 3 && l.fuses.some((f) => !f.routeThrough && !f.chain));
+    check(firstPartial?.level_id === 14, "partial (direct) fuses begin at L14", `first = L${firstPartial?.level_id}`);
+    check(partialLvls.length >= 15, "direct fuses appear throughout the rest of the ladder", `${partialLvls.length} levels`);
+
+    const parMissing = levels.filter((l) => typeof l.par !== "number" || l.par <= 0);
+    check(parMissing.length === 0, "every level carries a par time", parMissing.map((l) => `L${l.level_id}`).join(", "));
+    const parBeatable = levels.every((l) => l.par > 2);
+    check(parBeatable, "par is always above the 2s floor", "");
+}
+
+// PERFECT SNIP: a cut placed just ahead of a burning spark counts; a cut far
+// from the spark does not.
+{
+    const cfg = levels.find((l) => l.level_id === 4); // one shared chokepoint, slow spark
+    const g = new GameLoop({ canvas: null, ...makeStubs() });
+    const level = buildLevel(cfg, { width: 1280, height: 720 });
+    g.loadLevel(level, 0);
+
+    // Burn the first spark a little so it's ignited and moving.
+    for (let i = 0; i < 30 && g.gameState === STATE.PLAYING; i++) { g.frameCount++; g._update(); }
+    const spark = g.sparks.find((s) => s.ignited && s.active);
+    check(spark != null, "perfect: a spark is burning mid-level");
+
+    if (spark) {
+        const fuse = level.fuses[spark.fuseIndex];
+        // Just ahead of the spark (progress + 0.02 → ~2% of the wick ahead).
+        const ahead = getBezierXY(spark.progress + 0.02, fuse.startNode, fuse.cp1, fuse.cp2, fuse.endNode);
+        const p0 = { x: ahead.x - 5, y: ahead.y }, p1 = { x: ahead.x + 5, y: ahead.y };
+        g.tryCut(p0, p1, [p0, p1]);
+        check(g.perfectSnips === 1, "perfect: cutting just ahead of the moving spark counts a PERFECT SNIP", `count=${g.perfectSnips}`);
+
+        // A cut at the far chokepoint (other end of the wick) is NOT perfect.
+        const g2 = new GameLoop({ canvas: null, ...makeStubs() });
+        g2.loadLevel(level, 0);
+        for (let i = 0; i < 30 && g2.gameState === STATE.PLAYING; i++) { g2.frameCount++; g2._update(); }
+        const cp = fuse.intersectionPt;
+        const q0 = { x: cp.x - 5, y: cp.y }, q1 = { x: cp.x + 5, y: cp.y };
+        g2.tryCut(q0, q1, [q0, q1]);
+        check(g2.perfectSnips === 0, "perfect: a chokepoint cut far from the spark is not perfect", `count=${g2.perfectSnips}`);
+
+        // A cut BEHIND the spark (it already passed) is not perfect either.
+        const g3 = new GameLoop({ canvas: null, ...makeStubs() });
+        g3.loadLevel(level, 0);
+        for (let i = 0; i < 30 && g3.gameState === STATE.PLAYING; i++) { g3.frameCount++; g3._update(); }
+        const behind = getBezierXY(Math.max(0, spark.progress - 0.1), fuse.startNode, fuse.cp1, fuse.cp2, fuse.endNode);
+        const r0 = { x: behind.x - 5, y: behind.y }, r1 = { x: behind.x + 5, y: behind.y };
+        g3.tryCut(r0, r1, [r0, r1]);
+        check(g3.perfectSnips === 0, "perfect: a cut behind the spark is not perfect", `count=${g3.perfectSnips}`);
+    }
+}
+
+// Best-time records: the save keeps the fastest clear, and only improves.
+{
+    const storage = {};
+    const save = new SaveManager({ get: (k) => storage[k], set: (k, v) => (storage[k] = v) });
+    check(save.getBestTime(3) === null, "records: no best time before first clear");
+    check(save.setBestTime(3, 12.4) === true, "records: first clear is a new record");
+    check(save.getBestTime(3) === 12.4, "records: best time stored");
+    check(save.setBestTime(3, 9.1) === true, "records: faster clear sets a new record");
+    check(save.setBestTime(3, 10.0) === false, "records: slower clear is not a record");
+    check(save.getBestTime(3) === 9.1, "records: best time kept");
+    save.depositStars(2);
+    check(save.getStarBank() === 2, "records: PERFECT SNIP stars deposit into the bank");
+    save.depositStars(0);
+    save.depositStars(-3);
+    check(save.getStarBank() === 2, "records: non-positive deposits are ignored");
 }
 
 // Curve variety: a bulged fuse keeps cp1 != cp2 but the curve still passes

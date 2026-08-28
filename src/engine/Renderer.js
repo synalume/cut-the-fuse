@@ -818,6 +818,16 @@ export class Renderer {
                 );
             }
         }
+
+        // PERFECT! popups — a cut placed right ahead of a burning spark. Short
+        // life so back-to-back perfects stack cleanly on the wick.
+        for (const p of game.perfectSnipsAt || []) {
+            this._drawPopupWord(
+                game, "PERFECT!", "#16a34a",
+                p.x, p.y - 38, 21,
+                p.at, 65
+            );
+        }
     }
 
     /** Small comic word popping at an arbitrary world point — same poster style

@@ -31,6 +31,9 @@ platform.onEvent = (name, val) => {
 
 const input = new InputHandler(canvas, game);
 
+// QA hook: lets Playwright drive the loop and read game state directly.
+window.__CTF__ = { game, renderer, save, get levels() { return levels; } };
+
 // ---- UI elements ---------------------------------------------------------------
 
 const levelLabel = $("level-label");
@@ -51,6 +54,11 @@ const tutorialOverlay = $("tutorial-overlay");
 const tutorialText = $("tutorial-text");
 const btnTutorialNext = $("tutorial-next");
 const winStars = $("win-stars");
+const winTime = $("win-time");
+const winPar = $("win-par");
+const winRecord = $("win-record");
+const winPerfect = $("win-perfect");
+const winPerfectCount = $("win-perfect-count");
 const ddaText = $("dda-text");
 
 let levels = [];
@@ -158,7 +166,12 @@ function renderLevelGrid() {
         stars.className = "stars";
         stars.textContent = "★".repeat(earned) + "☆".repeat(3 - earned);
 
-        cell.append(num, stars);
+        const best = save.getBestTime(id);
+        const time = document.createElement("div");
+        time.className = "time";
+        time.textContent = best != null ? `${best.toFixed(1)}s` : "";
+
+        cell.append(num, stars, time);
         cell.addEventListener("click", () => {
             if (locked) return;
             loadLevel(i);
@@ -173,8 +186,13 @@ $("btn-levels-close").addEventListener("click", closeLevelSelect);
 
 // ---- tutorial ------------------------------------------------------------------
 
+// Each level's tutorial text shows the FIRST time that level loads in a
+// session. Re-entering a level later skips it, so replays don't re-educate.
+let seenTutorials = new Set();
+
 function startTutorialIfPresent(level) {
-    if (!level.tutorial || levelIndex !== 0) return;
+    if (!level.tutorial || seenTutorials.has(level.level_id)) return;
+    seenTutorials.add(level.level_id);
     game.tutorialActive = true;
     tutorialText.textContent = level.tutorial.text;
     tutorialOverlay.style.display = "flex";
@@ -229,8 +247,26 @@ game.onLevelComplete = (levelId, stars, won) => {
         if (unlockProgressRewards() > 0) {
             starDisplay.classList.add("new-unlock");
         }
+        // Speed reward: PERFECT SNIPs bank a star each (capped by snips spent).
+        const perfect = game.perfectSnips;
+        if (perfect > 0) save.depositStars(perfect);
         updateUi();
         showStars(stars);
+
+        // Speed record: clear time vs the level's par, plus perfect-snip count.
+        const seconds = Math.round((game.clearFrames / 60) * 10) / 10;
+        const isRecord = save.setBestTime(levelId, seconds);
+        const config = levels.find((l) => l.level_id === levelId);
+        winTime.textContent = `${seconds.toFixed(1)}s`;
+        winPar.textContent = config?.par != null ? `PAR ${config.par.toFixed(1)}s` : "";
+        winRecord.style.display = isRecord ? "inline-block" : "none";
+        if (perfect > 0) {
+            winPerfectCount.textContent = `×${perfect}`;
+            winPerfect.style.display = "inline-block";
+        } else {
+            winPerfect.style.display = "none";
+        }
+
         modalWin.style.display = "block";
         platform.commercialBreak();
     } else {

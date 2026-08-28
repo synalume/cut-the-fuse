@@ -53,7 +53,8 @@ function knobsForLevel(n) {
     const k = { spawns: 2, chokepoints: 1, share: true, delay: "burst", speed: 0.001 };
 
     if (act === 1) {
-        // Teaching phases, one skill at a time.
+        // Teaching phases, one skill at a time — but with a real speed ramp so
+        // "cut close to the spark for a fast clear" is meaningful from L4 on.
         if (n <= 3) {
             // Swipe-to-cut. Single direct fuse, generous snips.
             Object.assign(k, { spawns: 1, chokepoints: 0, share: true, delay: "burst", speed: 0.0008 });
@@ -61,85 +62,91 @@ function knobsForLevel(n) {
             // Staggered delays.
             Object.assign(k, {
                 spawns: 2 + (n % 2), chokepoints: 1, share: true,
-                delay: "stagger", speed: 0.0009,
+                delay: "stagger", speed: 0.0011,
             });
         } else if (n <= 10) {
-            // Shared chokepoint: one cut kills many.
+            // Shared chokepoint (L7 teaches it); chains arrive at L8.
             Object.assign(k, {
-                spawns: 3 + (n % 3), chokepoints: 1, share: true,
-                delay: "close", speed: 0.0009 + (n % 3) * 0.0001,
+                spawns: 3 + (n % 2), chokepoints: 1, share: true,
+                delay: "close", speed: 0.0013,
             });
-        } else if (n <= 15) {
-            // Snip economy: split across 2 chokepoints.
+        } else if (n <= 14) {
+            // Snip economy: split across 2 chokepoints, tighter timing.
             Object.assign(k, {
-                spawns: 3 + (n % 2), chokepoints: 2, share: false,
-                delay: "stagger", speed: 0.001,
+                spawns: 4, chokepoints: 2, share: false,
+                delay: "close", speed: 0.0015,
             });
         } else {
-            // Combine everything. Peak 19-20, relief 18.
+            // Planning: partial direct fuses from L14, faster pace, overlap peak.
             Object.assign(k, {
-                spawns: 4 + (relief ? 0 : (n % 2)), chokepoints: 2, share: false,
-                delay: "close", speed: relief ? 0.0009 : 0.001 + wave * 0.0001,
+                spawns: 4 + (n % 2), chokepoints: 2, share: false, partial: true,
+                delay: relief ? "close" : "overlap", speed: 0.0017 + wave * 0.0001,
             });
         }
     } else if (act === 2) {
-        // Planning depth. Wave math drives it.
-        Object.assign(k, { spawns: 4, chokepoints: 2, share: false, delay: "close", speed: 0.0012 });
+        // Planning depth. Wave math drives it; the whole act is ~2x the burn
+        // pace of the old ladder so two sparks can threaten at once.
+        Object.assign(k, { spawns: 4, chokepoints: 2, share: false, delay: "close", speed: 0.002 });
         k.spawns = 4 + wave + (relief ? 0 : wpos >= 2 ? 1 : 0);
         k.chokepoints = 2 + (wave >= 1 ? 1 : 0) - (relief ? 1 : 0);
-        k.delay = wave >= 2 ? "close" : "stagger";
-        k.speed = 0.0012 + wave * 0.00015;
+        k.delay = wave >= 2 ? "overlap" : "close";
+        k.speed = 0.002 + wave * 0.0003;
         // Level 21-24: speed variance focus.
-        if (n <= 24) { k.spawns = 4 + (n % 2); k.chokepoints = 2; k.speed = 0.0012 + (n % 3) * 0.0001; }
-        // 25-28: multi-chokepoint routing.
-        if (n >= 25 && n <= 28) { k.spawns = 5; k.chokepoints = 3; k.delay = "stagger"; }
+        if (n <= 24) { k.spawns = 4 + (n % 2); k.chokepoints = 2; k.speed = 0.002 + (n % 3) * 0.0001; }
+        // 25-28: multi-chokepoint routing + the jump to two chains.
+        if (n >= 25 && n <= 28) { k.spawns = 6; k.chokepoints = 3; k.delay = "close"; }
         // 29-33: overlapping timing pressure.
-        if (n >= 29 && n <= 33) { k.spawns = 5; k.chokepoints = 2; k.delay = "overlap"; }
+        if (n >= 29 && n <= 33) { k.spawns = 6; k.chokepoints = 2; k.delay = "overlap"; }
         // 34-37: partial coverage (some fuses direct).
-        if (n >= 34 && n <= 37) { k.spawns = 5 + (n % 2); k.chokepoints = 2; k.partial = true; }
+        if (n >= 34 && n <= 37) { k.spawns = 6 + (n % 2); k.chokepoints = 2; k.partial = true; }
         // 38-40: peak.
-        if (n >= 38) { k.spawns = 6; k.chokepoints = 3; k.speed = 0.0016; }
+        if (n >= 38) { k.spawns = 6; k.chokepoints = 3; k.speed = 0.0032; k.delay = "overlap"; }
     } else {
         // Act 3 — mastery. Snips derive from the geometry (min cuts, no slack).
-        const base = { spawns: 6, chokepoints: 2, share: false, delay: "close", speed: 0.0016 };
+        // Fast enough that a single misread costs the level.
+        const base = { spawns: 6, chokepoints: 2, share: false, delay: "close", speed: 0.0035 };
         Object.assign(k, base);
         if (n <= 44) {
             // Minimal snips: single shared chokepoint, faster.
-            Object.assign(k, { spawns: 6, chokepoints: 1, share: true, delay: "overlap", speed: 0.0018 });
+            Object.assign(k, { spawns: 6, chokepoints: 1, share: true, delay: "overlap", speed: 0.0038 });
         } else if (n <= 50) {
             // Full nets: many spawns funneled through a few chokepoints.
             Object.assign(k, {
                 spawns: 6 + (n % 2), chokepoints: 3, share: false,
-                delay: "overlap", speed: 0.0018 + (n % 3) * 0.0001,
+                delay: "overlap", speed: 0.004 + (n % 3) * 0.0002,
             });
         } else if (n <= 55) {
             // Wave peak escalation.
             Object.assign(k, {
                 spawns: 7 + (n % 2), chokepoints: 3, share: false,
-                delay: "overlap", speed: 0.002,
+                delay: "overlap", speed: 0.0045,
             });
         } else if (n <= 58) {
             // Boss levels: every chokepoint must be cut, zero slack (plateau, no climb).
             Object.assign(k, {
                 spawns: 8, chokepoints: 4, share: false,
-                delay: "overlap", speed: 0.002,
+                delay: "overlap", speed: 0.0048,
             });
         } else {
             // 59-60 finale + relief.
             Object.assign(k, {
                 spawns: 6 - (n % 2), chokepoints: 2, share: false,
-                delay: "stagger", speed: 0.0014,
+                delay: "stagger", speed: 0.0032,
             });
         }
     }
-    // Chain ignition: from act 2's midpoint onward, some wicks light OTHER
-    // wicks mid-burn (parent reaches a trigger point → the child wick ignites).
-    // Cutting the parent before the trigger breaks the chain and saves a snip.
-    if (n >= 25 && n <= 34) k.chains = 1;
-    else if (n >= 35) k.chains = relief ? 1 : 2;
-    // Partial coverage (some fuses route straight, no chokepoint) — pattern
-    // variety that stops every board from converging through the middle.
-    if (n >= 34 && n <= 37) k.partial = true;
+    // Chain ignition: introduced at L8 (right after the shared-chokepoint
+    // tutorial), one chain through L24, two chains from L25. Some wicks light
+    // OTHER wicks mid-burn (parent reaches a trigger point → the child wick
+    // ignites). Cutting the parent before the trigger breaks the chain and
+    // saves a snip.
+    if (n >= 8 && n <= 24) k.chains = 1;
+    else if (n >= 25) k.chains = 2;
+    // Partial coverage (some fuses route straight, no chokepoint) — taught at
+    // L14, returns with act 3's relief puzzles. Stops every board from
+    // converging through a visible middle.
+    if (n >= 14 && n <= 24) k.partial = true;
+    else if (n >= 34 && n <= 37) k.partial = true;
     else if (act === 3 && relief) k.partial = true;
     return k;
 }
@@ -199,7 +206,7 @@ function lookForLevel(n, k, seedOffset = 0, salt = 0) {
     // act 1. `visualTeaching` only forces the plain sunburst for the very first
     // single-fuse levels — from L4 on the maze ARRANGEMENT (distribution,
     // radius tiers, curve shape) varies so no two levels read the same.
-    const teaching = n <= 10;
+    const teaching = n <= 7;
     const visualTeaching = n <= 3;
     const sharedSingle = k.share && k.chokepoints === 1;
     // Narrow fan for single-shared-chokepoint levels (spawns must stay on one
@@ -791,7 +798,8 @@ function placeLevel(n, k, seedOffset = 0, salt = 0) {
     // downstream of the cut made every chain trivially breakable by the normal
     // chokepoint cut — the child never ignited and whole sections of a level
     // became pointless, which read as an "early win".)
-    const nChains = Math.min(k.chains || 0, Math.max(0, Math.floor(k.spawns / 2) - 1));
+    // Cap chains by available fuses (each chain needs a parent + a child).
+    const nChains = Math.min(k.chains || 0, Math.max(0, Math.floor(k.spawns / 2)));
     if (nChains > 0) {
         const ordered = fuses
             .map((f, i) => ({ f, i }))
@@ -814,6 +822,34 @@ function placeLevel(n, k, seedOffset = 0, salt = 0) {
 
     return { payload, spawns, intersections, fuses, k, style, look };
 }
+
+/** PAR time: the clear time if every fuse is cut at its ideal point (its
+ *  chokepoint or direct-fuse midpoint, both at t=0.5) the moment the level
+ *  starts. Sparks routed through a shared chokepoint die when they reach the
+ *  gap, so the level clears when the LAST spark crosses its cut. Beating par
+ *  means cutting sparks close-in (fast play), which spends extra snips — the
+ *  speed-vs-economy trade-off that keeps both strategies meaningful.
+ *  Chained children have no timer (delay 99999): they light when their parent
+ *  crosses the trigger, then burn to their own cut. */
+function parSeconds(fuses) {
+    let par = 0;
+    for (const f of fuses) {
+        let ign = f.delayFrames >= 99999 ? 0 : f.delayFrames;
+        if (f.chain) {
+            const parent = fuses.find((p) => p.start === f.chain.from);
+            if (parent) {
+                const pDelay = parent.delayFrames >= 99999 ? 0 : parent.delayFrames;
+                ign = pDelay + (f.chain.at / parent.speed);
+            }
+        }
+        par = Math.max(par, ign + 0.5 / f.speed);
+    }
+    return Math.max(2, Math.round((par / 60) * 10) / 10);
+}
+
+/** PAR floors for the pure-teaching levels: the demo hand + reading eats the
+ *  whole budget, so a low par there reads as "you missed" on a tutorial. */
+const PAR_FLOOR = { 1: 30, 2: 24, 3: 20 };
 
 // ---- assemble ---------------------------------------------------------------
 
@@ -863,6 +899,7 @@ function buildLevels() {
             level_id: n,
             layout: style, // layout archetype (hub/offset/train/split/weave)
             snipsAllowed: snips,
+            par: Math.max(parSeconds(fuses), PAR_FLOOR[n] || 0),
             payload,
             spawns,
             intersections,
@@ -889,7 +926,19 @@ function buildLevels() {
             };
         } else if (n === 25) {
             level.tutorial = {
-                text: "Some wicks light other wicks mid-burn! Snip the first fuse EARLY to stop it from lighting the next one — or be ready to cut the new wick it lights.",
+                text: "TWO wicks light other wicks now. Cut a parent EARLY to stop its chain — or be ready to snip every new wick it lights.",
+                focus: "spawn",
+                highlight: "s1",
+            };
+        } else if (n === 8) {
+            level.tutorial = {
+                text: "This wick lights ANOTHER wick mid-burn! Snip the first fuse EARLY to stop it — or cut the new wick it lights.",
+                focus: "spawn",
+                highlight: "s1",
+            };
+        } else if (n === 14) {
+            level.tutorial = {
+                text: "Some fuses run straight to the bomb — no crossroads to find. Track every wick, not just the crossings.",
                 focus: "spawn",
                 highlight: "s1",
             };
