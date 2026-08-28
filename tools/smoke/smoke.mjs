@@ -1028,7 +1028,7 @@ if (!bootError) {
     check(["btn-menu-play", "btn-menu-daily", "btn-menu-levels", "btn-menu-armory"].every((id) => elements[id] != null),
         "Boot: hub has PLAY / DAILY / LEVELS / ARMORY buttons", "");
 
-    // PLAY loads the furthest unlocked level (L1 on a fresh save).
+    // PLAY starts the story at the first un-cleared level (L1 on a fresh save).
     elements["btn-menu-play"].dispatch("click", {});
     await waitFor(() => elements["level-label"].textContent === "LEVEL 1" && elements["modal-menu"].style.display === "none");
     check(elements["level-label"].textContent === "LEVEL 1", "Boot: PLAY loads Level 1");

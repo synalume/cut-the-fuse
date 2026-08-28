@@ -62,17 +62,21 @@ export async function resolveAssets(config, hasFile, loadout = {}) {
         return placeholder;
     };
 
+    // Probe in parallel — the first level of a session pays one round-trip for
+    // all six art files instead of six sequential downloads (which can stall
+    // first-load for seconds on slow connections).
+    const [playing, win, lose, idle, ignition, dud] = await Promise.all([
+        pick(payload.playing, payloadSkin.assets.playing, PLACEHOLDER_PAYLOAD.playing),
+        pick(payload.win, payloadSkin.assets.win, PLACEHOLDER_PAYLOAD.win),
+        pick(payload.lose, payloadSkin.assets.lose, PLACEHOLDER_PAYLOAD.lose),
+        pick(spawn.idle, igniter.assets.idle, PLACEHOLDER_SPAWN.idle),
+        pick(spawn.ignition, igniter.assets.ignition, PLACEHOLDER_SPAWN.ignition),
+        pick(spawn.dud, igniter.assets.dud, PLACEHOLDER_SPAWN.dud),
+    ]);
+
     return {
-        payloadAssets: {
-            playing: await pick(payload.playing, payloadSkin.assets.playing, PLACEHOLDER_PAYLOAD.playing),
-            win: await pick(payload.win, payloadSkin.assets.win, PLACEHOLDER_PAYLOAD.win),
-            lose: await pick(payload.lose, payloadSkin.assets.lose, PLACEHOLDER_PAYLOAD.lose),
-        },
-        spawnAssets: {
-            idle: await pick(spawn.idle, igniter.assets.idle, PLACEHOLDER_SPAWN.idle),
-            ignition: await pick(spawn.ignition, igniter.assets.ignition, PLACEHOLDER_SPAWN.ignition),
-            dud: await pick(spawn.dud, igniter.assets.dud, PLACEHOLDER_SPAWN.dud),
-        },
+        payloadAssets: { playing, win, lose },
+        spawnAssets: { idle, ignition, dud },
     };
 }
 

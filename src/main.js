@@ -74,13 +74,25 @@ let dailyMode = false; // true while playing TODAY'S CHALLENGE
 
 // ---- level loading -------------------------------------------------------------
 
+/** The current loadout (payload skin + igniter) from the save. */
+const loadoutOf = () => ({ payloadSkin: save.getSelectedSkin(), igniter: save.getSelectedIgniter() });
+
+/** Story position: the first level not yet cleared. A fresh save → Level 1;
+ *  a player mid-way → their current level; a fully-cleared save → Level 1
+ *  (a new run). The level map handles jumping anywhere. */
+function storyStartIndex() {
+    for (let i = 0; i < levels.length; i++) {
+        if (save.getStars(levels[i].level_id) === 0) return i;
+    }
+    return 0;
+}
+
 async function loadLevel(index) {
     levelIndex = index;
     const config = levels[index];
     // Live resolution: the level's own art when pinned, else the player's
     // loadout (payload skin + igniter), else the placeholder set.
-    const loadout = { payloadSkin: save.getSelectedSkin(), igniter: save.getSelectedIgniter() };
-    const assets = await resolveAssets(config, renderer.hasAsset.bind(renderer), loadout);
+    const assets = await resolveAssets(config, renderer.hasAsset.bind(renderer), loadoutOf());
     const level = buildLevel(config, { width: renderer.width, height: renderer.height }, assets);
 
     // Load this level's assets (placeholder fallback handled by resolveAssets).
@@ -650,8 +662,14 @@ async function boot() {
         return;
     }
 
-    // Respect saved progress: the hub resumes at the furthest unlocked level.
-    levelIndex = Math.min(levels.length - 1, save.getUnlockedLevel() - 1 || 0);
+    // Respect saved progress: the story resumes at the first level not yet
+    // cleared (a fully-cleared save starts a new run at Level 1).
+    levelIndex = storyStartIndex();
+
+    // Warm the art cache in the background (probes which loadout files exist)
+    // so the first level the player picks loads instantly instead of paying
+    // six sequential downloads right when they're waiting.
+    resolveAssets(levels[levelIndex], renderer.hasAsset.bind(renderer), loadoutOf());
 
     // Home screen first — the player picks PLAY to load their level. Loading
     // happens lazily so a returning player sees their star bank before diving in.

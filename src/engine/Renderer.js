@@ -104,14 +104,24 @@ export class Renderer {
     }
 
     /** Probe whether an asset file exists (used by live asset resolution so a
-     *  missing per-level art file falls back to the placeholder set). Cached. */
+     *  missing per-level art file falls back to the placeholder set). Cached.
+     *  Times out so a stalled request can never hang a level load — the
+     *  placeholder set takes over after ASSET_PROBE_TIMEOUT_MS. */
     async hasAsset(name) {
         const src = ASSET_PREFIX + name;
         if (this._assetOk.has(src)) return this._assetOk.get(src);
         const ok = await new Promise((resolve) => {
             const img = new Image();
-            img.onload = () => resolve(true);
-            img.onerror = () => resolve(false);
+            let done = false;
+            const finish = (v) => {
+                if (done) return;
+                done = true;
+                clearTimeout(timer);
+                resolve(v);
+            };
+            const timer = setTimeout(() => finish(false), 3000);
+            img.onload = () => finish(true);
+            img.onerror = () => finish(false);
             img.src = src;
         });
         this._assetOk.set(src, ok);
