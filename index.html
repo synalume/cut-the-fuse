@@ -135,6 +135,7 @@
             <span class="stat" id="win-par">PAR --</span>
             <span class="stat record" id="win-record" style="display: none;">NEW RECORD!</span>
             <span class="stat perfect" id="win-perfect" style="display: none;">PERFECT SNIPS <span id="win-perfect-count"></span></span>
+            <span class="stat streak" id="win-streak" style="display: none;">STREAK --</span>
         </div>
         <button id="btn-next"><img src="assets/ui/ui-icon-next.png" alt="">NEXT LEVEL</button>
     </div>
@@ -168,6 +169,10 @@
     <!-- Level selector -->
     <div id="modal-levels" class="message-box level-select">
         <h1>LEVEL SELECT</h1>
+        <div id="daily-row">
+            <button id="btn-daily">🔥 TODAY'S CHALLENGE</button>
+            <span id="daily-streak" class="daily-streak-pill">STREAK 0</span>
+        </div>
         <div id="level-grid"></div>
         <button id="btn-levels-close">BACK</button>
     </div>

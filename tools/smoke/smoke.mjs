@@ -767,6 +767,44 @@ check(swept === levels.length, `winnability sweep: all ${levels.length} levels w
     check(save.getStarBank() === 2, "records: non-positive deposits are ignored");
 }
 
+// Daily challenge: date-seeded pick + streak accounting.
+{
+    const { todayStr, yesterdayOf, dayNumber } = await import("../../src/engine/dates.js");
+    check(todayStr(new Date(2026, 7, 28)) === "2026-08-28", "dates: todayStr pads to YYYY-MM-DD");
+    check(yesterdayOf("2026-08-28") === "2026-08-27", "dates: yesterdayOf rolls back across a day");
+    check(yesterdayOf("2026-03-01") === "2026-02-28", "dates: yesterdayOf handles month boundaries");
+    const d28 = new Date(2026, 7, 28, 23, 59); // local calendar day, not UTC
+    check(dayNumber(d28) === Math.floor(Date.UTC(2026, 7, 28) / 86400000),
+        "dates: dayNumber counts local calendar days", String(dayNumber(d28)));
+
+    // Deterministic pick: 37 is coprime with 60, so consecutive days cycle
+    // through all 60 levels with no repeats inside a full cycle.
+    const pick = (d) => (d * 37) % 60;
+    const seen = new Set();
+    for (let d = 0; d < 60; d++) seen.add(pick(d));
+    check(seen.size === 60, "daily: level pick cycles through all 60 levels", `distinct=${seen.size}`);
+    check(pick(0) !== pick(1), "daily: consecutive days pick different levels", `${pick(0)} vs ${pick(1)}`);
+    check(pick(12345) === pick(12345), "daily: pick is deterministic for a given day");
+
+    // Streak: first completion starts at 1, consecutive days extend, a replay
+    // of the same day is a no-op, and a gap resets to 1.
+    const storage = {};
+    const save = new SaveManager({ get: (k) => storage[k], set: (k, v) => (storage[k] = v) });
+    check(save.getDailyStreak() === 0 && !save.isDailyComplete("2026-08-27"),
+        "daily: fresh save has no streak and no completions");
+    let res = save.markDailyComplete("2026-08-27");
+    check(res.newDay && res.streak === 1, "daily: first completion starts streak at 1", JSON.stringify(res));
+    check(save.isDailyComplete("2026-08-27"), "daily: completed day is persisted");
+    res = save.markDailyComplete("2026-08-28");
+    check(res.newDay && res.streak === 2, "daily: consecutive day extends the streak", JSON.stringify(res));
+    res = save.markDailyComplete("2026-08-28");
+    check(!res.newDay && res.streak === 2, "daily: replaying the same day is a no-op", JSON.stringify(res));
+    res = save.markDailyComplete("2026-08-30"); // 29th skipped
+    check(res.newDay && res.streak === 1, "daily: a missed day resets the streak", JSON.stringify(res));
+    check(save.getDailyStreak() === 1 && storage["cut_the_fuse_save_v1"].includes('"dailyStreak":1'),
+        "daily: streak persists through the storage layer");
+}
+
 // Curve variety: a bulged fuse keeps cp1 != cp2 but the curve still passes
 // EXACTLY through its chokepoint at t=0.5 (the cut target must not move).
 {
@@ -988,6 +1026,24 @@ if (!bootError) {
     await new Promise((r) => setTimeout(r, 60));
     check(elements["level-label"].textContent.startsWith("LEVEL 3"), "Selector: clicking a cell loads that level", elements["level-label"].textContent);
     check(elements["modal-levels"].style.display === "none", "Selector: modal closes after picking a level");
+
+    // Daily challenge: banner renders in the selector; entering today's
+    // challenge loads a seeded level tagged DAILY; picking a story level
+    // exits daily mode.
+    check(elements["btn-daily"] != null, "Daily: challenge button rendered in the selector");
+    check((elements["daily-streak"].textContent || "").includes("STREAK"), "Daily: streak pill rendered", elements["daily-streak"].textContent);
+    elements["level-label"].dispatch("click", {});
+    await new Promise((r) => setTimeout(r, 30));
+    check(elements["btn-daily"].disabled === false, "Daily: challenge is enterable (not yet done today)", `disabled=${elements["btn-daily"].disabled}`);
+    elements["btn-daily"].dispatch("click", {});
+    await new Promise((r) => setTimeout(r, 60));
+    check(elements["level-label"].textContent === "DAILY ▾", "Daily: entering the challenge tags the header", elements["level-label"].textContent);
+    check(elements["modal-levels"].style.display === "none", "Daily: selector closes after entering the challenge");
+    elements["level-label"].dispatch("click", {});
+    await new Promise((r) => setTimeout(r, 30));
+    elements["level-grid"].children[0].dispatch("click", {});
+    await new Promise((r) => setTimeout(r, 60));
+    check(elements["level-label"].textContent === "LEVEL 1", "Daily: picking a story level exits daily mode", elements["level-label"].textContent);
 }
 
 console.log(failures === 0 ? "\nSMOKE PASS" : `\nSMOKE FAIL — ${failures} failing check(s)`);

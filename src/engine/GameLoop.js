@@ -30,6 +30,7 @@ export class GameLoop {
         this.ddaTier = 0;
         this.level = null;
         this.levelIndex = 0;
+        this.levelMode = "story"; // "story" | "daily" — tags analytics events
         this.attempts = 0;
         this.startedAt = 0;
         this.lastLevelWin = null;
@@ -103,7 +104,13 @@ export class GameLoop {
 
         this.attempts++;
         this.startedAt = this.frameCount;
-        if (this.analytics) this.analytics.track("level_start", { level: this.level.level_id, attempts: this.attempts });
+        if (this.analytics) {
+            this.analytics.track("level_start", {
+                level: this.level.level_id,
+                attempts: this.attempts,
+                mode: this.levelMode,
+            });
+        }
 
         if (this.onSnipsChange) this.onSnipsChange(this.snipsRemaining);
         if (this.onDdaTierChanged) this.onDdaTierChanged(this.ddaTier);
@@ -299,6 +306,7 @@ export class GameLoop {
                 this.analytics.track("level_win", {
                     level: this.level.level_id, stars, attempts: this.attempts,
                     duration: this.frameCount - this.startedAt, snips_used: this.snipsUsed,
+                    mode: this.levelMode,
                 });
             }
             if (this.platform) this.platform.gameplayStop();
@@ -312,6 +320,7 @@ export class GameLoop {
                 this.analytics.track("level_fail", {
                     level: this.level.level_id, attempts: this.attempts,
                     duration: this.frameCount - this.startedAt,
+                    mode: this.levelMode,
                 });
             }
             if (this.platform) this.platform.gameplayStop();

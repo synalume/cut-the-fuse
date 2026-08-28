@@ -7,6 +7,7 @@
   "scripts": {
     "dev": "node server.js",
     "start": "node server.js",
+    "collect": "node server/collector.mjs",
     "smoke": "node tools/smoke/smoke.mjs",
     "gen:levels": "node tools/level-gen/gen-levels.mjs",
     "audio:list": "node tools/gen-audio/gen-mmaudio.mjs list",

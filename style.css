@@ -206,6 +206,7 @@ canvas { display: block; position: absolute; z-index: 10; }
 }
 #win-stats .stat.record { background: #d97706; color: #fff7ed; animation: win-record-pulse 0.9s ease-in-out infinite alternate; }
 #win-stats .stat.perfect { background: #16a34a; color: #f0fdf4; }
+#win-stats .stat.streak { background: #b45309; color: #fffbeb; animation: win-record-pulse 0.9s ease-in-out infinite alternate; }
 @keyframes win-record-pulse { from { transform: scale(1); } to { transform: scale(1.08); } }
 
 /* Tutorial overlay */
@@ -346,6 +347,36 @@ canvas { display: block; position: absolute; z-index: 10; }
 .level-cell.current { background: #fef08a; box-shadow: 0 0 0 3px #d97706; }
 .level-cell.locked { opacity: 0.45; cursor: not-allowed; }
 .level-cell.locked .stars { visibility: hidden; }
+
+/* Daily challenge banner — sits above the level grid, same cream-card frame. */
+#daily-row {
+    display: flex; align-items: center; justify-content: center; gap: 12px;
+    width: 100%; margin: 10px 0 2px; flex-wrap: wrap;
+}
+#btn-daily {
+    background: #F6ECD1;
+    border: 4px solid #2B1F14;
+    border-radius: 14px;
+    box-shadow: 4px 4px 0 rgba(43, 31, 20, 0.85);
+    color: #2B1F14; font-family: 'Luckiest Guy', 'Baloo 2', 'Courier New', Courier, monospace;
+    font-size: 1.05rem; font-weight: bold; letter-spacing: 0.04em;
+    padding: 8px 22px; cursor: pointer;
+    transition: transform 0.08s ease, box-shadow 0.08s ease;
+}
+#btn-daily:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 6px 6px 0 rgba(43, 31, 20, 0.85); }
+#btn-daily:active:not(:disabled) { transform: translateY(3px); box-shadow: 1px 1px 0 rgba(43, 31, 20, 0.85); }
+#btn-daily:disabled {
+    background: #e7e5e4; color: #57534e; cursor: default;
+    box-shadow: 2px 2px 0 rgba(43, 31, 20, 0.5);
+}
+.daily-streak-pill {
+    display: inline-flex; align-items: center;
+    background: #b45309; color: #fffbeb;
+    border: 3px solid #2B1F14; border-radius: 999px;
+    padding: 5px 14px 3px; font-family: 'Luckiest Guy', 'Baloo 2', 'Courier New', Courier, monospace;
+    font-size: 0.95rem; letter-spacing: 0.05em; line-height: 1;
+    text-shadow: 1px 1px 0 rgba(0, 0, 0, 0.35);
+}
 
 /* ---------------------------------------------------------------------------
    Mobile / short-screen responsive passes.

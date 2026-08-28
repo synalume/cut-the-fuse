@@ -1,9 +1,14 @@
-// SaveManager.js — best stars per level, progress, star bank, and skins.
+// SaveManager.js — best stars per level, progress, star bank, skins, and the
+// daily-challenge streak.
 // Storage abstraction: localStorage locally, swappable to bridge.storage on
 // Playgama (wobble-run pattern). Save stays well under the 500 KB budget.
+import { yesterdayOf } from "./dates.js";
 const KEY = "cut_the_fuse_save_v1";
 
-const DEFAULT_SAVE = {
+/** Fresh defaults per instance — `_load` must NOT spread a module-level object,
+ *  or every instance shares the same nested maps (stars/skins/dailyCompleted)
+ *  and mutations leak across instances. */
+const freshDefaults = () => ({
     stars: {}, // levelId -> best stars (1-3)
     unlockedLevel: 1,
     starBank: 0,
@@ -12,7 +17,10 @@ const DEFAULT_SAVE = {
     igniters: {}, // igniter typeId -> true (unlocked)
     selectedIgniter: null,
     bestTimes: {}, // levelId -> best clear seconds (float)
-};
+    dailyStreak: 0, // consecutive days with a completed daily challenge
+    lastDailyDay: null, // "YYYY-MM-DD" of the last completed daily
+    dailyCompleted: {}, // "YYYY-MM-DD" -> true
+});
 
 export class SaveManager {
     constructor(storageImpl = null) {
@@ -24,12 +32,12 @@ export class SaveManager {
         try {
             if (this.impl && typeof this.impl.get === "function") {
                 const raw = this.impl.get(KEY);
-                if (raw) return { ...DEFAULT_SAVE, ...JSON.parse(raw) };
+                if (raw) return { ...freshDefaults(), ...JSON.parse(raw) };
             }
             const raw = localStorage.getItem(KEY);
-            if (raw) return { ...DEFAULT_SAVE, ...JSON.parse(raw) };
+            if (raw) return { ...freshDefaults(), ...JSON.parse(raw) };
         } catch { /* corrupt save -> reset */ }
-        return { ...DEFAULT_SAVE };
+        return freshDefaults();
     }
 
     _save() {
@@ -158,5 +166,30 @@ export class SaveManager {
         if (typeof n !== "number" || n <= 0) return;
         this.data.starBank += Math.floor(n);
         this._save();
+    }
+
+    // ---- daily challenge ---------------------------------------------------
+
+    getDailyStreak() {
+        return this.data.dailyStreak || 0;
+    }
+
+    isDailyComplete(dateStr) {
+        return !!this.data.dailyCompleted[dateStr];
+    }
+
+    /** Mark a day's daily challenge complete, maintaining the streak.
+     *  Streak = consecutive days ending today; a gap resets to 1.
+     *  Returns { streak, newDay } — newDay is false when already done. */
+    markDailyComplete(dateStr) {
+        if (this.data.dailyCompleted[dateStr]) {
+            return { streak: this.data.dailyStreak || 0, newDay: false };
+        }
+        this.data.dailyCompleted[dateStr] = true;
+        this.data.dailyStreak =
+            this.data.lastDailyDay === yesterdayOf(dateStr) ? (this.data.dailyStreak || 0) + 1 : 1;
+        this.data.lastDailyDay = dateStr;
+        this._save();
+        return { streak: this.data.dailyStreak, newDay: true };
     }
 }

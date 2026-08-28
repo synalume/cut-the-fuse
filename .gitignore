@@ -6,3 +6,4 @@ dist/out/stage/
 .DS_Store
 node_modules/
 .firebase/
+analytics-events.jsonl

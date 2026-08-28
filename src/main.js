@@ -8,6 +8,7 @@ import { Analytics } from "./engine/Analytics.js";
 import { Platform } from "./engine/Platform.js";
 import { buildLevel, resolveAssets } from "./engine/LevelManager.js";
 import { PAYLOAD_SKINS, IGNITER_TYPES, isSkinOwned } from "./data/skins.js";
+import { todayStr, dayNumber } from "./engine/dates.js";
 
 // Level-select gating. During playtest every level is pickable; flip to true
 // for release to enforce linear unlock (must beat N to play N+1).
@@ -59,11 +60,14 @@ const winPar = $("win-par");
 const winRecord = $("win-record");
 const winPerfect = $("win-perfect");
 const winPerfectCount = $("win-perfect-count");
+const winStreak = $("win-streak");
+const btnNext = $("btn-next");
 const ddaText = $("dda-text");
 
 let levels = [];
 let levelIndex = 0;
 let selectorPaused = false; // true when the level selector paused a live game
+let dailyMode = false; // true while playing TODAY'S CHALLENGE
 
 // ---- level loading -------------------------------------------------------------
 
@@ -80,10 +84,11 @@ async function loadLevel(index) {
     renderer.loadAssets(assets.payloadAssets);
     renderer.loadAssets(assets.spawnAssets);
 
+    game.levelMode = dailyMode ? "daily" : "story";
     game.loadLevel(level, index);
     renderer.resize();
 
-    levelLabel.textContent = `LEVEL ${config.level_id}`;
+    levelLabel.textContent = dailyMode ? "DAILY ▾" : `LEVEL ${config.level_id}`;
     updateUi();
     closeModals();
     startTutorialIfPresent(level);
@@ -129,6 +134,7 @@ function closeModals() {
 
 function openLevelSelect() {
     renderLevelGrid();
+    renderDailyRow();
     modalLevels.style.display = "flex";
     // Freeze a live game while the map is open; the win/lose modals stay as-is.
     if (game.gameState === STATE.PLAYING) {
@@ -174,6 +180,7 @@ function renderLevelGrid() {
         cell.append(num, stars, time);
         cell.addEventListener("click", () => {
             if (locked) return;
+            if (dailyMode) exitDaily();
             loadLevel(i);
             closeLevelSelect();
         });
@@ -184,6 +191,41 @@ function renderLevelGrid() {
 $("level-label").addEventListener("click", openLevelSelect);
 $("btn-levels-close").addEventListener("click", closeLevelSelect);
 
+// ---- daily challenge -------------------------------------------------------------
+
+// Deterministic pick: 37 is coprime with 60, so consecutive days cycle through
+// all 60 levels with no repeats within a full cycle (same for every player).
+const dailyLevelIndex = (dayNum) => (dayNum * 37) % levels.length;
+
+function openDaily() {
+    const today = todayStr();
+    dailyMode = true;
+    analytics.track("daily_visit", {
+        date: today,
+        streak: save.getDailyStreak(),
+        completed: save.isDailyComplete(today),
+    });
+    loadLevel(dailyLevelIndex(dayNumber()));
+    closeLevelSelect();
+}
+
+function exitDaily() {
+    dailyMode = false;
+    btnNext.innerHTML = `<img src="assets/ui/ui-icon-next.png" alt="">NEXT LEVEL`;
+}
+
+/** Refresh the daily banner (today's status + streak) in the level selector. */
+function renderDailyRow() {
+    const today = todayStr();
+    const done = save.isDailyComplete(today);
+    const btn = $("btn-daily");
+    btn.textContent = done ? "✓ TODAY DONE" : "🔥 TODAY'S CHALLENGE";
+    btn.disabled = done;
+    $("daily-streak").textContent = `STREAK ${save.getDailyStreak()}`;
+}
+
+$("btn-daily").addEventListener("click", openDaily);
+
 // ---- tutorial ------------------------------------------------------------------
 
 // Each level's tutorial text shows the FIRST time that level loads in a
@@ -191,6 +233,8 @@ $("btn-levels-close").addEventListener("click", closeLevelSelect);
 let seenTutorials = new Set();
 
 function startTutorialIfPresent(level) {
+    // The daily challenge must never spoil its own solution with a tutorial.
+    if (dailyMode) return;
     if (!level.tutorial || seenTutorials.has(level.level_id)) return;
     seenTutorials.add(level.level_id);
     game.tutorialActive = true;
@@ -267,6 +311,23 @@ game.onLevelComplete = (levelId, stars, won) => {
             winPerfect.style.display = "none";
         }
 
+        if (dailyMode) {
+            // Daily win: advance the streak once per day, then land back in
+            // the level selector instead of the linear ladder.
+            const res = save.markDailyComplete(todayStr());
+            analytics.track("daily_complete", {
+                date: todayStr(),
+                streak: res.streak,
+                newDay: res.newDay,
+            });
+            winStreak.textContent = `STREAK ${res.streak}`;
+            winStreak.style.display = "inline-block";
+            btnNext.innerHTML = `<img src="assets/ui/ui-icon-next.png" alt="">OK`;
+        } else {
+            winStreak.style.display = "none";
+            btnNext.innerHTML = `<img src="assets/ui/ui-icon-next.png" alt="">NEXT LEVEL`;
+        }
+
         modalWin.style.display = "block";
         platform.commercialBreak();
     } else {
@@ -311,6 +372,12 @@ $("btn-retry").addEventListener("click", () => {
 
 $("btn-next").addEventListener("click", () => {
     modalWin.style.display = "none";
+    if (dailyMode) {
+        // Back to the map so the streak banner + "done today" state is visible.
+        exitDaily();
+        openLevelSelect();
+        return;
+    }
     if (levelIndex + 1 < levels.length) {
         loadLevel(levelIndex + 1);
     } else {
