@@ -753,80 +753,67 @@ export class Renderer {
         }
     }
 
-    /** Level-1 onboarding: a sliding hand swipes across the wick to show the
-     *  snip gesture. Reuses the UFO puzzle's pointer hand, animated along a
-     *  dashed guide path — travel along the wick, then slice across it. Runs
-     *  while the tutorial is up and stops after the player makes their first cut. */
+    /** Level-1 onboarding: a red cut line across the wick shows where to snip,
+     *  and a hand (the UFO puzzle's pointer) slowly travels along the wick to
+     *  it, pointing at the line, holds a beat, then loops. Runs while the
+     *  tutorial is up and stops after the player makes their first cut. */
     _drawTutorialDemo(game) {
         if (!game.tutorialActive) return;
         if (game.level?.level_id !== 1 || game.fuses.length < 1) return;
         if (game.snipsUsed > 0) return; // player got it — stop the demo
 
         const fuse = game.fuses[0];
-        const path = this._tutorialPath(game, fuse);
-        if (!path || path.length < 2) return;
-
+        const p0 = fuse.startNode;
+        const p3 = fuse.endNode;
         const ctx = this.ctx;
         const t = game.frameCount;
 
-        // Dashed guide route with a slow alpha pulse.
+        // Red cut line: a pulsing slash across the wick where the snip goes.
+        const cutU = 0.42;
+        const C = getBezierXY(cutU, p0, fuse.cp1, fuse.cp2, p3);
+        const tanT = getBezierTangent(cutU, p0, fuse.cp1, fuse.cp2, p3);
+        const perp = { x: -tanT.y, y: tanT.x };
         ctx.save();
-        ctx.globalAlpha = 0.45 + Math.sin(t * 0.05) * 0.12;
-        ctx.setLineDash([7, 9]);
-        ctx.lineWidth = 3;
+        ctx.globalAlpha = 0.8 + Math.sin(t * 0.06) * 0.15;
         ctx.lineCap = "round";
+        ctx.lineWidth = 5;
         ctx.strokeStyle = "#ef4444";
         ctx.beginPath();
-        ctx.moveTo(path[0].x, path[0].y);
-        for (let i = 1; i < path.length; i++) ctx.lineTo(path[i].x, path[i].y);
+        ctx.moveTo(C.x - perp.x * 27, C.y - perp.y * 27);
+        ctx.lineTo(C.x + perp.x * 27, C.y + perp.y * 27);
         ctx.stroke();
-        ctx.setLineDash([]);
-
-        // Slide along the path; hold at the end (the swipe finish) before looping.
-        const total = this._polylineLength(path);
-        const speed = 6; // world units per frame (~360/s)
-        const pause = 110;
-        const cycle = total + pause;
-        let along = (t * speed) % cycle;
-        if (along > total) along = total;
-
-        const pos = this._pointAtLength(path, along);
-        const ahead = this._pointAtLength(path, Math.min(total, along + 26));
-        let tan = { x: ahead.x - pos.x, y: ahead.y - pos.y };
-        const len = Math.hypot(tan.x, tan.y);
-        if (len < 2) {
-            const prev = this._pointAtLength(path, Math.max(0, along - 26));
-            tan = { x: pos.x - prev.x, y: pos.y - prev.y };
-        } else {
-            tan = { x: tan.x / len, y: tan.y / len };
-        }
-        this._drawHandPointer(ctx, pos.x, pos.y, tan);
         ctx.restore();
-    }
 
-    /** Build the demo route for a single wick: follow the fuse from its spawn
-     *  toward the cut point, then slice perpendicular across it (the snip). */
-    _tutorialPath(game, fuse) {
-        const p0 = fuse.startNode;
-        const p3 = fuse.endNode;
-        const cutU = 0.42;
-        const pts = [];
-        for (let i = 0; i <= 16; i++) {
-            const u = (i / 16) * cutU;
-            pts.push(getBezierXY(u, p0, fuse.cp1, fuse.cp2, p3));
-        }
-        const C = getBezierXY(cutU, p0, fuse.cp1, fuse.cp2, p3);
-        const tan = getBezierTangent(cutU, p0, fuse.cp1, fuse.cp2, p3);
-        const perp = { x: -tan.y, y: tan.x };
-        const sw = 34;
-        pts.push({ x: C.x - perp.x * sw, y: C.y - perp.y * sw });
-        pts.push({ x: C.x + perp.x * sw, y: C.y + perp.y * sw });
-        return pts;
+        // Hand: slow travel along the wick toward the cut line, pointing at it,
+        // hold at the line, then loop. No dash route — just the hand + target.
+        const u0 = 0.1;
+        const start = getBezierXY(u0, p0, fuse.cp1, fuse.cp2, p3);
+        const dir = { x: C.x - start.x, y: C.y - start.y };
+        const len = Math.hypot(dir.x, dir.y) || 1;
+        const tanDir = { x: dir.x / len, y: dir.y / len };
+
+        const travel = 110; // frames to reach the line (~1.8s)
+        const pause = 130;  // hold the fingertip on the line
+        const cycle = travel + pause;
+        const ct = t % cycle;
+        let u = ct / travel;
+        if (u > 1) u = 1;
+        const ease = 1 - Math.pow(1 - u, 2); // slow-out as it nears the line
+        const pos = {
+            x: start.x + dir.x * ease,
+            y: start.y + dir.y * ease,
+        };
+
+        // Fade in as it appears and fade out just before looping back.
+        let alpha = 1;
+        if (ct < 14) alpha = ct / 14;
+        if (ct > cycle - 16) alpha = Math.max(0, (cycle - ct) / 16);
+        this._drawHandPointer(ctx, pos.x, pos.y, tanDir, alpha);
     }
 
     /** Draw the pointer hand rotated so its finger points along `tan`, with its
      *  fingertip landing on (x, y). Same asset + offsets as the UFO puzzle. */
-    _drawHandPointer(ctx, x, y, tan) {
+    _drawHandPointer(ctx, x, y, tan, alpha = 1) {
         const img = this._handImg;
         if (!img || !img.complete || img.height === 0) return;
         const box = this._handBBox || (this._handBBox = this._opaqueBBox(img));
@@ -835,6 +822,7 @@ export class Renderer {
         const ang = Math.atan2(tan.y, tan.x);
         const finger = Math.atan2(1, -1); // intrinsic finger direction in the sprite
         ctx.save();
+        ctx.globalAlpha = alpha;
         ctx.translate(x, y);
         ctx.rotate(ang - finger);
         const size = 104;
@@ -884,32 +872,6 @@ export class Renderer {
             /* fall through to null → full-image draw */
         }
         return null;
-    }
-
-    _polylineLength(pts) {
-        let n = 0;
-        for (let i = 1; i < pts.length; i++) {
-            n += Math.hypot(pts[i].x - pts[i - 1].x, pts[i].y - pts[i - 1].y);
-        }
-        return n;
-    }
-
-    _pointAtLength(pts, length) {
-        if (!pts.length) return { x: 0, y: 0 };
-        if (length <= 0) return { x: pts[0].x, y: pts[0].y };
-        let acc = 0;
-        for (let i = 1; i < pts.length; i++) {
-            const d = Math.hypot(pts[i].x - pts[i - 1].x, pts[i].y - pts[i - 1].y);
-            if (acc + d >= length) {
-                const u = (length - acc) / (d || 1);
-                return {
-                    x: pts[i - 1].x + (pts[i].x - pts[i - 1].x) * u,
-                    y: pts[i - 1].y + (pts[i].y - pts[i - 1].y) * u,
-                };
-            }
-            acc += d;
-        }
-        return { x: pts[pts.length - 1].x, y: pts[pts.length - 1].y };
     }
 
     /** Smooth a raw pointer trail into `count` evenly-spaced points (quadratic
