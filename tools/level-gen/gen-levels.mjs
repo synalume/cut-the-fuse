@@ -532,6 +532,13 @@ const PLACEMENTS = {
 // 150px keeps a clear run of wick between the bend and the banana.
 const PAYLOAD_CLEARANCE = 150;
 
+// Bomb-side anchors: every wick ends at its OWN point on a ring just outside
+// the bomb's visible art (half-diagonal ~82), so wicks ENTER THE BOMB FROM
+// DIFFERENT SIDES instead of all funneling into the center. The tail swings
+// around the bomb to its anchor — a longer, readable detour that lets the
+// player snipe each line near its own entry point instead of a tight bundle.
+const ENTRY_RADIUS = 88;
+
 // Chokepoints may never drift absurdly far from the payload: the fit camera
 // bounds the whole level to the viewport, so an outlying chokepoint (a relaxed
 // hairpin can wander to 700-1200+ px) shrinks the entire puzzle on screen —
@@ -599,15 +606,16 @@ function deHairpin(level) {
         if (!f.routeThrough) continue;
         const start = f.branchOf ? f.branchPoint : sMap[f.start];
         if (!start) continue;
-        (routed[f.routeThrough] ??= []).push({ start, end: bomb });
+        (routed[f.routeThrough] ??= []).push({ start, end: f.entry || bomb });
     }
-    // Direct fuses' cut points: the midpoint of their spawn->bomb segment.
+    // Direct fuses' cut points: the midpoint of their start->entry segment.
     // Branch fuses have no spawn and no chokepoint (always direct) — their cut
     // points are validated after positionBranches pins the fork.
     const directMidpoints = [];
     for (const f of level.fuses) {
         if (f.routeThrough || f.branchOf) continue;
-        directMidpoints.push({ x: (sMap[f.start].x + bomb.x) / 2, y: (sMap[f.start].y + bomb.y) / 2 });
+        const e = f.entry || bomb;
+        directMidpoints.push({ x: (sMap[f.start].x + e.x) / 2, y: (sMap[f.start].y + e.y) / 2 });
     }
 
     // Outer loop: alternate hairpin relaxation and payload clearance until both hold.
@@ -679,7 +687,7 @@ function deHairpin(level) {
         const I = iMap[f.routeThrough];
         const st = f.branchOf ? f.branchPoint : sMap[f.start];
         if (!st) continue;
-        const u = projectionU(st, bomb, I);
+        const u = projectionU(st, f.entry || bomb, I);
         if (u < FOLD_THRESHOLD || u > 1 - FOLD_THRESHOLD) {
             delete f.routeThrough;
         }
@@ -705,7 +713,7 @@ function validatePlacement({ payload, spawns, intersections, fuses }) {
         if (!f.routeThrough) continue;
         const st = f.branchOf ? f.branchPoint : sMap[f.start];
         if (!st) return { ok: false, reason: `fuse ${f.id} has no start` };
-        const u = projectionU(st, payload, iMap[f.routeThrough]);
+        const u = projectionU(st, f.entry || payload, iMap[f.routeThrough]);
         if (u < FOLD_THRESHOLD || u > 1 - FOLD_THRESHOLD) return { ok: false, reason: `fold on ${f.start || f.id}` };
     }
     // Chokepoints must sit clear of the payload's visible art.
@@ -721,13 +729,14 @@ function validatePlacement({ payload, spawns, intersections, fuses }) {
         }
     }
     // Every cut point (chokepoint or direct-fuse midpoint) must be separately
-    // placeable. Branch fuses contribute their fork->payload midpoint.
+    // placeable. Branch fuses contribute their fork->entry midpoint.
     const pts = intersections.slice();
     for (const f of fuses) {
         if (f.routeThrough) continue;
         const st = f.branchOf ? f.branchPoint : sMap[f.start];
         if (!st) return { ok: false, reason: `fuse ${f.id} has no start` };
-        pts.push({ x: (st.x + payload.x) / 2, y: (st.y + payload.y) / 2 });
+        const e = f.entry || payload;
+        pts.push({ x: (st.x + e.x) / 2, y: (st.y + e.y) / 2 });
     }
     for (let i = 0; i < pts.length; i++) {
         for (let j = i + 1; j < pts.length; j++) {
@@ -884,8 +893,9 @@ function positionBranches(level) {
         const parent = byId.get(f.branchOf);
         if (!parent) continue;
         const ps = sMap[parent.start];
-        const pCp = iMap[parent.routeThrough] || { x: (ps.x + payload.x) / 2, y: (ps.y + payload.y) / 2 };
-        const [cp1, cp2] = forcedFuseCPs(ps, payload, pCp, parent.bulge || 0);
+        const pEnd = parent.entry || payload;
+        const pCp = iMap[parent.routeThrough] || { x: (ps.x + pEnd.x) / 2, y: (ps.y + pEnd.y) / 2 };
+        const [cp1, cp2] = forcedFuseCPs(ps, pEnd, pCp, parent.bulge || 0);
 
         // A fork too close to the payload leaves a stubby, half-hidden branch
         // wick. Push the fork earlier along the parent until the branch has a
@@ -893,13 +903,14 @@ function positionBranches(level) {
         // fires before a normal cut can stop it). If even the earliest `at`
         // can't clear the bomb art, the parent's wick never leaves the bomb's
         // footprint — drop the branch rather than emit a hidden stub.
+        const bend = f.entry || payload;
         let at = f.at;
-        let P = getBezierXY(at, ps, cp1, cp2, payload);
-        let L = Math.hypot(payload.x - P.x, payload.y - P.y);
+        let P = getBezierXY(at, ps, cp1, cp2, pEnd);
+        let L = Math.hypot(bend.x - P.x, bend.y - P.y);
         for (let guard = 0; guard < 8 && L < FORK_MIN_LENGTH; guard++) {
             at = Math.max(0.14, at - 0.025);
-            P = getBezierXY(at, ps, cp1, cp2, payload);
-            L = Math.hypot(payload.x - P.x, payload.y - P.y);
+            P = getBezierXY(at, ps, cp1, cp2, pEnd);
+            L = Math.hypot(bend.x - P.x, bend.y - P.y);
         }
         if (L < 160) {
             toRemove.push(f);
@@ -909,15 +920,15 @@ function positionBranches(level) {
         f.branchPoint = { x: Math.round(P.x), y: Math.round(P.y) };
 
         // Long wicks get the branch a real cross-section: ~55% along the
-        // fork->payload chord, offset to the side away from the parent's
+        // fork->entry chord, offset to the side away from the parent's
         // mid-curve (flipped if that side crowds another cut point), then
         // pushed out of the payload clearance ring. Short-wick forks can't
         // host a chokepoint inside the clearance ring — those stay direct
         // (their midpoint is the cut target) with a bulge so the fork still
         // reads as a Y.
-        const wx = payload.x - P.x, wy = payload.y - P.y;
+        const wx = bend.x - P.x, wy = bend.y - P.y;
         const perpX = -wy / L, perpY = wx / L;
-        const parentMid = getBezierXY(0.5, ps, cp1, cp2, payload);
+        const parentMid = getBezierXY(0.5, ps, cp1, cp2, pEnd);
         let side = perpX * (parentMid.x - P.x) + perpY * (parentMid.y - P.y) > 0 ? -1 : 1;
         if (L < 185) {
             delete f.routeThrough;
@@ -996,19 +1007,112 @@ function settleBranches(level) {
         if (parent) {
             const ps = sMap[parent.start];
             if (ps) {
-                const pCp = iMap[parent.routeThrough] || { x: (ps.x + payload.x) / 2, y: (ps.y + payload.y) / 2 };
-                const [cp1, cp2] = forcedFuseCPs(ps, payload, pCp, parent.bulge || 0);
-                const P = f.branchPoint || getBezierXY(f.at, ps, cp1, cp2, payload);
-                const wx = payload.x - P.x, wy = payload.y - P.y;
+                const pEnd = parent.entry || payload;
+                const pCp = iMap[parent.routeThrough] || { x: (ps.x + pEnd.x) / 2, y: (ps.y + pEnd.y) / 2 };
+                const [cp1, cp2] = forcedFuseCPs(ps, pEnd, pCp, parent.bulge || 0);
+                const P = f.branchPoint || getBezierXY(f.at, ps, cp1, cp2, pEnd);
+                const bend = f.entry || payload;
+                const wx = bend.x - P.x, wy = bend.y - P.y;
                 const L = Math.hypot(wx, wy) || 1;
                 const perpX = -wy / L, perpY = wx / L;
-                const parentMid = getBezierXY(0.5, ps, cp1, cp2, payload);
+                const parentMid = getBezierXY(0.5, ps, cp1, cp2, pEnd);
                 side = perpX * (parentMid.x - P.x) + perpY * (parentMid.y - P.y) > 0 ? -1 : 1;
             }
         }
         f.bulge = Math.round(side * curveMag * 1000) / 1000;
     }
     level.intersections = intersections.filter((c) => !drop.has(c.id));
+}
+
+/** BOMB-SIDE ANCHORS: each wick gets its own end point on a ring just outside
+ *  the bomb art, spread around the full circle and ordered by each fuse's
+ *  chokepoint/start angle — so adjacent wicks peel to adjacent sides and the
+ *  tails swing around the bomb instead of funneling into one spot. A branch
+ *  wick anchors on the far side of its parent's entry (the tree still reads
+ *  as one split, but the two tips enter the bomb from different sides).
+ *  Returns the entry node list for the level JSON. */
+function assignEntryAnchors(level, rng) {
+    const { payload, fuses } = level;
+    const sMap = {};
+    level.spawns.forEach((s) => (sMap[s.id] = s));
+    const iMap = {};
+    level.intersections.forEach((c) => (iMap[c.id] = c));
+    const byId = new Map(fuses.map((f) => [f.id, f]));
+
+    // Ordering angle per fuse: its chokepoint (routed), its start (direct), or
+    // its parent's anchor (branch — set below, parents precede branches).
+    const keyed = fuses.map((f) => {
+        let ref = null;
+        if (f.routeThrough) ref = iMap[f.routeThrough];
+        else if (!f.branchOf) ref = sMap[f.start];
+        else {
+            const p = byId.get(f.branchOf);
+            ref = p && p.entry ? p.entry : payload;
+        }
+        const ang = Math.atan2((ref ? ref.y : payload.y) - payload.y, (ref ? ref.x : payload.x) - payload.x);
+        return { f, ang };
+    });
+    keyed.sort((a, b) => a.ang - b.ang);
+
+    const n = keyed.length;
+    const sep = (Math.PI * 2) / Math.max(1, n);
+    const base = rng() * sep * 0.6;
+    const entries = [];
+    const tups = []; // { f, a } — angle then refined by de-bundling
+    keyed.forEach((k, idx) => {
+        let a = base + idx * sep + (rng() - 0.5) * sep * 0.45;
+        if (k.f.branchOf) {
+            // Peels the branch ~60° around the bomb from its parent's tip.
+            const p = byId.get(k.f.branchOf);
+            if (p && p.entry) {
+                const pa = Math.atan2(p.entry.y - payload.y, p.entry.x - payload.x);
+                a = pa + 1.05 + (rng() - 0.5) * 0.4;
+            }
+        }
+        const id = `e${idx}`;
+        k.f.end = id;
+        k.f.entry = {
+            x: Math.round(payload.x + Math.cos(a) * ENTRY_RADIUS),
+            y: Math.round(payload.y + Math.sin(a) * ENTRY_RADIUS),
+        };
+        entries.push({ id, x: k.f.entry.x, y: k.f.entry.y });
+        tups.push({ f: k.f, a });
+    });
+
+    // De-bundle: nudge anchors that landed within ~24° of a neighbor apart, so
+    // every wick enters the bomb from a visibly distinct side (the jittered
+    // slot ordering + branch offsets can otherwise bunch two tips together).
+    const MIN_ENTRY_GAP = 0.42;
+    tups.sort((p, q) => p.a - q.a);
+    for (let iter = 0; iter < 10; iter++) {
+        let moved = false;
+        for (let i = 0; i < tups.length; i++) {
+            const cur = tups[i];
+            const next = tups[(i + 1) % tups.length];
+            let gap = next.a - cur.a;
+            if (i === tups.length - 1) gap += Math.PI * 2;
+            if (gap < MIN_ENTRY_GAP) {
+                const fix = (MIN_ENTRY_GAP - gap) / 2;
+                cur.a -= fix;
+                next.a += fix;
+                moved = true;
+            }
+        }
+        if (!moved) break;
+    }
+    for (let i = 0; i < tups.length; i++) {
+        const { f, a } = tups[i];
+        f.entry = {
+            x: Math.round(payload.x + Math.cos(a) * ENTRY_RADIUS),
+            y: Math.round(payload.y + Math.sin(a) * ENTRY_RADIUS),
+        };
+        const en = entries.find((e) => e.id === f.end);
+        if (en) {
+            en.x = f.entry.x;
+            en.y = f.entry.y;
+        }
+    }
+    return entries;
 }
 
 function placeLevel(n, k, seedOffset = 0, salt = 0) {
@@ -1080,15 +1184,15 @@ function placeLevel(n, k, seedOffset = 0, salt = 0) {
         }
     }
 
+    // Bomb-side anchors: every wick (spawn-rooted AND branch) ends at its own
+    // point on a ring around the bomb art, so wicks enter from different sides.
+    const entries = assignEntryAnchors({ payload, spawns, intersections, fuses }, rng);
+
     if (process.env.GEN_DELAY_DEBUG && (n === 48 || n === 51 || n === 55 || n === 45)) {
         console.log(`[delaydebug] L${n} delayPattern=${look.delayPattern} k.delay=${k.delay} spawns=${k.spawns} chainDelaySpan=${delaySpan(k, k.spawns, rng)}`);
         for (const f of fuses) console.log(`[delaydebug]   ${f.id} delay=${f.delayFrames}${f.branchOf ? " branchOf=" + f.branchOf : ""}`);
     }
-    if (process.env.GEN_DELAY_DEBUG && (n === 48 || n === 51 || n === 55 || n === 45)) {
-        console.log(`[delaydebug] L${n} delayPattern=${look.delayPattern} k.delay=${k.delay} spawns=${k.spawns} chainDelaySpan=${delaySpan(k, k.spawns, rng)}`);
-        for (const f of fuses) console.log(`[delaydebug]   ${f.id} delay=${f.delayFrames}${f.branchOf ? " branchOf=" + f.branchOf : ""}`);
-    }
-    return { n, payload, spawns, intersections, fuses, k, style, look };
+    return { n, payload, spawns, intersections, fuses, entries, k, style, look };
 }
 
 /** PAR time: the clear time if every fuse is cut at its ideal point (its
@@ -1175,7 +1279,7 @@ function buildLevels() {
             deHairpin({ payload: placed.payload, spawns: placed.spawns, intersections: placed.intersections, fuses: placed.fuses });
             settleBranches(placed);
         }
-        const { payload, spawns, intersections, fuses, style, look } = placed;
+        const { payload, spawns, intersections, fuses, entries, style, look } = placed;
         prevSig = lookSignature(look);
 
         // Snips = minimum cuts the geometry requires + slack.
@@ -1194,6 +1298,7 @@ function buildLevels() {
             payload,
             spawns,
             intersections,
+            entries,
             fuses,
         };
         // One-skill-at-a-time tutorial (CHI PLAY learning curve).

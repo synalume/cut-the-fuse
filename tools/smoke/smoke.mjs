@@ -203,8 +203,12 @@ check(swept === levels.length, `winnability sweep: all ${levels.length} levels w
 // Camera fit convention: screen center (w/2, h/2) must map to the level center.
 {
     const cam = computeFitCamera(lvl1, { width: 1280, height: 720 });
-    const centerX = (lvl1.nodes[0].x + lvl1.nodes[1].x) / 2;
-    const centerY = (lvl1.nodes[0].y + lvl1.nodes[1].y) / 2;
+    // The fit camera centers on the level's node bounding box (padding is
+    // symmetric and cancels). Entries (bomb-side anchors) are nodes too.
+    const xs = lvl1.nodes.map((n) => n.x);
+    const ys = lvl1.nodes.map((n) => n.y);
+    const centerX = (Math.min(...xs) + Math.max(...xs)) / 2;
+    const centerY = (Math.min(...ys) + Math.max(...ys)) / 2;
     const worldAtScreenCenter = { x: 1280 / 2 - cam.x, y: 720 / 2 - cam.y };
     check(
         Math.hypot(worldAtScreenCenter.x - centerX, worldAtScreenCenter.y - centerY) < 1,
@@ -288,11 +292,13 @@ check(swept === levels.length, `winnability sweep: all ${levels.length} levels w
     for (const c of levels) {
         const sMap = Object.fromEntries(c.spawns.map((s) => [s.id, s]));
         const iMap = Object.fromEntries(c.intersections.map((i) => [i.id, i]));
+        const eMap = Object.fromEntries((c.entries || []).map((e) => [e.id, e]));
         for (const f of c.fuses) {
             if (!f.routeThrough) continue;
             const s = f.branchOf ? f.branchPoint : sMap[f.start];
             if (!s) continue;
-            const u = proj(s, c.payload, iMap[f.routeThrough]);
+            const e = eMap[f.end] || c.payload;
+            const u = proj(s, e, iMap[f.routeThrough]);
             if (u < 0.02 || u > 0.98) folds++;
         }
     }
@@ -301,11 +307,13 @@ check(swept === levels.length, `winnability sweep: all ${levels.length} levels w
     let tooClose = 0;
     for (const c of levels) {
         const sMap = Object.fromEntries(c.spawns.map((s) => [s.id, s]));
+        const eMap = Object.fromEntries((c.entries || []).map((e) => [e.id, e]));
         const pts = c.intersections.map((i) => ({ x: i.x, y: i.y }));
         for (const f of c.fuses) {
             if (!f.routeThrough) {
                 const s = f.branchOf ? f.branchPoint : sMap[f.start];
-                if (s) pts.push({ x: (s.x + c.payload.x) / 2, y: (s.y + c.payload.y) / 2 });
+                const e = eMap[f.end] || c.payload;
+                if (s) pts.push({ x: (s.x + e.x) / 2, y: (s.y + e.y) / 2 });
             }
         }
         for (let i = 0; i < pts.length; i++)
@@ -490,43 +498,83 @@ check(swept === levels.length, `winnability sweep: all ${levels.length} levels w
     // target isn't floating in mid-air next to the wick).
     {
         const hiddenForks = [];
+        const stubbyForks = [];
         const offWick = [];
         for (const c of levels) {
+            const eMap = Object.fromEntries((c.entries || []).map((e) => [e.id, e]));
             for (const f of c.fuses) {
                 if (!f.branchOf) continue;
                 const r = Math.hypot(f.branchPoint.x - c.payload.x, f.branchPoint.y - c.payload.y);
-                if (r < 160) hiddenForks.push(`L${c.level_id}:${f.id}@r${Math.round(r)}`);
+                // The fork must sit clear of the bomb art (visible Y-split)…
+                if (r < 95) hiddenForks.push(`L${c.level_id}:${f.id}@r${Math.round(r)}`);
+                // …and the branch wick must have a real span (fork → its own
+                // entry anchor) so it reads as a full second line, not a stub.
+                const e = eMap[f.end] || c.payload;
+                const L = Math.hypot(e.x - f.branchPoint.x, e.y - f.branchPoint.y);
+                if (L < 160) stubbyForks.push(`L${c.level_id}:${f.id}@L${Math.round(L)}`);
                 if (f.routeThrough) {
                     const cp = c.intersections.find((x) => x.id === f.routeThrough);
                     if (!cp) continue;
-                    const wx = c.payload.x - f.branchPoint.x, wy = c.payload.y - f.branchPoint.y;
+                    const wx = e.x - f.branchPoint.x, wy = e.y - f.branchPoint.y;
                     const L2 = wx * wx + wy * wy;
-                    const m = { x: (cp.x - 0.125 * (f.branchPoint.x + c.payload.x)) / 0.75, y: (cp.y - 0.125 * (f.branchPoint.y + c.payload.y)) / 0.75 };
+                    const m = { x: (cp.x - 0.125 * (f.branchPoint.x + e.x)) / 0.75, y: (cp.y - 0.125 * (f.branchPoint.y + e.y)) / 0.75 };
                     const u = ((m.x - f.branchPoint.x) * wx + (m.y - f.branchPoint.y) * wy) / L2;
                     if (u < 0.02 || u > 0.98) offWick.push(`L${c.level_id}:${f.id}@u${u.toFixed(2)}`);
                 }
             }
         }
         check(hiddenForks.length === 0, "fork showcase: every fork is visible outside the bomb art", hiddenForks.join(", "));
+        check(stubbyForks.length === 0, "fork showcase: every branch wick has a real span to its entry", stubbyForks.join(", "));
         check(offWick.length === 0, "fork showcase: routed branch cross-sections sit on the branch wick", offWick.join(", "));
+    }
+
+    // Bomb-side anchors: wicks must not funnel into the payload center — each
+    // fuse ends at its OWN entry on a ring just outside the bomb art, spread
+    // around different sides so every line is individually snipe-able near the
+    // bomb. Anchors sit outside the visible art (half-diagonal ~82) and are
+    // distinct per fuse.
+    {
+        let bundled = 0;
+        let hiddenAnchors = 0;
+        for (const c of levels) {
+            const eMap = Object.fromEntries((c.entries || []).map((e) => [e.id, e]));
+            for (const f of c.fuses) {
+                const e = eMap[f.end];
+                if (!e) { bundled++; continue; }
+                const r = Math.hypot(e.x - c.payload.x, e.y - c.payload.y);
+                if (r < 75 || r > 110) hiddenAnchors++;
+            }
+            // Distinct sides: no two anchors within ~15° of each other.
+            const angles = Object.values(eMap)
+                .map((e) => Math.atan2(e.y - c.payload.y, e.x - c.payload.x))
+                .sort((a, b) => a - b);
+            for (let i = 1; i < angles.length; i++) {
+                if (angles[i] - angles[i - 1] < 0.26) bundled++;
+            }
+            if (angles.length > 1 && angles[0] + Math.PI * 2 - angles[angles.length - 1] < 0.26) bundled++;
+        }
+        check(bundled === 0, "bomb-side anchors: every wick ends at its own entry around the bomb", `${bundled} bundled`);
+        check(hiddenAnchors === 0, "bomb-side anchors: entries sit just outside the bomb art", `${hiddenAnchors} misplaced`);
     }
 }
 
 // Anti-cheat: a cut only kills sparks on ITS OWN wick, or sparks crossing a
-// shared chokepoint (the intended crossroads multi-kill). Without the fuse
-// guard, every wick converges on the bomb — waiting until sparks bunch at the
-// banana and snipping there killed several fuses with one snip.
+// shared chokepoint (the intended crossroads multi-kill). With the fuse guard
+// gone, a swipe near the bomb could kill several wicks at once because every
+// wick converged on the center. Now wicks enter the bomb at their own side —
+// the cut must still be fuse-scoped so one snip near the bomb kills exactly
+// the line it was placed on.
 {
-    const cfg = levels.find((l) => l.level_id === 4); // 2 fuses, both end at the bomb
+    const cfg = levels.find((l) => l.level_id === 4); // 2 fuses, distinct entries
     const level = buildLevel(cfg, { width: 1280, height: 720 });
     const g = new GameLoop({ canvas: null, ...makeStubs() });
     g.loadLevel(level, 0);
 
-    // A cut placed right at the bomb, on fuse 0 (as if the player waited for
-    // the sparks to bunch up at the banana and swiped there).
+    // A cut placed on fuse 0's tail at its entry anchor (as if the player
+    // waited for the sparks to approach the banana and swiped there).
     const f0 = level.fuses[0];
-    const bomb = Object.values(level.nodeMap).find((n) => n.type === "payload");
-    g.cuts.push({ x: bomb.x, y: bomb.y, radius: 15, angle: 0, fuseId: f0.id });
+    const entry0 = f0.endNode;
+    g.cuts.push({ x: entry0.x, y: entry0.y, radius: 15, angle: 0, fuseId: f0.id });
 
     let f0DiedFrame = -1;
     for (let i = 0; i < 6000 && g.gameState === STATE.PLAYING; i++) {
