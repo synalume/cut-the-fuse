@@ -78,9 +78,9 @@ const align = await page.evaluate(() => {
         const rr = range.getBoundingClientRect();
         return { pillTop: pr.top, textTop: rr.top, pillBot: pr.bottom, textBot: rr.bottom, pillH: pr.height, textH: rr.height };
     };
-    return { score: pick("win-score"), perfect: pick("win-perfect"), time: pick("win-time") };
+    return { score: pick("win-score"), perfect: pick("win-perfect"), time: pick("win-time"), record: pick("win-record"), best: pick("win-best") };
 });
-for (const k of ["time", "perfect", "score"]) {
+for (const k of ["time", "perfect", "score", "record", "best"]) {
     const b = align[k];
     if (!b) continue;
     // Center of text vs center of pill, as a fraction of pill height from center.
