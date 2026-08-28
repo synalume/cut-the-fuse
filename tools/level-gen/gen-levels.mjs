@@ -1035,6 +1035,19 @@ function placeLevel(n, k, seedOffset = 0, salt = 0) {
         return f;
     });
 
+    // Every level ignites its FIRST spark immediately on load — the burn
+    // starts and the player reacts. The "rain" rhythm shuffles the arrival
+    // ladder per fuse, so by luck it can push EVERY timer up (e.g. L48/L51
+    // waited ~7s before anything lit). Renormalize so the earliest timed fuse
+    // starts now, preserving the relative trickle of the rest.
+    {
+        const timed = fuses.filter((f) => f.delayFrames < 99999);
+        const min = timed.length ? Math.min(...timed.map((f) => f.delayFrames)) : 0;
+        if (min > 15) {
+            for (const f of timed) f.delayFrames -= min;
+        }
+    }
+
     // Fork ignition: attach branch fuses to the earliest-burning wicks. A
     // branch wick starts AT a fork point on its parent's wick and stays DARK
     // until the parent's spark crosses the fork (`at`), then a new spark races
@@ -1067,6 +1080,14 @@ function placeLevel(n, k, seedOffset = 0, salt = 0) {
         }
     }
 
+    if (process.env.GEN_DELAY_DEBUG && (n === 48 || n === 51 || n === 55 || n === 45)) {
+        console.log(`[delaydebug] L${n} delayPattern=${look.delayPattern} k.delay=${k.delay} spawns=${k.spawns} chainDelaySpan=${delaySpan(k, k.spawns, rng)}`);
+        for (const f of fuses) console.log(`[delaydebug]   ${f.id} delay=${f.delayFrames}${f.branchOf ? " branchOf=" + f.branchOf : ""}`);
+    }
+    if (process.env.GEN_DELAY_DEBUG && (n === 48 || n === 51 || n === 55 || n === 45)) {
+        console.log(`[delaydebug] L${n} delayPattern=${look.delayPattern} k.delay=${k.delay} spawns=${k.spawns} chainDelaySpan=${delaySpan(k, k.spawns, rng)}`);
+        for (const f of fuses) console.log(`[delaydebug]   ${f.id} delay=${f.delayFrames}${f.branchOf ? " branchOf=" + f.branchOf : ""}`);
+    }
     return { n, payload, spawns, intersections, fuses, k, style, look };
 }
 

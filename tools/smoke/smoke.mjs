@@ -589,6 +589,16 @@ check(swept === levels.length, `winnability sweep: all ${levels.length} levels w
     }
     check(bunched.length === 0, "act-3 spread: 9+ spark levels stagger arrivals over >= 7s", bunched.join(", "));
 
+    // First-spark immediacy: every level ignites its first fuse the moment it
+    // loads (rain shuffles can push every timer up, leaving a dead 7s wait).
+    let sluggish = [];
+    for (const c of levels) {
+        const timed = c.fuses.filter((f) => f.delayFrames < 99999);
+        const min = Math.min(...timed.map((f) => f.delayFrames));
+        if (min > 15) sluggish.push(`L${c.level_id}=${Math.round(min / 60)}s`);
+    }
+    check(sluggish.length === 0, "every level ignites its first spark immediately on load", sluggish.join(", "));
+
     const partialLvls = levels.filter((l) => l.level_id > 3 && l.fuses.some((f) => !f.routeThrough && !f.branchOf));
     const firstPartial = levels.find((l) => l.level_id > 3 && l.fuses.some((f) => !f.routeThrough && !f.branchOf));
     check(firstPartial?.level_id === 14, "partial (direct) fuses begin at L14", `first = L${firstPartial?.level_id}`);
