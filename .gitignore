@@ -5,3 +5,4 @@ dist/out/stage/
 *.zip
 .DS_Store
 node_modules/
+.firebase/

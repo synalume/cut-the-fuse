@@ -32,8 +32,18 @@ export class Renderer {
     constructor(canvas) {
         this.canvas = canvas;
         this.ctx = canvas.getContext("2d");
-        this.width = canvas.width = window.innerWidth;
-        this.height = canvas.height = window.innerHeight;
+        // HiDPI: the backing store is device-pixel sized so phones (dpr 2-3)
+        // render art crisply instead of the browser upscaling a 1x canvas.
+        // All game math uses logical CSS-pixel width/height below.
+        this.dpr = Math.max(1, window.devicePixelRatio || 1);
+        this.width = window.innerWidth;
+        this.height = window.innerHeight;
+        canvas.width = Math.round(this.width * this.dpr);
+        canvas.height = Math.round(this.height * this.dpr);
+        canvas.style.width = this.width + "px";
+        canvas.style.height = this.height + "px";
+        this.ctx.imageSmoothingEnabled = true;
+        this.ctx.imageSmoothingQuality = "high";
         this.images = {};
         this._pending = new Set();
         this._onAssetsReady = null;
@@ -43,8 +53,13 @@ export class Renderer {
     // ---- Responsive sizing ------------------------------------------------------
 
     resize() {
-        this.width = this.canvas.width = window.innerWidth;
-        this.height = this.canvas.height = window.innerHeight;
+        this.width = window.innerWidth;
+        this.height = window.innerHeight;
+        this.dpr = Math.max(1, window.devicePixelRatio || 1);
+        this.canvas.width = Math.round(this.width * this.dpr);
+        this.canvas.height = Math.round(this.height * this.dpr);
+        this.canvas.style.width = this.width + "px";
+        this.canvas.style.height = this.height + "px";
     }
 
     computeFitCamera(level) {
@@ -99,6 +114,13 @@ export class Renderer {
 
     draw(game) {
         const ctx = this.ctx;
+        // Scale to device pixels once per frame; everything after this uses
+        // logical CSS-pixel coordinates (this.width / this.height).
+        ctx.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
+        // canvas.width changes (resize) reset context state, so re-assert high
+        // quality downscaling for the sprites every frame.
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = "high";
         ctx.clearRect(0, 0, this.width, this.height);
 
         ctx.save();

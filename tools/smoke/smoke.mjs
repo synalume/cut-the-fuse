@@ -101,6 +101,34 @@ for (const c of levels) {
 }
 check(swept === levels.length, `winnability sweep: all ${levels.length} levels winnable via chokepoints`);
 
+// Shared-chokepoint regression: levels route several wicks through the same
+// intersection (e.g. L4's cut1). The 2nd snip at the same spot must hit the
+// OTHER fuse, not be deduped into a no-op by the first cut.
+{
+    const cfg = levels.find((l) => l.level_id === 4);
+    const g = new GameLoop({ canvas: null, ...makeStubs() });
+    g.loadLevel(buildLevel(cfg, { width: 1280, height: 720 }), 0);
+    const cp = g.level.intersectionMap.cut1;
+
+    const swipe = () => {
+        const ok = g.tryCut(
+            { x: cp.x - 26, y: cp.y },
+            { x: cp.x + 26, y: cp.y },
+            [{ x: cp.x - 26, y: cp.y }, { x: cp.x + 26, y: cp.y }]
+        );
+        return ok;
+    };
+
+    check(swipe() === true && g.cuts.length === 1 && g.snipsRemaining === 1,
+        "L4: first snip at shared chokepoint lands (1 snip left)");
+    check(swipe() === true && g.cuts.length === 2 && g.snipsRemaining === 0,
+        "L4: 2nd snip in the same area hits the other fuse (2 cuts placed)");
+    check(g.cuts[0].fuseId !== g.cuts[1].fuseId,
+        "L4: both snips cut different fuses at the shared chokepoint");
+    check(swipe() === false && g.cuts.length === 2,
+        "L4: 3rd snip is rejected (both fuses already cut + budget spent)");
+}
+
 // Asset resolution: placeholder reuse when a level's art file is missing
 // (placeholder-first: banana bomb + matchstick on every level until art exists).
 {

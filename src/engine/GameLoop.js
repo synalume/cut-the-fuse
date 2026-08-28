@@ -120,33 +120,47 @@ export class GameLoop {
     tryCut(swipeStart, swipeEnd, trail) {
         if (this.gameState !== STATE.PLAYING || this.snipsRemaining <= 0) return false;
 
-        let closestDist = Infinity;
-        let snipPoint = null;
-        let snipFuse = null;
-        let snipT = 0;
-
-        // Check the swipe line segment against every fuse curve.
+        // Track the closest point on every fuse, then pick the best *eligible*
+        // one. A fuse is ineligible when it already has a cut within 30 units
+        // (its spark is already dead there). At a shared chokepoint this lets
+        // the 2nd snip hit the other wick instead of the dead one — otherwise
+        // the distance tie-break always re-selects the first fuse and the
+        // second snip in the same area feels dead.
+        let best = null;
         for (const fuse of this.fuses) {
             const p0 = fuse.startNode;
             const p3 = fuse.endNode;
+            let minDist = Infinity;
+            let minPt = null;
+            let minT = 0;
             for (let t = 0; t <= 1; t += 0.02) {
                 const pt = getBezierXY(t, p0, fuse.cp1, fuse.cp2, p3);
                 const dist = distToSegment(pt, swipeStart, swipeEnd);
-                if (dist < closestDist) {
-                    closestDist = dist;
-                    snipPoint = pt;
-                    snipFuse = fuse;
-                    snipT = t;
+                if (dist < minDist) {
+                    minDist = dist;
+                    minPt = pt;
+                    minT = t;
                 }
             }
+
+            let deduped = false;
+            for (const c of this.cuts) {
+                if (c.fuseId === fuse.id && Math.hypot(minPt.x - c.x, minPt.y - c.y) < 30) {
+                    deduped = true;
+                    break;
+                }
+            }
+            if (deduped) continue;
+
+            if (!best || minDist < best.dist) best = { fuse, point: minPt, t: minT, dist: minDist };
         }
 
-        if (closestDist < 25 && snipPoint) {
-            // Dedupe: ignore cuts within 30px of an existing cut.
-            for (const c of this.cuts) {
-                if (Math.hypot(snipPoint.x - c.x, snipPoint.y - c.y) < 30) return false;
-            }
+        if (!best || best.dist >= 25) return false;
+        const snipFuse = best.fuse;
+        const snipPoint = best.point;
+        const snipT = best.t;
 
+        {
             const swipeAngle = Math.atan2(swipeEnd.y - swipeStart.y, swipeEnd.x - swipeStart.x);
             this.cuts.push({ x: snipPoint.x, y: snipPoint.y, radius: 15, angle: swipeAngle, fuseId: snipFuse.id, snipT });
 
@@ -172,7 +186,6 @@ export class GameLoop {
             }
             return true;
         }
-        return false;
     }
 
     // ---- DDA: adaptive difficulty tier ladder --------------------------------
