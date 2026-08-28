@@ -477,7 +477,7 @@ export class Renderer {
         ctx.scale(scaleX * flipX, scaleY);
         ctx.translate(0, dy);
 
-        const targetHeight = 200;
+        const targetHeight = 150; // TEST: 200 → 150
         const aspect = img.width / img.height;
         const targetWidth = targetHeight * aspect;
 
