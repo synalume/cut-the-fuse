@@ -314,6 +314,23 @@ check(swept === levels.length, `winnability sweep: all ${levels.length} levels w
     }
     check(tooClose === 0, `cut points separated: every chokepoint/direct-midpoint cut is placeable (${tooClose} collisions)`);
 
+    // Tail fan: wicks must bow their final leg into the bomb from their own
+    // side, or the tails bundle into one line at the banana and can't be read
+    // apart. The bulge keeps the t=0.5 pass-through but bends the tail to a
+    // distinct approach angle — so nearly every wick should carry a real bow.
+    {
+        let flat = 0;
+        let total = 0;
+        for (const c of levels) {
+            for (const f of c.fuses) {
+                if (f.branchOf) continue; // branches bow to their own side already
+                total++;
+                if (Math.abs(f.bulge || 0) < 0.08) flat++;
+            }
+        }
+        check(flat / total < 0.1, "tail fan: 90%+ of wicks bow their final leg (no bundled straight tails)", `${flat}/${total} flat`);
+    }
+
     // Fit-camera guard: a chokepoint that drifts absurdly far from the payload
     // (a relaxed hairpin can wander to 700-1200px) shrinks the whole puzzle on
     // mobile — the fit camera zooms out to cover it and the wicks get tiny.
