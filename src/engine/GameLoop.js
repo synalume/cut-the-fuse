@@ -449,7 +449,7 @@ export class GameLoop {
             }
 
             if (spark.progress >= 1) {
-                if (fuse.endNode.type === "payload") {
+                if (fuse.endNode.type === "payload" || fuse.endNode.type === "entry") {
                     this._finishLevel(false);
                     return;
                 }

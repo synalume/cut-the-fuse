@@ -111,13 +111,13 @@ export function buildLevel(config, viewport, assets = null) {
 
     // Entry anchors (bomb-side landing points). Each wick ends at its OWN
     // anchor on a ring around the bomb art, so wicks enter from different
-    // sides instead of funneling into the center. Type "payload" so a spark
-    // reaching its anchor triggers the explosion, exactly like reaching the
-    // bomb center did before.
+    // sides instead of funneling into the center. Type "entry": reaching one
+    // triggers the explosion (GameLoop), but nothing is DRAWN here — the bomb
+    // art lives at the real payload node only.
     for (const e of config.entries || []) {
         const node = {
             id: e.id,
-            type: "payload",
+            type: "entry",
             x: cx + (e.x ?? 0),
             y: cy + (e.y ?? 0),
         };

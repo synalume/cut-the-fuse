@@ -555,6 +555,19 @@ check(swept === levels.length, `winnability sweep: all ${levels.length} levels w
         }
         check(bundled === 0, "bomb-side anchors: every wick ends at its own entry around the bomb", `${bundled} bundled`);
         check(hiddenAnchors === 0, "bomb-side anchors: entries sit just outside the bomb art", `${hiddenAnchors} misplaced`);
+
+        // One bomb, exactly: entry anchors must never render as payloads (that
+        // bug drew a duplicate bomb PNG at every entry). The real payload node
+        // stays the only "payload" node; entries are invisible anchor points.
+        let dupBombs = 0;
+        for (const c of levels) {
+            const lvl = buildLevel(c, { width: 1280, height: 720 });
+            const payloads = lvl.nodes.filter((n) => n.type === "payload");
+            const entries = lvl.nodes.filter((n) => n.type === "entry");
+            if (payloads.length !== 1) dupBombs++;
+            if (entries.length !== (c.entries || []).length) dupBombs++;
+        }
+        check(dupBombs === 0, "one bomb only: entry anchors are invisible, never payload nodes", `${dupBombs} levels malformed`);
     }
 }
 
