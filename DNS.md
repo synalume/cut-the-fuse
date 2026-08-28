@@ -11,10 +11,10 @@ Same pattern as Big Fluff / Wobble Run: apex Lovable, `play.*` Firebase (`synalu
 
 - [x] Firebase site `cut-the-fuse` created
 - [x] Placeholder live: https://cut-the-fuse.web.app
-- [ ] Custom domain `play.cutthefuse.com` registered in Firebase
-- [ ] Lovable DNS: `play` CNAME → `cut-the-fuse.web.app` + ACME TXT
+- [x] Custom domain `play.cutthefuse.com` registered in Firebase
+- [x] Lovable DNS: `play` CNAME → `cut-the-fuse.web.app` + ACME TXT
 - [ ] Lovable marketing project + domain connected
-- [ ] `play.cutthefuse.com` HTTPS active
+- [x] `play.cutthefuse.com` HTTPS active
 
 ## 1 · Play DNS (do this at Name.com / Lovable DNS panel)
 
