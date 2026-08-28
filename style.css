@@ -59,6 +59,7 @@ canvas { display: block; position: absolute; z-index: 10; }
     color: #d97706;
     display: inline-flex; align-items: center; gap: 6px;
     line-height: 1;
+    pointer-events: auto; /* opens the armory */
 }
 #star-display::before {
     content: ""; display: inline-block;
@@ -83,6 +84,7 @@ canvas { display: block; position: absolute; z-index: 10; }
 #snips-counter.last-snip { color: #d97706; animation: snip-pulse 1s ease-in-out infinite; }
 #snips-counter.depleted { color: #dc2626; }
 #snips-counter.shake { animation: snip-shake 0.45s ease; }
+#star-display.new-unlock { animation: snip-pulse 0.9s ease-in-out 3; }
 @keyframes snip-pulse {
     0%, 100% { opacity: 1; }
     50% { opacity: 0.55; }
@@ -233,17 +235,57 @@ canvas { display: block; position: absolute; z-index: 10; }
     border-radius: 20px;
     box-shadow: 10px 10px 0px rgba(0,0,0,0.3);
 }
-.message-box.skins { width: min(92vw, 520px); }
-#skin-grid { display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; margin: 12px 0; }
-.skin-card {
-    width: 110px; border: 3px solid #1c1917; border-radius: 12px;
-    background: #f5f5f4; padding: 8px; cursor: pointer; text-align: center;
-    box-sizing: border-box;
+.message-box.skins { width: min(92vw, 560px); }
+#skin-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+    gap: 10px;
+    justify-content: center;
+    margin: 12px 0;
+    max-height: 52vh;
+    overflow-y: auto;
+    padding: 2px;
 }
-.skin-card img { width: 60px; height: 60px; object-fit: contain; }
+.skin-card {
+    border: 3px solid #1c1917; border-radius: 12px;
+    background: #f5f5f4; padding: 8px; cursor: pointer; text-align: center;
+    box-sizing: border-box; min-width: 0;
+}
+.skin-card img { width: 56px; height: 56px; object-fit: contain; }
+.skin-card .skin-name { font-weight: bold; font-size: 0.85rem; line-height: 1.1; }
 .skin-card.locked { opacity: 0.35; cursor: not-allowed; }
 .skin-card.selected { background: #fef08a; box-shadow: 0 0 0 3px #d97706; }
 .skin-card .cost { font-size: 0.8rem; color: #d97706; font-weight: bold; }
+.skin-card .blurb { font-size: 0.72rem; color: #57534e; min-height: 1.1em; }
+.skin-card .unlock {
+    font-size: 0.7rem; color: #b91c1c; font-weight: bold;
+    text-transform: uppercase; letter-spacing: 0.02em;
+}
+.skin-card .watch-ad {
+    display: inline-block; margin-top: 6px; padding: 4px 10px;
+    background: #fef08a; border: 3px solid #2B1F14; border-radius: 8px;
+    box-shadow: 3px 3px 0 rgba(43, 31, 20, 0.85);
+    font-family: 'Luckiest Guy', 'Baloo 2', 'Courier New', Courier, monospace;
+    font-size: 0.75rem; color: #2B1F14; cursor: pointer; text-transform: uppercase;
+    transition: transform 0.08s ease;
+}
+.skin-card .watch-ad:hover { transform: translateY(-1px); }
+.skin-card .watch-ad:active { transform: translateY(2px); box-shadow: 1px 1px 0 rgba(43, 31, 20, 0.85); }
+.skin-card .selected-tag { font-size: 0.75rem; color: #b45309; font-weight: bold; text-transform: uppercase; }
+
+#skin-tabs {
+    display: flex; gap: 8px; justify-content: center; margin: 10px 0 4px;
+}
+#skin-tabs button {
+    background: #F6ECD1; border: 3px solid #2B1F14; border-radius: 10px;
+    box-shadow: 3px 3px 0 rgba(43, 31, 20, 0.85);
+    padding: 6px 18px; font-size: 1rem; cursor: pointer;
+    font-family: 'Luckiest Guy', 'Baloo 2', 'Courier New', Courier, monospace;
+    letter-spacing: 0.04em; color: #2B1F14; text-transform: uppercase;
+    transition: transform 0.08s ease, background 0.15s ease;
+}
+#skin-tabs button:hover { transform: translateY(-1px); }
+#skin-tabs button.active { background: #fef08a; box-shadow: 0 0 0 3px #d97706, 3px 3px 0 rgba(43, 31, 20, 0.85); }
 
 /* Level selector */
 #level-label {
@@ -340,6 +382,14 @@ canvas { display: block; position: absolute; z-index: 10; }
     #level-grid { max-height: 62vh; }
     .win-stars { gap: 8px; margin: 2px 0 10px; }
     #modal-lose, #modal-win { padding: 10px 16px; }
+    /* Center the armory vertically so its tabs stay on screen. */
+    .message-box.skins {
+        max-height: 94vh;
+        overflow-y: auto;
+        top: 50%; bottom: auto;
+        transform: translate(-50%, -50%);
+    }
+    .message-box.skins #skin-grid { max-height: 36vh; }
 }
 
 /* Hide the corner control buttons while any modal / tutorial is open, so they

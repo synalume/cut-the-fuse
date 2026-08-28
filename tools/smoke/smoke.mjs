@@ -36,6 +36,7 @@ globalThis.cancelAnimationFrame = () => {};
 // ---------------------------------------------------------------------------
 import { buildLevel, validateLevel, computeFitCamera, resolveAssets } from "../../src/engine/LevelManager.js";
 import { GameLoop, STATE } from "../../src/engine/GameLoop.js";
+import { getBezierXY } from "../../src/engine/MathUtils.js";
 
 function makeStubs() {
     const renderer = {
@@ -163,7 +164,8 @@ check(swept === levels.length, `winnability sweep: all ${levels.length} levels w
 }
 
 // Asset resolution: placeholder reuse when a level's art file is missing
-// (placeholder-first: banana bomb + matchstick on every level until art exists).
+// (placeholder-first). Priority: explicit level-pinned art > the player's
+// loadout skin art > the placeholder set.
 {
     const missing = async () => false;
     const lvl2 = await resolveAssets(levels[1], missing);
@@ -171,10 +173,30 @@ check(swept === levels.length, `winnability sweep: all ${levels.length} levels w
     check(lvl2.spawnAssets.idle === "lvl1_matchstick_idle.png", "L2 matchstick falls back to placeholder", lvl2.spawnAssets.idle);
     const lvl3 = await resolveAssets(levels[2], missing);
     check(lvl3.payloadAssets.playing === "lvl1_banana_panic.png", "L3 bomb falls back to banana placeholder", lvl3.payloadAssets.playing);
-    const present = async (name) => name === "lvl5_bomb_win.png";
-    const lvl5 = await resolveAssets(levels[4], present);
-    check(lvl5.payloadAssets.win === "lvl5_bomb_win.png", "Per-level art picked up when file exists", lvl5.payloadAssets.win);
-    check(lvl5.payloadAssets.playing === "lvl1_banana_panic.png", "Missing state still falls back to placeholder", lvl5.payloadAssets.playing);
+
+    // Loadout: the selected skin's art is used when the file exists.
+    const hasMelon = async (name) => name === "skin_melon_playing.png";
+    const melon = await resolveAssets(levels[1], hasMelon, { payloadSkin: "melon" });
+    check(melon.payloadAssets.playing === "skin_melon_playing.png", "Loadout skin art picked up when file exists", melon.payloadAssets.playing);
+    check(melon.payloadAssets.win === "lvl1_banana_win.png", "Missing skin frame falls back to placeholder", melon.payloadAssets.win);
+
+    // Igniter loadout + per-frame fallback.
+    const hasLighter = async (name) => name === "skin_lighter_idle.png";
+    const lighter = await resolveAssets(levels[1], hasLighter, { igniter: "lighter" });
+    check(lighter.spawnAssets.idle === "skin_lighter_idle.png", "Loadout igniter picked up when file exists", lighter.spawnAssets.idle);
+    check(lighter.spawnAssets.dud === "lvl1_matchstick_dud.png", "Missing igniter frame falls back to placeholder", lighter.spawnAssets.dud);
+
+    // Explicit level-pinned art always wins over the loadout.
+    const pinned = { ...levels[1], payload: { ...levels[1].payload, assets: { playing: "special_bomb.png" } } };
+    const lvlPinned = await resolveAssets(pinned, missing, { payloadSkin: "melon" });
+    check(lvlPinned.payloadAssets.playing === "special_bomb.png", "Level-pinned art overrides the loadout", lvlPinned.payloadAssets.playing);
+
+    // Unknown loadout ids resolve to the defaults.
+    const unknown = await resolveAssets(levels[1], missing, { payloadSkin: "nope", igniter: "nope" });
+    check(
+        unknown.payloadAssets.playing === "lvl1_banana_panic.png" && unknown.spawnAssets.idle === "lvl1_matchstick_idle.png",
+        "Unknown loadout ids fall back to defaults"
+    );
 }
 
 // Camera fit convention: screen center (w/2, h/2) must map to the level center.
@@ -232,6 +254,14 @@ check(swept === levels.length, `winnability sweep: all ${levels.length} levels w
     const shapeSigs = new Set(levels.map(shapeSig));
     check(shapeSigs.size >= 35, `visual identity: levels aren't just rotations (${shapeSigs.size} distinct spawn-shapes of ${levels.length})`);
 
+    // Act-1 teaching band must not all read as the same sunburst — the early
+    // levels (L4-L10, shared-chokepoint band) previously forced the same visual
+    // recipe (uniform/even/flat) and all looked identical.
+    {
+        const earlySigs = new Set(levels.filter((l) => l.level_id >= 4 && l.level_id <= 10).map(shapeSig));
+        check(earlySigs.size >= 5, `act-1 variety: L4-L10 use distinct maze arrangements (${earlySigs.size} distinct of 7)`);
+    }
+
     // Timing-texture guard: same-budget levels should still schedule sparks
     // differently (delay rhythm + burn pace are part of a level's feel).
     const timingSigs = new Set(
@@ -277,6 +307,18 @@ check(swept === levels.length, `winnability sweep: all ${levels.length} levels w
                 if (Math.hypot(pts[i].x - pts[j].x, pts[i].y - pts[j].y) < 30) tooClose++;
     }
     check(tooClose === 0, `cut points separated: every chokepoint/direct-midpoint cut is placeable (${tooClose} collisions)`);
+
+    // Fit-camera guard: a chokepoint that drifts absurdly far from the payload
+    // (a relaxed hairpin can wander to 700-1200px) shrinks the whole puzzle on
+    // mobile — the fit camera zooms out to cover it and the wicks get tiny.
+    let farCps = [];
+    for (const c of levels) {
+        for (const cp of c.intersections) {
+            const d = Math.hypot(cp.x - c.payload.x, cp.y - c.payload.y);
+            if (d > 480) farCps.push(`L${c.level_id}:${cp.id}=${d.toFixed(0)}`);
+        }
+    }
+    check(farCps.length === 0, `no chokepoint drifts past 480px (mobile fit zoom), ${farCps.join(", ")}`);
 }
 
 // DDA tier ladder
@@ -318,6 +360,116 @@ check(swept === levels.length, `winnability sweep: all ${levels.length} levels w
     g.snipsRemaining = 0;
     g.snipsUsed = 2;
     check(g.computeStars() === 2, "Stars: all snips used → 2★");
+
+    // Every level must carry at least one spare snip so 3★ is always reachable.
+    let noSlack = [];
+    for (const c of levels) {
+        const used = new Set(c.fuses.filter((f) => f.routeThrough).map((f) => f.routeThrough)).size;
+        const direct = c.fuses.filter((f) => !f.routeThrough).length;
+        if (c.snipsAllowed - (used + direct) < 1) noSlack.push(`L${c.level_id}`);
+    }
+    check(noSlack.length === 0, "Stars: every level has >= 1 spare snip (3★ always reachable)", noSlack.join(", "));
+}
+
+// Chain ignition: a chained wick stays dark until its parent's spark crosses the
+// trigger point. The trigger sits BEFORE the parent's cut target (t=0.5), so a
+// normal chokepoint cut CANNOT silently erase the child — it lights first and
+// demands its own cut. To PREVENT the child the player must cut the parent
+// EARLY (before the trigger), saving that snip.
+{
+    const cfg = levels.find((l) => l.level_id === 27);
+    const chainFuses = cfg.fuses.filter((f) => f.chain);
+    check(chainFuses.length === 1, "L27 has a chained wick", JSON.stringify(chainFuses[0]?.chain));
+
+    const level = buildLevel(cfg, { width: 1280, height: 720 });
+    const childSpark = level.sparks.find((s) => s.chain);
+    const parentSpark = level.sparks[childSpark.chain.fromFuseIndex];
+    check(
+        parentSpark && level.fuses[parentSpark.fuseIndex].start === chainFuses[0].chain.from,
+        "chain wiring: child points at the parent fuse's spark"
+    );
+    check(childSpark.delay === 99999 && childSpark.triggered === false,
+        "chain wiring: chained spark has no timer and starts dark");
+    check(childSpark.chain.at < 0.5,
+        "chain wiring: trigger fires before the parent's chokepoint cut", `at=${childSpark.chain.at}`);
+
+    const run = (cuts) => {
+        const g = new GameLoop({ canvas: null, ...makeStubs() });
+        g.loadLevel(buildLevel(cfg, { width: 1280, height: 720 }), 0);
+        for (const c of cuts) g.cuts.push({ x: c.x, y: c.y, radius: 15, angle: 0, fuseId: null });
+        for (let i = 0; i < 6000 && g.gameState === STATE.PLAYING; i++) {
+            g.frameCount++;
+            g._update();
+        }
+        return g;
+    };
+
+    // Regression for the "early win" bug: cutting every chokepoint (including a
+    // parent's shared cross point) must NOT erase the chained side — the child
+    // lights before the parent dies, then dies at its own cut. Level still won.
+    const allCuts = level.fuses.map((f) => f.intersectionPt).filter((p, i, a) => !a.some((q, j) => j < i && Math.hypot(q.x - p.x, q.y - p.y) < 30));
+    const gNormal = run(allCuts);
+    const childNormal = gNormal.sparks.find((s) => s.chain);
+    check(
+        gNormal.gameState === STATE.WON && childNormal.ignited && childNormal.triggered,
+        "chain: cutting all chokepoints still lets the child light (no early win) — it dies at its own cut"
+    );
+
+    // Prevention: cut the parent's wick BEFORE the trigger → the chain breaks
+    // and the child never lights.
+    const parentFuse = level.fuses[parentSpark.fuseIndex];
+    const early = getBezierXY(childSpark.chain.at - 0.1, parentFuse.startNode, parentFuse.cp1, parentFuse.cp2, parentFuse.endNode);
+    const gPrev = run([...allCuts, { x: early.x, y: early.y, radius: 15, angle: 0, fuseId: null }]);
+    const childPrev = gPrev.sparks.find((s) => s.chain);
+    check(
+        gPrev.gameState === STATE.WON && !childPrev.ignited && !childPrev.active,
+        "chain: cutting the parent BEFORE the trigger breaks the chain (child never lights)"
+    );
+
+    // A parent that dies AFTER crossing the trigger must still light the child:
+    // cut every chokepoint EXCEPT the child's own. The child lights (its parent
+    // died at a normal cut, downstream of the trigger), burns un-snuffed to the
+    // payload, and the level is LOST — proving a normal parent cut can't
+    // silently erase the chained side, regardless of spark array order.
+    const childFuse = level.fuses[childSpark.fuseIndex];
+    const withoutChildCut = allCuts.filter((p) => Math.hypot(p.x - childFuse.intersectionPt.x, p.y - childFuse.intersectionPt.y) > 30);
+    const gDown = run(withoutChildCut);
+    const childDown = gDown.sparks.find((s) => s.chain);
+    check(
+        childDown.ignited && childDown.triggered && gDown.gameState === STATE.LOST,
+        "chain: a parent cut after the trigger still lights the child (lit child is a real threat)"
+    );
+
+    // Design invariant (the "early win" regression): NO chained child may have a
+    // trigger at/after its parent's cut target, or the normal cut would silently
+    // erase the chained side. Verify across all 60 levels.
+    {
+        const bad = [];
+        for (const c of levels) {
+            for (const f of c.fuses) {
+                if (f.chain && f.chain.at >= 0.5) bad.push(`L${c.level_id}:${f.start}@${f.chain.at}`);
+            }
+        }
+        check(bad.length === 0, "chain invariant: no level has a trivially breakable chain (trigger before parent's cut)", bad.join(", "));
+    }
+}
+
+// Curve variety: a bulged fuse keeps cp1 != cp2 but the curve still passes
+// EXACTLY through its chokepoint at t=0.5 (the cut target must not move).
+{
+    const cfg = levels.find((l) => l.fuses.some((f) => f.bulge));
+    check(cfg != null, "at least one level uses curve bulges");
+    if (cfg) {
+        const level = buildLevel(cfg, { width: 1280, height: 720 });
+        const bulged = level.fuses.filter((f) => f.bulge && f.bulge !== 0);
+        const okSplit = bulged.every((f) => Math.hypot(f.cp1.x - f.cp2.x, f.cp1.y - f.cp2.y) > 1);
+        check(okSplit, "bulged fuses have split control points");
+        const okPass = bulged.every((f) => {
+            const b = getBezierXY(0.5, f.startNode, f.cp1, f.cp2, f.endNode);
+            return Math.hypot(b.x - f.intersectionPt.x, b.y - f.intersectionPt.y) < 0.001;
+        });
+        check(okPass, "bulged fuses still pass exactly through their chokepoint at t=0.5");
+    }
 }
 
 // ---------------------------------------------------------------------------
@@ -347,7 +499,7 @@ class El {
         if (v === "") this.children = [];
     }
     get innerHTML() { return this._innerHTML; }
-    set innerHTML(v) { this._innerHTML = v; }
+    set innerHTML(v) { this._innerHTML = v; if (v === "") this.children = []; }
     set src(v) { this._src = v; this.complete = true; queueMicrotask(() => this.onload && this.onload()); }
     get src() { return this._src; }
     addEventListener(t, fn) { (this.listeners[t] ??= []).push(fn); }
@@ -356,7 +508,17 @@ class El {
     append(...c) { this.children.push(...c); }
     focus() {}
     getBoundingClientRect() { return { left: 0, top: 0 }; }
-    classList = { toggle() {}, add() {}, remove() {} };
+    classList = {
+        add: (...c) => { for (const x of c) if (!this.className.split(/\s+/).includes(x)) this.className = (this.className + " " + x).trim(); },
+        remove: (...c) => { this.className = this.className.split(/\s+/).filter((x) => !c.includes(x)).join(" "); },
+        toggle: (c, force) => {
+            const has = this.className.split(/\s+/).includes(c);
+            const want = force === undefined ? !has : !!force;
+            if (want && !has) this.className = (this.className + " " + c).trim();
+            if (!want && has) this.className = this.className.split(/\s+/).filter((x) => x !== c).join(" ");
+            return want;
+        },
+    };
 }
 
 const elements = {};
@@ -462,6 +624,45 @@ if (!bootError) {
     check(lit === 3, "Boot: all 3 stars light on a 3-star clear", String(lit));
     // Star icon is now a CSS background image; the counter text is the number only.
     check(elements["star-display"].textContent.trim() === "3", "Boot: star bank credited 3★", elements["star-display"].textContent);
+
+    // Armory: opens from the star counter, shows 10 payload skins.
+    elements["star-display"].dispatch("click", {});
+    check(elements["modal-skins"].style.display === "block", "Armory: opens from the star counter");
+    check(elements["tab-payloads"].className.includes("active"), "Armory: BOMBS tab active by default", elements["tab-payloads"].className);
+    check(elements["skin-grid"].children.length === 10, "Armory: renders all 10 payload skins", String(elements["skin-grid"].children.length));
+    const cards = elements["skin-grid"].children;
+    check(cards[0].className.includes("selected"), "Armory: banana (starter) owned + selected", cards[0].className);
+    check(cards[1].className.includes("locked"), "Armory: melon locked until level 4", cards[1].className);
+
+    // Switch to IGNITERS: 3 types, matchstick selected, lighter shows an ad unlock.
+    elements["tab-igniters"].dispatch("click", {});
+    check(elements["tab-igniters"].className.includes("active"), "Armory: IGNITERS tab active", elements["tab-igniters"].className);
+    check(elements["skin-grid"].children.length === 3, "Armory: renders all 3 igniter types", String(elements["skin-grid"].children.length));
+    const ig = elements["skin-grid"].children;
+    check(ig[0].className.includes("selected"), "Armory: matchstick (starter) selected", ig[0].className);
+    check(ig[1].className.includes("locked"), "Armory: lighter locked until level 4", ig[1].className);
+    const lighterFooter = ig[1].children[ig[1].children.length - 1];
+    const lighterAdBtn = lighterFooter.children[1];
+    check(lighterAdBtn && lighterAdBtn.className.includes("watch-ad"), "Armory: locked ad skin shows a Watch Ad button");
+
+    // Dev build has no ad platform wired: watching the ad grants the reward free.
+    const fakeEvent = { stopPropagation() {} };
+    lighterAdBtn.dispatch("click", fakeEvent);
+    await new Promise((r) => setTimeout(r, 30));
+    check(elements["skin-grid"].children[1].className.includes("selected"), "Armory: ad unlock grants + selects lighter (dev fallback)", elements["skin-grid"].children[1].className);
+    check(elements["skin-grid"].children[1].className.includes("locked") === false, "Armory: lighter no longer locked after unlock");
+
+    // Selecting another payload skin persists to the save and is applied to the loadout.
+    elements["tab-payloads"].dispatch("click", {});
+    const melonFooter = elements["skin-grid"].children[1].children[3];
+    const melonAdBtn = melonFooter.children[1];
+    melonAdBtn.dispatch("click", fakeEvent);
+    await new Promise((r) => setTimeout(r, 30));
+    check(elements["skin-grid"].children[1].className.includes("selected"), "Armory: ad-unlocked melon selected", elements["skin-grid"].children[1].className);
+    check(JSON.parse(localStorage.getItem("cut_the_fuse_save_v1")).selectedSkin === "melon", "Armory: payload skin selection persisted to save");
+    check(JSON.parse(localStorage.getItem("cut_the_fuse_save_v1")).selectedIgniter === "lighter", "Armory: igniter selection persisted to save");
+    elements["btn-skins-close"].dispatch("click", {});
+    check(elements["modal-skins"].style.display === "none", "Armory: close returns to the game");
 
     // Level selector
     elements["level-label"].dispatch("click", {});

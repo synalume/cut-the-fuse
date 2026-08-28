@@ -1,6 +1,7 @@
 // LevelManager.js — parses a levels.json config into the runtime node graph.
 // Everything is data-driven: nodes, forced-intersection fuses, sparks, camera.
 import { createForcedIntersectionFuse } from "./MathUtils.js";
+import { findPayloadSkin, findIgniterType } from "../data/skins.js";
 
 const PLACEHOLDER_PAYLOAD = {
     playing: "lvl1_banana_panic.png",
@@ -14,56 +15,63 @@ const PLACEHOLDER_SPAWN = {
 };
 
 /** Resolve which asset files a level should draw, with placeholder fallback.
- *  Priority: explicit JSON assets > auto-derived lvl{N}_* > placeholder set.
  *
- *  Sync form (editor/tests): auto-derived names are always chosen when present,
- *  so it assumes the level's art exists. */
-export function resolveAssetsSync(config) {
-    const n = config.level_id;
+ *  Live form (async, probing): priority is explicit level-pinned JSON assets >
+ *  the player's loadout skin art (probed with hasFile) > placeholder set. The
+ *  loadout lets players switch characters/igniters without per-level art.
+ *
+ *  Sync form (editor/tests, no probing): explicit JSON assets > placeholder. */
+export function resolveAssetsSync(config, loadout = null) {
+    const payloadSkin = findPayloadSkin(loadout?.payloadSkin);
+    const igniter = findIgniterType(loadout?.igniter);
     const payload = config.payload?.assets || {};
     const spawn = config.spawnAssets || {};
 
-    const pick = (explicit, auto) => explicit || auto || null;
+    // Sync path can't probe disk, so loadout art is only used if a file name is
+    // known-good (defaults always are). Non-default skins resolve to their art
+    // in the editor; runtime uses the async probing path.
+    const pick = (explicit, fallback) => explicit || fallback;
 
     const payloadAssets = {
-        playing: pick(payload.playing, `lvl${n}_bomb_panic.png`) || PLACEHOLDER_PAYLOAD.playing,
-        win: pick(payload.win, `lvl${n}_bomb_win.png`) || PLACEHOLDER_PAYLOAD.win,
-        lose: pick(payload.lose, `lvl${n}_bomb_fail.png`) || PLACEHOLDER_PAYLOAD.lose,
+        playing: pick(payload.playing, payloadSkin.assets.playing) || PLACEHOLDER_PAYLOAD.playing,
+        win: pick(payload.win, payloadSkin.assets.win) || PLACEHOLDER_PAYLOAD.win,
+        lose: pick(payload.lose, payloadSkin.assets.lose) || PLACEHOLDER_PAYLOAD.lose,
     };
     const spawnAssets = {
-        idle: pick(spawn.idle, `lvl${n}_matchstick_idle.png`) || PLACEHOLDER_SPAWN.idle,
-        ignition: pick(spawn.ignition, `lvl${n}_matchstick_ignition.png`) || PLACEHOLDER_SPAWN.ignition,
-        dud: pick(spawn.dud, `lvl${n}_matchstick_dud.png`) || PLACEHOLDER_SPAWN.dud,
+        idle: pick(spawn.idle, igniter.assets.idle) || PLACEHOLDER_SPAWN.idle,
+        ignition: pick(spawn.ignition, igniter.assets.ignition) || PLACEHOLDER_SPAWN.ignition,
+        dud: pick(spawn.dud, igniter.assets.dud) || PLACEHOLDER_SPAWN.dud,
     };
     return { payloadAssets, spawnAssets };
 }
 
 /** Live resolution for the running game. `hasFile(name) => Promise<boolean>`
- *  probes whether the level's own art file exists on disk; when it does not,
- *  the placeholder set is used. This keeps placeholder-first development working
- *  (banana bomb + matchstick on every level) until per-level art is generated. */
-export async function resolveAssets(config, hasFile) {
-    if (!hasFile) return resolveAssetsSync(config);
-    const n = config.level_id;
+ *  probes whether an art file exists on disk; missing files fall back to the
+ *  placeholder set. Priority: explicit level-pinned JSON assets > the player's
+ *  loadout (payload skin + igniter) art > placeholder. */
+export async function resolveAssets(config, hasFile, loadout = {}) {
+    if (!hasFile) return resolveAssetsSync(config, loadout);
+    const payloadSkin = findPayloadSkin(loadout.payloadSkin);
+    const igniter = findIgniterType(loadout.igniter);
     const payload = config.payload?.assets || {};
     const spawn = config.spawnAssets || {};
 
-    const pick = async (explicit, auto, placeholder) => {
+    const pick = async (explicit, skinFile, placeholder) => {
         if (explicit) return explicit;
-        if (await hasFile(auto)) return auto;
+        if (await hasFile(skinFile)) return skinFile;
         return placeholder;
     };
 
     return {
         payloadAssets: {
-            playing: await pick(payload.playing, `lvl${n}_bomb_panic.png`, PLACEHOLDER_PAYLOAD.playing),
-            win: await pick(payload.win, `lvl${n}_bomb_win.png`, PLACEHOLDER_PAYLOAD.win),
-            lose: await pick(payload.lose, `lvl${n}_bomb_fail.png`, PLACEHOLDER_PAYLOAD.lose),
+            playing: await pick(payload.playing, payloadSkin.assets.playing, PLACEHOLDER_PAYLOAD.playing),
+            win: await pick(payload.win, payloadSkin.assets.win, PLACEHOLDER_PAYLOAD.win),
+            lose: await pick(payload.lose, payloadSkin.assets.lose, PLACEHOLDER_PAYLOAD.lose),
         },
         spawnAssets: {
-            idle: await pick(spawn.idle, `lvl${n}_matchstick_idle.png`, PLACEHOLDER_SPAWN.idle),
-            ignition: await pick(spawn.ignition, `lvl${n}_matchstick_ignition.png`, PLACEHOLDER_SPAWN.ignition),
-            dud: await pick(spawn.dud, `lvl${n}_matchstick_dud.png`, PLACEHOLDER_SPAWN.dud),
+            idle: await pick(spawn.idle, igniter.assets.idle, PLACEHOLDER_SPAWN.idle),
+            ignition: await pick(spawn.ignition, igniter.assets.ignition, PLACEHOLDER_SPAWN.ignition),
+            dud: await pick(spawn.dud, igniter.assets.dud, PLACEHOLDER_SPAWN.dud),
         },
     };
 }
@@ -109,18 +117,25 @@ export function buildLevel(config, viewport, assets = null) {
     // Fuses + sparks.
     const fuses = [];
     const sparks = [];
+    const fuseIndexByStart = new Map((config.fuses || []).map((f, i) => [f.start, i]));
     (config.fuses || []).forEach((f, i) => {
         const start = nodeMap[f.start];
         const end = nodeMap[f.end];
         const intersection = intersectionMap[f.routeThrough] || { x: (start.x + end.x) / 2, y: (start.y + end.y) / 2 };
 
-        const fuse = createForcedIntersectionFuse(`f${i}`, start, end, intersection);
+        const fuse = createForcedIntersectionFuse(`f${i}`, start, end, intersection, f.bulge ?? 0);
         fuse.routeThrough = f.routeThrough || null;
         fuse.speed = f.speed ?? 0.001;
         fuse.delayFrames = f.delayFrames ?? 0;
         fuse.startNode = start;
         fuse.endNode = end;
         fuses.push(fuse);
+
+        // Chain ignition: this spark stays DARK (no timer) until its parent
+        // spark's progress crosses chain.at. The parent fuse is identified by
+        // the spawn id it starts from.
+        const parentIdx = f.chain ? fuseIndexByStart.get(f.chain.from) : -1;
+        const chain = f.chain && parentIdx >= 0 ? { fromFuseIndex: parentIdx, at: f.chain.at } : null;
 
         sparks.push({
             fuseIndex: i,
@@ -130,6 +145,8 @@ export function buildLevel(config, viewport, assets = null) {
             delay: fuse.delayFrames,
             ignitedAt: null,
             diedAt: null,
+            chain,
+            triggered: false,
         });
     });
 
@@ -229,6 +246,17 @@ export function validateLevel(config) {
         }
         if (typeof f.speed !== "number" || f.speed <= 0) {
             warnings.push(`level ${config.level_id}: fuse speed must be > 0 (got ${f.speed})`);
+        }
+        // A chained wick lights when its parent's burn crosses `at`. A bad
+        // `from` (or an `at` outside (0,1)) would leave the wick dark forever —
+        // active but never burning, so the level can neither be won nor lost.
+        if (f.chain) {
+            if (!config.fuses.some((x) => x.start === f.chain.from)) {
+                warnings.push(`level ${config.level_id}: fuse '${f.start}' chain.from '${f.chain.from}' unknown`);
+            }
+            if (typeof f.chain.at !== "number" || f.chain.at <= 0 || f.chain.at >= 1) {
+                warnings.push(`level ${config.level_id}: fuse '${f.start}' chain.at must be in (0,1) (got ${f.chain.at})`);
+            }
         }
     }
 

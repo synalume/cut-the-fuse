@@ -89,6 +89,7 @@ export class GameLoop {
             s.ignited = false;
             s.ignitedAt = null; // frameCount when this spark lit (drives reaction words)
             s.diedAt = null;    // frameCount when it was snuffed by a cut
+            s.triggered = false; // chained sparks start dark, lit by their parent
         }
 
         this.camera = this.level.camera
@@ -257,10 +258,10 @@ export class GameLoop {
     // ---- Star scoring ----------------------------------------------------------
 
     computeStars() {
-        // 3 stars: >= 1 snip left. 2 stars: used all snips. 1: any win.
+        // Every level now carries at least one spare snip, so 3 stars is always
+        // achievable: 3★ = finish with a snip left, 2★ = used the whole budget.
         if (this.snipsRemaining >= 1) return 3;
-        if (this.snipsUsed > 0) return 2;
-        return 1;
+        return 2;
     }
 
     // ---- State transitions ------------------------------------------------------
@@ -342,9 +343,25 @@ export class GameLoop {
 
         for (const spark of this.sparks) {
             if (!spark.active) continue;
+
+            // Chained spark: dark until its parent's burn crosses the trigger
+            // point. While dark it doesn't count toward the win condition.
+            // Triggering happens in the PARENT's pass (see below), so this check
+            // only handles the chain-break case: a parent that died before
+            // reaching the trigger point means this wick will never ignite.
+            if (spark.chain) {
+                const parent = this.sparks[spark.chain.fromFuseIndex];
+                if (!spark.triggered && !parent.active) {
+                    spark.active = false;
+                    spark.diedAt = this.frameCount;
+                    continue;
+                }
+                if (!spark.triggered) continue; // still waiting for the parent
+            }
+
             activeSparks++;
 
-            if (this.frameCount < spark.delay) continue;
+            if (this.frameCount < spark.delay && !spark.ignited) continue;
             if (!spark.ignited) {
                 spark.ignited = true;
                 spark.ignitedAt = this.frameCount;
@@ -355,6 +372,19 @@ export class GameLoop {
             const fuse = this.fuses[spark.fuseIndex];
             spark.progress += spark.speed;
             fuse.burntProgress = Math.max(fuse.burntProgress, spark.progress);
+
+            // When a parent's burn crosses a chained child's trigger point, the
+            // child lights IMMEDIATELY — even if the parent is cut this frame.
+            // Doing it in the parent's pass keeps triggering order-independent
+            // of spark array position.
+            for (const child of this.sparks) {
+                if (child.chain && child.chain.fromFuseIndex === spark.fuseIndex && !child.triggered && spark.progress >= child.chain.at) {
+                    child.triggered = true;
+                    child.ignited = true;
+                    child.ignitedAt = this.frameCount;
+                    if (this.audio) this.audio.play("ignite");
+                }
+            }
 
             const pos = getBezierXY(spark.progress, fuse.startNode, fuse.cp1, fuse.cp2, fuse.endNode);
 

@@ -132,19 +132,26 @@ function knobsForLevel(n) {
             });
         }
     }
+    // Chain ignition: from act 2's midpoint onward, some wicks light OTHER
+    // wicks mid-burn (parent reaches a trigger point → the child wick ignites).
+    // Cutting the parent before the trigger breaks the chain and saves a snip.
+    if (n >= 25 && n <= 34) k.chains = 1;
+    else if (n >= 35) k.chains = relief ? 1 : 2;
+    // Partial coverage (some fuses route straight, no chokepoint) — pattern
+    // variety that stops every board from converging through the middle.
+    if (n >= 34 && n <= 37) k.partial = true;
+    else if (act === 3 && relief) k.partial = true;
     return k;
 }
 
 /**
  * Cut slack per level — how many mistakes the player can afford.
  * Snips = minimum cuts required by the geometry + slack.
- * Slack falls across the ladder: teach (2) -> ramp (1) -> mastery (0).
+ * Every level keeps >= 1 spare snip so the 3-star goal ("finish with a snip
+ * left") is always achievable; teaching levels get 2.
  */
 function slackForLevel(n) {
-    if (n <= 3) return 2;
-    if (n <= 15) return 1;
-    if (n <= 24) return 1;
-    return 0;
+    return n <= 3 ? 2 : 1;
 }
 
 // ---- placement --------------------------------------------------------------
@@ -188,7 +195,12 @@ function pick(rng, arr) {
 
 function lookForLevel(n, k, seedOffset = 0, salt = 0) {
     const rng = makeRng(9000 + n * 577 + seedOffset * 104729 + salt * 31337);
-    const teaching = n <= 10; // keep early levels pedagogically simple
+    // `teaching` locks the difficulty FEEL (delay rhythm + burn pace) simple for
+    // act 1. `visualTeaching` only forces the plain sunburst for the very first
+    // single-fuse levels — from L4 on the maze ARRANGEMENT (distribution,
+    // radius tiers, curve shape) varies so no two levels read the same.
+    const teaching = n <= 10;
+    const visualTeaching = n <= 3;
     const sharedSingle = k.share && k.chokepoints === 1;
     // Narrow fan for single-shared-chokepoint levels (spawns must stay on one
     // side of the bomb for the shared cut to stay fold-free); wide otherwise.
@@ -197,19 +209,22 @@ function lookForLevel(n, k, seedOffset = 0, salt = 0) {
         : Math.round(170 + rng() * 140); // 170-310°
     return {
         fanDeg,
-        distPattern: teaching ? "uniform" : pick(rng, LOOK_DIST),
-        radiusProfile: teaching ? "even" : pick(rng, LOOK_RADIUS),
+        distPattern: visualTeaching ? "uniform" : pick(rng, LOOK_DIST),
+        radiusProfile: visualTeaching ? "even" : pick(rng, LOOK_RADIUS),
         cpDist: 0.72 + rng() * 0.45,
         routePattern: k.chokepoints >= 2 && !k.share ? pick(rng, LOOK_ROUTE) : "nearest",
         delayPattern: teaching || k.delay === "burst" ? "stagger" : pick(rng, LOOK_DELAY),
         speedPattern: teaching ? "even" : pick(rng, LOOK_SPEED),
+        // Curve shape: flat (classic parabola) is weighted so most arcs stay
+        // subtle; arc bows every wick one way; weave alternates per wick.
+        curvePattern: visualTeaching ? "flat" : pick(rng, ["flat", "flat", "arc", "weave"]),
     };
 }
 
 /** Compact fingerprint of a look, used to guarantee adjacent levels differ. */
 function lookSignature(look) {
     const bucket = Math.round(look.fanDeg / 40);
-    return `${look.distPattern}|${look.radiusProfile}|${bucket}|${look.routePattern}|${look.delayPattern}|${look.speedPattern}`;
+    return `${look.distPattern}|${look.radiusProfile}|${bucket}|${look.routePattern}|${look.delayPattern}|${look.speedPattern}|${look.curvePattern}`;
 }
 
 /**
@@ -460,6 +475,21 @@ const PLACEMENTS = {
         }
         return { payload, spawns, intersections };
     },
+
+    rings(n, k, rng, look) {
+        // Concentric tiers: spawns alternate between an outer and inner ring,
+        // chokepoints sit on an intermediate ring. Reads as a mini-maze rather
+        // than a sunburst — no two wicks look like they meet at the same point.
+        const payload = { id: PAYLOAD_ID, x: 0, y: 0 };
+        const angles = spawnAngles(k.spawns, look, rng);
+        const spawns = angles.map((deg, i) => {
+            const a = (deg * Math.PI) / 180;
+            const ring = (i % 2 === 0 ? 1 : 0.72) * (300 + rng() * 55);
+            return { id: `s${i + 1}`, x: Math.round(Math.cos(a) * ring), y: Math.round(Math.sin(a) * ring) };
+        });
+        const intersections = chokepointsBetween(k, rng, Math.min(...angles), look.fanDeg, 205 * look.cpDist);
+        return { payload, spawns, intersections };
+    },
 };
 
 // Chokepoints must stay clearly OUTSIDE the payload's VISIBLE art. The banana
@@ -467,6 +497,13 @@ const PLACEMENTS = {
 // targetHeight 150 → visible ~91x135 world px (half-width ~46, half-height ~68).
 // 150px keeps a clear run of wick between the bend and the banana.
 const PAYLOAD_CLEARANCE = 150;
+
+// Chokepoints may never drift absurdly far from the payload: the fit camera
+// bounds the whole level to the viewport, so an outlying chokepoint (a relaxed
+// hairpin can wander to 700-1200+ px) shrinks the entire puzzle on screen —
+// on mobile portrait it falls to the zoom floor and the wicks become tiny.
+// Spawns sit at radius ~300-450, so anything past 480 is a drift artifact.
+const MAX_CP_DISTANCE = 480;
 
 // Relaxation target (good-looking, well-balanced arcs).
 const HAIRPIN_MARGIN = 0.08; // u pushed toward [margin, 1-margin]
@@ -626,6 +663,14 @@ function validatePlacement({ payload, spawns, intersections, fuses }) {
     // Chokepoints must sit clear of the payload's visible art.
     for (const c of intersections) {
         if (Math.hypot(c.x - payload.x, c.y - payload.y) < PAYLOAD_CLEARANCE) return { ok: false, reason: "chokepoint under payload" };
+        if (Math.hypot(c.x - payload.x, c.y - payload.y) > MAX_CP_DISTANCE) return { ok: false, reason: "chokepoint too far from payload" };
+    }
+    // Chokepoints must not sit on top of a spawn (the wick would be invisible
+    // and the cut pointless) — especially with concentric "rings" layouts.
+    for (const c of intersections) {
+        for (const s of spawns) {
+            if (Math.hypot(c.x - s.x, c.y - s.y) < 60) return { ok: false, reason: "chokepoint too close to a spawn" };
+        }
     }
     // Every cut point (chokepoint or direct-fuse midpoint) must be separately placeable.
     const pts = intersections.slice();
@@ -646,13 +691,17 @@ function validatePlacement({ payload, spawns, intersections, fuses }) {
  *  (hub/offset/train) — in split/weave the spawns flank the bomb, so no single
  *  point can sit fold-free between every spawn and the bomb. */
 function styleForLevel(n, k) {
-    if (n <= 3) return "hub"; // teach swipe-to-cut on the familiar sunburst
+    if (n <= 1) return "hub"; // the swipe tutorial keeps the familiar sunburst
     const act = Math.ceil(n / 20);
+    // Single-fuse practice (L2-L3) and single-shared-chokepoint levels keep the
+    // one-sided pools (spawns must sit on one side of the bomb); everything else
+    // draws from the full archetype set.
+    const simple = n <= 3;
     const sharedSingle = k.share && k.chokepoints === 1;
-    const pool = sharedSingle
+    const pool = simple || sharedSingle
         ? ["hub", "offset", "train"]
         : act >= 2
-            ? ["hub", "offset", "train", "split", "weave"]
+            ? ["hub", "offset", "train", "split", "weave", "rings"]
             : ["hub", "offset", "train", "split"];
     const rng = makeRng(2000 + n * 911);
     let idx = Math.floor(rng() * pool.length);
@@ -716,14 +765,52 @@ function placeLevel(n, k, seedOffset = 0, salt = 0) {
     // Fuses: route spawns through chokepoints (shared vs grouped vs partial).
     const fuses = spawns.map((s, i) => {
         const routeThrough = routeFor(i, s, k, look, intersections, rng);
-        return {
+        const f = {
             start: s.id,
             ...(routeThrough ? { routeThrough } : {}),
             end: PAYLOAD_ID,
             speed: speedFor(k, i, look, rng),
             delayFrames: delayFor(k, i, k.spawns, look, rng),
         };
+        // Curve shape variety: split control points bow the arc without moving
+        // the chokepoint pass-through (see createForcedIntersectionFuse).
+        const curve = look.curvePattern || "flat";
+        f.bulge = curve === "flat" ? 0 : curve === "arc" ? Math.round((0.06 + rng() * 0.05) * 1000) / 1000 : i % 2 === 0 ? 0.1 : -0.1;
+        return f;
     });
+
+    // Chain ignition: pair the earliest-burning fuses (parents) with the
+    // latest (children). A child's wick stays DARK until its parent's spark
+    // crosses the trigger point (`at`).
+    //
+    // `at` sits BEFORE the parent's cut target (chokepoint or direct midpoint,
+    // both at t=0.5), so the child lights BEFORE a normal cut on the parent can
+    // stop it — the chain actually fires and the child is a real second threat
+    // that needs its own cut. To PREVENT the child the player must cut the
+    // parent EARLY (before the trigger), which saves that snip. (Trigger points
+    // downstream of the cut made every chain trivially breakable by the normal
+    // chokepoint cut — the child never ignited and whole sections of a level
+    // became pointless, which read as an "early win".)
+    const nChains = Math.min(k.chains || 0, Math.max(0, Math.floor(k.spawns / 2) - 1));
+    if (nChains > 0) {
+        const ordered = fuses
+            .map((f, i) => ({ f, i }))
+            .sort((a, b) => a.f.delayFrames - b.f.delayFrames || a.i - b.i);
+        for (let c = 0; c < nChains; c++) {
+            const parent = ordered[c];
+            const child = ordered[ordered.length - 1 - c];
+            if (parent.i === child.i) continue;
+            const at = Math.round((0.3 + rng() * 0.14) * 1000) / 1000; // 0.30–0.44, before t=0.5
+            child.f.chain = { from: parent.f.start, at };
+            child.f.delayFrames = 99999; // no timer — lit by the parent's burn
+            // If the child would share its parent's cut point (same chokepoint),
+            // one snip would handle both and the chain would be decorative —
+            // make it a direct fuse so it demands its own cut.
+            if (parent.f.routeThrough && child.f.routeThrough === parent.f.routeThrough) {
+                delete child.f.routeThrough;
+            }
+        }
+    }
 
     return { payload, spawns, intersections, fuses, k, style, look };
 }
@@ -799,6 +886,12 @@ function buildLevels() {
                 text: "Every fuse passes through the same point. One well-placed cut snips them all!",
                 focus: "intersection",
                 highlight: "cut1",
+            };
+        } else if (n === 25) {
+            level.tutorial = {
+                text: "Some wicks light other wicks mid-burn! Snip the first fuse EARLY to stop it from lighting the next one — or be ready to cut the new wick it lights.",
+                focus: "spawn",
+                highlight: "s1",
             };
         }
         levels.push(level);

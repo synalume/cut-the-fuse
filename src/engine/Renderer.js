@@ -397,6 +397,11 @@ export class Renderer {
         let scaleY = 1;
         let rot = 0;
         let dy = 0;
+        // The payload faces the majority of its matchsticks — when the bomb is
+        // pushed off-center (offset/train layouts) it should look at the spawns.
+        // Art is drawn facing +x, so flip when the spawn mass sits to the left.
+        const spawns = game.nodes.filter((n) => n.type === "spawn");
+        const flipX = spawns.length ? (spawns.reduce((s, n) => s + n.x, 0) / spawns.length < node.x ? -1 : 1) : 1;
 
         if (game.gameState === "playing") {
             rot = Math.sin(game.frameCount * 0.1) * 0.05;
@@ -417,7 +422,7 @@ export class Renderer {
         }
 
         ctx.rotate(rot);
-        ctx.scale(scaleX, scaleY);
+        ctx.scale(scaleX * flipX, scaleY);
         ctx.translate(0, dy);
 
         const targetHeight = 200;
@@ -590,15 +595,22 @@ export class Renderer {
         let src = assets.idle;
         if (game.gameState === "won" || (spark && !spark.active && spark.progress > 0)) {
             src = assets.dud;
-        } else if (spark && spark.active && game.frameCount >= spark.delay) {
+        } else if (spark && spark.active && spark.ignited) {
             src = assets.ignition;
         }
 
         const img = this._img(ASSET_PREFIX + src);
         if (!img) return;
 
+        // Every matchstick faces the level's center line: art is drawn facing
+        // +x, so spawns on the LEFT of the payload keep facing right (toward
+        // center) and spawns on the RIGHT flip to face left.
+        const payloadNode = game.nodes.find((n) => n.type === "payload");
+        const flip = payloadNode ? node.x > payloadNode.x : false;
+
         ctx.save();
         ctx.translate(node.x, node.y);
+        ctx.scale(flip ? -1 : 1, 1);
         if (game.gameState === "playing") ctx.rotate(Math.sin(game.frameCount * 0.05 + node.id.length) * 0.1);
 
         const targetHeight = 80;
@@ -633,8 +645,7 @@ export class Renderer {
 
         // Sparks themselves.
         for (const spark of game.sparks) {
-            if (!spark.active) continue;
-            if (game.frameCount < spark.delay) continue;
+            if (!spark.active || !spark.ignited) continue;
             const fuse = game.fuses[spark.fuseIndex];
             const pos = getBezierXY(spark.progress, fuse.startNode, fuse.cp1, fuse.cp2, fuse.endNode);
             this._drawRetroSpark(pos.x, pos.y, game.frameCount);

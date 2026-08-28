@@ -7,8 +7,10 @@ const DEFAULT_SAVE = {
     stars: {}, // levelId -> best stars (1-3)
     unlockedLevel: 1,
     starBank: 0,
-    skins: {}, // skinId -> true (unlocked)
+    skins: {}, // payload skinId -> true (unlocked)
     selectedSkin: null,
+    igniters: {}, // igniter typeId -> true (unlocked)
+    selectedIgniter: null,
 };
 
 export class SaveManager {
@@ -103,5 +105,29 @@ export class SaveManager {
 
     getUnlockedSkins() {
         return Object.keys(this.data.skins);
+    }
+
+    // ---- igniter types -----------------------------------------------------
+
+    isIgniterUnlocked(igniterId) {
+        return !!this.data.igniters[igniterId];
+    }
+
+    unlockIgniter(igniterId) {
+        this.data.igniters[igniterId] = true;
+        this._save();
+    }
+
+    getSelectedIgniter() {
+        return this.data.selectedIgniter;
+    }
+
+    setSelectedIgniter(igniterId) {
+        this.data.selectedIgniter = igniterId;
+        this._save();
+    }
+
+    getUnlockedIgniters() {
+        return Object.keys(this.data.igniters);
     }
 }

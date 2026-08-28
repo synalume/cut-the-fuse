@@ -101,26 +101,73 @@ export class Platform {
 
     /** Rewarded continue (retry a failed level). Grants only on success. */
     rewardedContinue(next) {
-        const go = typeof next === "function" ? next : () => {};
+        this.showRewarded("continue").then((ok) => next(ok));
+    }
+
+    /** Generic rewarded ad (skin unlocks, continues). Resolves true ONLY when
+     *  the player is granted the reward. Falls back to a free grant when no ad
+     *  platform is wired (local dev / plain portal build). */
+    async showRewarded(placement = "reward") {
+        const pause = () => { this.gameplayStop(); this.adOpen = true; };
+        const resume = () => { this.adOpen = false; this.gameplayStart(); };
+
         if (IN_POKI && typeof PokiSDK !== "undefined") {
-            this.gameplayStop();
-            this.adOpen = true;
-            PokiSDK.rewardedBreak()
-                .then((res) => { this.adOpen = false; go(!!res?.success); })
-                .catch(() => { this.adOpen = false; go(false); });
-        } else if (IN_PLAYGAMA && typeof bridge !== "undefined" && bridge.ads) {
-            this.adOpen = true;
+            pause();
             try {
-                bridge.ads.showRewarded()
-                    .then((res) => { this.adOpen = false; go(!!res?.result); })
-                    .catch(() => { this.adOpen = false; go(false); });
+                const res = await PokiSDK.rewardedBreak();
+                resume();
+                return !!res?.success;
             } catch {
-                this.adOpen = false;
-                go(true); // dev/portal fallback: no ad platform wired
+                resume();
+                return false;
             }
-        } else {
-            go(true); // local dev / portal: free continue
         }
+
+        if (IN_PLAYGAMA && typeof bridge !== "undefined") {
+            // v2 advertisement module: event-driven state machine. The SDK may
+            // fire 'rewarded' once; settle on the first terminal state.
+            if (bridge.advertisement?.showRewarded) {
+                pause();
+                return await new Promise((resolve) => {
+                    let settled = false;
+                    let off = null;
+                    const finish = (ok) => {
+                        if (settled) return;
+                        settled = true;
+                        if (typeof off === "function") off();
+                        resume();
+                        resolve(ok);
+                    };
+                    const onState = (state) => {
+                        if (state === "rewarded") finish(true);
+                        else if (state === "closed" || state === "failed") finish(false);
+                    };
+                    try {
+                        if (typeof bridge.advertisement.on === "function") {
+                            off = bridge.advertisement.on("rewarded_state_changed", onState);
+                        }
+                        bridge.advertisement.showRewarded(placement);
+                        setTimeout(() => finish(false), 60000); // never hang the reward flow
+                    } catch {
+                        finish(false);
+                    }
+                });
+            }
+            // v1 ads module: promise-based.
+            if (bridge.ads?.showRewarded) {
+                pause();
+                try {
+                    const res = await bridge.ads.showRewarded();
+                    resume();
+                    return !!res?.result;
+                } catch {
+                    resume();
+                    return false;
+                }
+            }
+        }
+
+        return true; // local dev / portal: free reward
     }
 
     // ---- pause / mute (host veto) ----------------------------------------------

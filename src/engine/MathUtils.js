@@ -62,18 +62,42 @@ export function getClosestPointOnBezier(target, p0, cp1, cp2, p3, samples = 50) 
  * curve lands on the chokepoint at t=0.5.
  *   B(0.5) = (p0 + 3*cp + 3*cp + p3) / 8 = (p0 + p3 + 6*cp) / 8
  *   => cp = (intersection - (p0 + p3) * 0.125) / 0.75
+ *
+ * `bulge` (default 0) splits the control points perpendicular to the chord
+ * (cp1 = M + perp·d, cp2 = M - perp·d) so the curve still passes exactly
+ * through the intersection at t=0.5 — B(0.5) depends only on (cp1+cp2)/2 = M —
+ * but the arc's SHAPE changes (one-sided bow / alternating weave). Perpendicular
+ * offsets keep both control points on the same fold-free slab as M.
  */
-export function createForcedIntersectionFuse(id, startNode, endNode, intersectionPt) {
+export function createForcedIntersectionFuse(id, startNode, endNode, intersectionPt, bulge = 0) {
     const p0 = startNode;
     const p3 = endNode;
-    const cpX = (intersectionPt.x - 0.125 * (p0.x + p3.x)) / 0.75;
-    const cpY = (intersectionPt.y - 0.125 * (p0.y + p3.y)) / 0.75;
+    const mX = (intersectionPt.x - 0.125 * (p0.x + p3.x)) / 0.75;
+    const mY = (intersectionPt.y - 0.125 * (p0.y + p3.y)) / 0.75;
+
+    if (!bulge) {
+        return {
+            id,
+            start: startNode.id,
+            end: endNode.id,
+            cp1: { x: mX, y: mY },
+            cp2: { x: mX, y: mY },
+            burntProgress: 0,
+            intersectionPt: { x: intersectionPt.x, y: intersectionPt.y },
+        };
+    }
+
+    const wx = p3.x - p0.x, wy = p3.y - p0.y;
+    const L = Math.hypot(wx, wy) || 1;
+    const d = bulge * L;
+    // Unit perpendicular to the chord.
+    const perpX = -wy / L, perpY = wx / L;
     return {
         id,
         start: startNode.id,
         end: endNode.id,
-        cp1: { x: cpX, y: cpY },
-        cp2: { x: cpX, y: cpY },
+        cp1: { x: mX + perpX * d, y: mY + perpY * d },
+        cp2: { x: mX - perpX * d, y: mY - perpY * d },
         burntProgress: 0,
         intersectionPt: { x: intersectionPt.x, y: intersectionPt.y },
     };

@@ -7,6 +7,7 @@ import { SaveManager } from "./engine/SaveManager.js";
 import { Analytics } from "./engine/Analytics.js";
 import { Platform } from "./engine/Platform.js";
 import { buildLevel, resolveAssets } from "./engine/LevelManager.js";
+import { PAYLOAD_SKINS, IGNITER_TYPES, isSkinOwned } from "./data/skins.js";
 
 // Level-select gating. During playtest every level is pickable; flip to true
 // for release to enforce linear unlock (must beat N to play N+1).
@@ -61,9 +62,10 @@ let selectorPaused = false; // true when the level selector paused a live game
 async function loadLevel(index) {
     levelIndex = index;
     const config = levels[index];
-    // Live resolution: use the level's own art when it exists, otherwise the
-    // placeholder set (banana bomb + matchstick) for every level.
-    const assets = await resolveAssets(config, renderer.hasAsset.bind(renderer));
+    // Live resolution: the level's own art when pinned, else the player's
+    // loadout (payload skin + igniter), else the placeholder set.
+    const loadout = { payloadSkin: save.getSelectedSkin(), igniter: save.getSelectedIgniter() };
+    const assets = await resolveAssets(config, renderer.hasAsset.bind(renderer), loadout);
     const level = buildLevel(config, { width: renderer.width, height: renderer.height }, assets);
 
     // Load this level's assets (placeholder fallback handled by resolveAssets).
@@ -223,6 +225,10 @@ game.onLevelComplete = (levelId, stars, won) => {
     if (won) {
         save.setStars(levelId, stars);
         save.setUnlockedLevel(Math.min(levels.length, levelId + 1));
+        // Progression unlocks: skins whose level threshold was just crossed.
+        if (unlockProgressRewards() > 0) {
+            starDisplay.classList.add("new-unlock");
+        }
         updateUi();
         showStars(stars);
         modalWin.style.display = "block";
@@ -314,13 +320,26 @@ window.addEventListener("game:escape", () => {
     }
 });
 
-// ---- skin screen (star bank -> bomb/matchstick swaps) --------------------------------
+// ---- armory (payload skins + igniter types) ------------------------------------
 
-const SKIN_COST = { bomb: 0, matchstick: 0 }; // v1: skins cost 0 stars, unlock by completion
+let armoryTab = "payload"; // "payload" | "igniter"
+
+const ARMORY_LISTS = { payload: PAYLOAD_SKINS, igniter: IGNITER_TYPES };
+const isOwned = (kind, id) => (kind === "payload" ? save.isSkinUnlocked(id) : save.isIgniterUnlocked(id));
+// A null selection means "the starter" — the first item of the list.
+const isSelected = (kind, id) => {
+    const sel = kind === "payload" ? save.getSelectedSkin() : save.getSelectedIgniter();
+    if (sel == null) return id === ARMORY_LISTS[kind][0].id;
+    return sel === id;
+};
+const selectItem = (kind, id) => (kind === "payload" ? save.setSelectedSkin(id) : save.setSelectedIgniter(id));
+const fallbackFrame = (kind) => (kind === "payload" ? "lvl1_banana_panic.png" : "lvl1_matchstick_idle.png");
+
 starDisplay.style.cursor = "pointer";
 starDisplay.title = "Armory";
 starDisplay.addEventListener("click", () => {
-    renderSkins();
+    starDisplay.classList.remove("new-unlock");
+    renderArmory();
     modalSkins.style.display = "block";
 });
 
@@ -328,46 +347,118 @@ $("btn-skins-close").addEventListener("click", () => {
     modalSkins.style.display = "none";
 });
 
-function renderSkins() {
+$("tab-payloads").addEventListener("click", () => {
+    armoryTab = "payload";
+    renderArmory();
+});
+$("tab-igniters").addEventListener("click", () => {
+    armoryTab = "igniter";
+    renderArmory();
+});
+
+/** Apply a loadout change immediately when the level hasn't started (no snip
+ *  spent, no spark burning); otherwise it lands on the next level load. */
+function applyLoadout() {
+    const lvl = game.level;
+    if (!lvl) return;
+    if (game.snipsRemaining < (lvl.snipsAllowed ?? 0)) return; // mid-level
+    if (game.sparks?.some((s) => s.progress > 0 || s.diedAt != null)) return;
+    loadLevel(levelIndex);
+}
+
+function renderArmory() {
+    $("tab-payloads").classList.toggle("active", armoryTab === "payload");
+    $("tab-igniters").classList.toggle("active", armoryTab === "igniter");
     const grid = $("skin-grid");
     grid.innerHTML = "";
-    const skins = [
-        { id: "banana", label: "Bananabomb", file: "lvl1_banana_panic.png", stars: 0 },
-        { id: "dynamite", label: "Dynamite", file: "lvl1_banana_win.png", stars: 25 },
-        { id: "orb", label: "Mystery Orb", file: "lvl1_banana_fail.png", stars: 50 },
-    ];
-    for (const skin of skins) {
+    const reached = save.getUnlockedLevel();
+
+    for (const item of ARMORY_LISTS[armoryTab]) {
         const card = document.createElement("div");
         card.className = "skin-card";
-        const unlocked = skin.stars === 0 || save.isSkinUnlocked(skin.id);
-        card.classList.toggle("locked", !unlocked);
-        card.classList.toggle("selected", save.getSelectedSkin() === skin.id);
+        const owned = isSkinOwned(item, reached, isOwned(armoryTab, item.id));
+        const selected = isSelected(armoryTab, item.id);
+        card.classList.toggle("locked", !owned);
+        card.classList.toggle("selected", owned && selected);
 
         const img = document.createElement("img");
-        img.src = `assets/${skin.file}`;
-        const label = document.createElement("div");
-        label.textContent = skin.label;
-        const cost = document.createElement("div");
-        cost.className = "cost";
-        cost.textContent = unlocked ? (save.getSelectedSkin() === skin.id ? "SELECTED" : "Owned") : `★ ${skin.stars}`;
+        const firstFrame = item.assets.playing || item.assets.idle;
+        img.src = `assets/${firstFrame}`;
+        img.onerror = () => { img.onerror = null; img.src = `assets/${fallbackFrame(armoryTab)}`; };
+        img.alt = item.name;
 
-        card.append(img, label, cost);
-        card.addEventListener("click", () => {
-            if (!unlocked) {
-                if (save.getStarBank() >= skin.stars) {
-                    save.spendStars(skin.stars);
-                    save.unlockSkin(skin.id);
-                    save.setSelectedSkin(skin.id);
-                    updateUi();
-                    renderSkins();
-                }
-                return;
+        const name = document.createElement("div");
+        name.className = "skin-name";
+        name.textContent = item.name;
+        const blurb = document.createElement("div");
+        blurb.className = "blurb";
+        blurb.textContent = item.blurb;
+
+        const footer = document.createElement("div");
+        if (owned) {
+            const tag = document.createElement("div");
+            tag.className = "selected-tag";
+            tag.textContent = selected ? "Selected" : "Select";
+            footer.appendChild(tag);
+        } else {
+            const unlock = document.createElement("div");
+            unlock.className = "unlock";
+            unlock.textContent = item.unlock?.ad ? `Or reach Level ${item.unlock.level}` : `Reach Level ${item.unlock.level}`;
+            footer.appendChild(unlock);
+            if (item.unlock?.ad) {
+                const adBtn = document.createElement("button");
+                adBtn.className = "watch-ad";
+                adBtn.textContent = "Watch Ad";
+                adBtn.addEventListener("click", async (e) => {
+                    e.stopPropagation();
+                    adBtn.disabled = true;
+                    adBtn.textContent = "Loading...";
+                    const ok = await platform.showRewarded(`unlock_${armoryTab}_${item.id}`);
+                    if (ok) {
+                        if (armoryTab === "payload") save.unlockSkin(item.id);
+                        else save.unlockIgniter(item.id);
+                        selectItem(armoryTab, item.id);
+                        updateUi();
+                        renderArmory();
+                        applyLoadout();
+                    } else {
+                        adBtn.disabled = false;
+                        adBtn.textContent = "Watch Ad";
+                    }
+                });
+                footer.appendChild(adBtn);
             }
-            save.setSelectedSkin(skin.id);
-            renderSkins();
+        }
+
+        card.append(img, name, blurb, footer);
+        card.addEventListener("click", () => {
+            if (!owned) return;
+            selectItem(armoryTab, item.id);
+            renderArmory();
+            applyLoadout();
         });
         grid.appendChild(card);
     }
+}
+
+/** Unlock any payload skins / igniter types whose level threshold the player
+ *  has now reached. Returns how many were newly unlocked. */
+function unlockProgressRewards() {
+    const reached = save.getUnlockedLevel();
+    let count = 0;
+    for (const s of PAYLOAD_SKINS) {
+        if (s.unlock?.level && reached >= s.unlock.level && !save.isSkinUnlocked(s.id)) {
+            save.unlockSkin(s.id);
+            count++;
+        }
+    }
+    for (const s of IGNITER_TYPES) {
+        if (s.unlock?.level && reached >= s.unlock.level && !save.isIgniterUnlocked(s.id)) {
+            save.unlockIgniter(s.id);
+            count++;
+        }
+    }
+    return count;
 }
 
 // ---- boot -----------------------------------------------------------------------------
