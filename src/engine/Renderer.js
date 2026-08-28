@@ -754,9 +754,9 @@ export class Renderer {
     }
 
     /** Level-1 onboarding: a red cut line across the wick shows where to snip,
-     *  and a hand (the UFO puzzle's pointer) slowly travels along the wick to
-     *  it, pointing at the line, holds a beat, then loops. Runs while the
-     *  tutorial is up and stops after the player makes their first cut. */
+     *  and a hand slides back and forth ALONG that line — the same direction as
+     *  the red line, i.e. across the wick — to demonstrate the cut motion. Runs
+     *  while the tutorial is up and stops after the player's first cut. */
     _drawTutorialDemo(game) {
         if (!game.tutorialActive) return;
         if (game.level?.level_id !== 1 || game.fuses.length < 1) return;
@@ -784,30 +784,36 @@ export class Renderer {
         ctx.stroke();
         ctx.restore();
 
-        // Hand: slow travel along the wick toward the cut line, pointing at it,
-        // hold at the line, then loop. No dash route — just the hand + target.
-        const u0 = 0.1;
-        const start = getBezierXY(u0, p0, fuse.cp1, fuse.cp2, p3);
-        const dir = { x: C.x - start.x, y: C.y - start.y };
-        const len = Math.hypot(dir.x, dir.y) || 1;
-        const tanDir = { x: dir.x / len, y: dir.y / len };
+        // Hand: slide along the cut line, across the wick, then back. The finger
+        // points in the direction of travel the whole way (the snip motion).
+        const swipe = 24;   // fingertip travel distance along the line
+        const travel = 70;  // frames across the wick
+        const pause = 50;   // hold at each end
+        const halfCycle = travel + pause;
+        const phase = t % (2 * halfCycle);
 
-        const travel = 110; // frames to reach the line (~1.8s)
-        const pause = 130;  // hold the fingertip on the line
-        const cycle = travel + pause;
-        const ct = t % cycle;
-        let u = ct / travel;
-        if (u > 1) u = 1;
-        const ease = 1 - Math.pow(1 - u, 2); // slow-out as it nears the line
-        const pos = {
-            x: start.x + dir.x * ease,
-            y: start.y + dir.y * ease,
-        };
+        let off, tanDir;
+        if (phase < travel) {
+            const u = phase / travel;
+            off = -swipe + 2 * swipe * u;
+            tanDir = perp;
+        } else if (phase < halfCycle) {
+            off = swipe;             // hold the far side
+            tanDir = perp;
+        } else if (phase < halfCycle + travel) {
+            const u = (phase - halfCycle) / travel;
+            off = swipe - 2 * swipe * u;
+            tanDir = { x: -perp.x, y: -perp.y };
+        } else {
+            off = -swipe;            // hold the near side
+            tanDir = { x: -perp.x, y: -perp.y };
+        }
+        const pos = { x: C.x + perp.x * off, y: C.y + perp.y * off };
 
         // Fade in as it appears and fade out just before looping back.
         let alpha = 1;
-        if (ct < 14) alpha = ct / 14;
-        if (ct > cycle - 16) alpha = Math.max(0, (cycle - ct) / 16);
+        if (t < 14) alpha = t / 14;
+        if (t % (2 * halfCycle) > 2 * halfCycle - 16) alpha = Math.max(0, (2 * halfCycle - (t % (2 * halfCycle))) / 16);
         this._drawHandPointer(ctx, pos.x, pos.y, tanDir, alpha);
     }
 
