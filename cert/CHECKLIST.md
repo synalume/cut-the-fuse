@@ -32,3 +32,20 @@ YouTube Playables / MC Play upload. Build: `./cert/make-bundle.sh` → `cert/out
 
 - Big Fluff cert checklist: [`../big-fluff/cert/CHECKLIST.md`](../big-fluff/cert/CHECKLIST.md)
 - Mediacube and Playables policies re-checked before submit
+
+## Portal SDK compliance (wired)
+
+Verified by `tools/smoke/verify-portal.mjs` (mock Playgama Bridge v2 + mock Playables SDK):
+
+- **Playgama Bridge v2** — `bridge.initialize()` awaited before any SDK call;
+  `bridge.platform.sendMessage("game_ready")` on the first playable frame;
+  `PAUSE_STATE_CHANGED` + `AUDIO_STATE_CHANGED` subscribed (audio muted on
+  host mute); `bridge.platform.language` read for localization; saves go
+  through `bridge.storage.get/set` (never localStorage); interstitial shown at
+  level clear via `bridge.advertisement.showInterstitial("level_complete")`.
+- **YouTube Playables** — `ytgame.firstFrameReady()` precedes `ytgame.gameReady()`;
+  `ytgame.onPause/onResume` replace the Page Visibility API; saves go through
+  `ytgame.loadData/saveData`.
+
+> Bundle-size: cert zip is ~11 MiB (dead root-level UI PNGs removed — the game
+> only references `assets/ui/*`). Well under the Playables 30 MiB initial cap.

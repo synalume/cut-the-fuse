@@ -728,6 +728,13 @@ async function boot() {
         return;
     }
 
+    // Hydrate progress from the platform backend (Playgama bridge.storage /
+    // YouTube Playables saveData) before the menu shows, so a returning player
+    // sees their real star bank and unlocked level. No-op on plain builds.
+    // Bridge storage must wait for Bridge initialization, so gate on it first.
+    await platform.ready();
+    await save.init();
+
     // Respect saved progress: the story resumes at the first level not yet
     // cleared (a fully-cleared save starts a new run at Level 1).
     levelIndex = storyStartIndex();
@@ -764,9 +771,19 @@ async function boot() {
     });
 
     // Host pause (Playgama / Playables) freezes the loop even when visible.
-    document.addEventListener("visibilitychange", () => {
-        game.setPaused(document.hidden);
-    });
+    // YouTube Playables forbids the Page Visibility API — its onPause/onResume
+    // callbacks are the only legal pause signal there; everywhere else the
+    // visibilitychange listener (with the platform's save flush) is the norm.
+    if (platform.isPlayables) {
+        if (typeof ytgame !== "undefined") {
+            try { if (ytgame.onPause) ytgame.onPause(() => game.setPaused(true)); } catch { /* noop */ }
+            try { if (ytgame.onResume) ytgame.onResume(() => game.setPaused(false)); } catch { /* noop */ }
+        }
+    } else {
+        document.addEventListener("visibilitychange", () => {
+            game.setPaused(document.hidden);
+        });
+    }
 
     if (window.__CUT_THE_FUSE_POKI__) {
         // Poki records gameplay via a hidden capture canvas; keep the main canvas visible.

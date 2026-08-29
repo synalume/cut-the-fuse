@@ -17,7 +17,9 @@ export class Platform {
         this._pokiUiReady = false;
         this._pokiLoaded = false;
         this._bound = {};
-
+        this._bridgeReady = null; // resolves once Playgama Bridge is initialized
+        this._pendingAdNext = null; // level-transition callback to fire when an ad closes
+        this.language = "en"; // platform.language read after Bridge init
         this._boot();
     }
 
@@ -37,17 +39,71 @@ export class Platform {
             this._pokiBoot();
         }
         if (IN_PLAYABLES && typeof ytgame !== "undefined" && ytgame.gameReady) {
-            try { ytgame.gameReady(); } catch { /* noop */ }
+            // Readiness is signaled from loadingFinished() (firstFrameReady →
+            // gameReady) once the first playable frame exists; nothing to do at
+            // boot beyond grabbing the callbacks for pause/resume.
         }
         if (IN_PLAYGAMA) {
             window.addEventListener("message", (e) => this._onBridgeMessage(e));
             if (typeof bridge !== "undefined" && bridge.initialize) {
-                try { bridge.initialize(); } catch { /* noop */ }
+                try {
+                    this._bridgeReady = bridge.initialize()
+                        .then(() => {
+                            this._subscribePlaygamaEvents();
+                            this._applyPlaygamaAudioState();
+                        })
+                        .catch(() => { /* Bridge still usable via mocks */ });
+                } catch { /* noop */ }
             }
         }
-        document.addEventListener("visibilitychange", () => {
-            if (document.hidden) this.tabHidden();
-        });
+        // YouTube Playables forbids the Page Visibility API — its onPause /
+        // onResume callbacks (wired in main.js) replace this listener there.
+        if (!IN_PLAYABLES) {
+            document.addEventListener("visibilitychange", () => {
+                if (document.hidden) this.tabHidden();
+            });
+        }
+    }
+
+    /** Resolves once Playgama Bridge is initialized — Bridge SDK calls (storage,
+     *  ads, platform reads) must all wait for it. Resolves immediately on plain
+     *  builds and non-Playgama platforms. */
+    ready() {
+        return this._bridgeReady || Promise.resolve();
+    }
+
+    /** Bridge v2: await init, then wire pause + audio-state events (both are
+     *  moderation requirements — the game must never play sound in the
+     *  background) and record the platform language for localization. */
+    _subscribePlaygamaEvents() {
+        if (typeof bridge === "undefined" || !bridge.platform) return;
+        try { this.language = bridge.platform.language || this.language; } catch { /* noop */ }
+        try {
+            const on = bridge.platform.on?.bind(bridge.platform) || (() => {});
+            const pauseEvt = bridge.EVENT_NAME?.PAUSE_STATE_CHANGED || "pause_state_changed";
+            on(pauseEvt, (isPaused) => this.setPaused(!!isPaused, (p) => this._emit("pause", p)));
+            const audioEvt = bridge.EVENT_NAME?.AUDIO_STATE_CHANGED || "audio_state_changed";
+            on(audioEvt, (isEnabled) => this.audio?.setHostMuted?.(!isEnabled));
+            // Interstitial lifecycle: stop the game while the ad is open, then
+            // resume and continue the level-transition flow exactly when it
+            // closes (the showInterstitial promise settles the same moment).
+            const intEvt = bridge.EVENT_NAME?.INTERSTITIAL_STATE_CHANGED || "interstitial_state_changed";
+            on(intEvt, (state) => {
+                if (state === "opened") { this.gameplayStop(); this.adOpen = true; }
+                else if (state === "closed" || state === "failed") this._settleAd();
+            });
+        } catch { /* noop */ }
+    }
+
+    /** Bridge v2: apply the CURRENT host audio state on start (the event only
+     *  fires on later changes, so the initial value must be applied manually). */
+    _applyPlaygamaAudioState() {
+        if (typeof bridge === "undefined" || !bridge.platform) return;
+        try {
+            if (typeof bridge.platform.isAudioEnabled === "boolean") {
+                this.audio?.setHostMuted?.(!bridge.platform.isAudioEnabled);
+            }
+        } catch { /* noop */ }
     }
 
     // ---- Poki --------------------------------------------------------------
@@ -73,8 +129,20 @@ export class Platform {
     loadingFinished() {
         this._pokiUiReady = true;
         this._pokiMaybeLoaded();
-        if (IN_PLAYABLES && typeof ytgame !== "undefined" && ytgame.gameReady) {
-            try { ytgame.gameReady(); } catch { /* noop */ }
+        if (IN_PLAYABLES && typeof ytgame !== "undefined") {
+            // Playables lifecycle: firstFrameReady MUST precede gameReady —
+            // first signals frames are rendering, gameReady says the menu is
+            // interactable (the menu IS the first frame here; there's no
+            // separate loading screen).
+            try { if (ytgame.firstFrameReady) ytgame.firstFrameReady(); } catch { /* noop */ }
+            try { if (ytgame.gameReady) ytgame.gameReady(); } catch { /* noop */ }
+        }
+        if (IN_PLAYGAMA && typeof bridge !== "undefined" && bridge.platform?.sendMessage) {
+            // Playgama required message once the first playable frame is up —
+            // platforms use it to hide their loading screen + start analytics.
+            (this._bridgeReady || Promise.resolve()).then(() => {
+                try { bridge.platform.sendMessage("game_ready"); } catch { /* noop */ }
+            });
         }
     }
 
@@ -95,6 +163,21 @@ export class Platform {
     /** Ad at a natural break (results / level clear). */
     commercialBreak(next) {
         const go = typeof next === "function" ? next : () => {};
+        if (IN_PLAYGAMA && typeof bridge !== "undefined" && bridge.advertisement?.showInterstitial) {
+            (this._bridgeReady || Promise.resolve()).then(() => {
+                this.gameplayStop();
+                this.adOpen = true;
+                this._pendingAdNext = go;
+                try {
+                    // Settle on the promise OR the state event — whichever lands
+                    // first; _settleAd() is idempotent for the other.
+                    Promise.resolve(bridge.advertisement.showInterstitial("level_complete"))
+                        .then(() => this._settleAd())
+                        .catch(() => this._settleAd());
+                } catch { this._settleAd(); }
+            });
+            return;
+        }
         if (IN_POKI && typeof PokiSDK !== "undefined") {
             this.gameplayStop();
             this.adOpen = true;
@@ -104,6 +187,17 @@ export class Platform {
         } else {
             go();
         }
+    }
+
+    /** Resume after a Playgama interstitial closes; fires the level-transition
+     *  callback at most once. */
+    _settleAd() {
+        const next = this._pendingAdNext;
+        this._pendingAdNext = null;
+        if (!next) return;
+        this.adOpen = false;
+        this.gameplayStart();
+        next();
     }
 
     /** Rewarded continue (retry a failed level). Grants only on success. */
@@ -131,6 +225,8 @@ export class Platform {
         }
 
         if (IN_PLAYGAMA && typeof bridge !== "undefined") {
+            // Bridge init must resolve before any advertisement call.
+            await (this._bridgeReady || Promise.resolve());
             // v2 advertisement module: event-driven state machine. The SDK may
             // fire 'rewarded' once; settle on the first terminal state.
             if (bridge.advertisement?.showRewarded) {

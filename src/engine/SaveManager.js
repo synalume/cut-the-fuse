@@ -1,7 +1,11 @@
 // SaveManager.js — best stars per level, progress, star bank, skins, and the
 // daily-challenge streak.
 // Storage abstraction: localStorage locally, swappable to bridge.storage on
-// Playgama (wobble-run pattern). Save stays well under the 500 KB budget.
+// Playgama / ytgame.saveData on YouTube Playables. On those platforms the
+// SANCTIONED async backend is the source of truth (both portals forbid direct
+// localStorage) — the synchronous in-memory `data` is what the game reads, and
+// `init()` hydrates it from the platform before boot finishes. Saves are
+// fire-and-forget through the async backend with writes serialized in order.
 import { yesterdayOf } from "./dates.js";
 const KEY = "cut_the_fuse_save_v1";
 
@@ -25,11 +29,59 @@ const freshDefaults = () => ({
 
 export class SaveManager {
     constructor(storageImpl = null) {
-        this.impl = storageImpl; // { get, set } — Playgama bridge.storage if provided
+        this.impl = storageImpl; // { get, set } — test / alternate sync storage
+        this.async = this._detectAsyncBackend(); // platform storage (Playgama / Playables)
+        this._writeTail = null; // serialized async write chain (last write wins)
         this.data = this._load();
     }
 
+    /** Platform-sanctioned async storage, when the build runs inside a portal
+     *  that forbids direct localStorage (Playgama Bridge storage / YouTube
+     *  Playables saveData). Returns null on plain local / live-URL builds. */
+    _detectAsyncBackend() {
+        const hasWindow = typeof window !== "undefined";
+        const inPlaygama = hasWindow && !!window.__CUT_THE_FUSE_PLAYGAMA__;
+        if (inPlaygama && typeof bridge !== "undefined" && bridge.storage?.get && bridge.storage?.set) {
+            return {
+                name: "playgama",
+                load: async () => {
+                    const arr = await bridge.storage.get([KEY]);
+                    return (Array.isArray(arr) && typeof arr[0] === "string" && arr[0]) || null;
+                },
+                save: async (raw) => { await bridge.storage.set([KEY], [raw]); },
+            };
+        }
+        const inPlayables =
+            (hasWindow && !!window.__CUT_THE_FUSE_PLAYABLES__) ||
+            (typeof ytgame !== "undefined" && !!ytgame.IN_PLAYABLES_ENV);
+        if (inPlayables && typeof ytgame !== "undefined" && ytgame.loadData && ytgame.saveData) {
+            return {
+                name: "playables",
+                load: async () => {
+                    const raw = await ytgame.loadData();
+                    return typeof raw === "string" && raw ? raw : null;
+                },
+                save: async (raw) => { await ytgame.saveData(raw); },
+            };
+        }
+        return null;
+    }
+
+    /** Hydrate from the platform backend. MUST be awaited before gameplay so
+     *  the player's real progress shows (both portals also require awaiting
+     *  load before any save). No-op on plain builds. */
+    async init() {
+        if (!this.async) return;
+        try {
+            const raw = await this.async.load();
+            if (raw) this.data = { ...freshDefaults(), ...JSON.parse(raw) };
+        } catch { /* corrupt / unavailable -> keep defaults */ }
+    }
+
     _load() {
+        // Async platform backends are the source of truth — never read
+        // localStorage directly on them (portal moderation requirement).
+        if (this.async) return freshDefaults();
         try {
             if (this.impl && typeof this.impl.get === "function") {
                 const raw = this.impl.get(KEY);
@@ -44,7 +96,13 @@ export class SaveManager {
     _save() {
         try {
             const raw = JSON.stringify(this.data);
-            if (this.impl && typeof this.impl.set === "function") {
+            if (this.async) {
+                // Fire-and-forget through the platform backend, serialized so
+                // rapid saves keep order (each write ships the full snapshot).
+                this._writeTail = (this._writeTail || Promise.resolve())
+                    .then(() => this.async.save(raw))
+                    .catch(() => { /* platform save failed; keep the session copy */ });
+            } else if (this.impl && typeof this.impl.set === "function") {
                 this.impl.set(KEY, raw);
             } else {
                 localStorage.setItem(KEY, raw);
