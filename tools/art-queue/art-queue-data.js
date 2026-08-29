@@ -74,244 +74,244 @@ const ITEMS = [
     "subject": "Melo-Bomb: cute round watermelon with a dark green striped rind and a bundle of red TNT dynamite strapped to it with rope. FAIL state: mid-explosion, cracked sooty shell, dizzy spiral pie-cut eyes, smoke."
   },
   {
-    "id": "skin_tnt_playing",
-    "file": "skin_tnt_playing.png",
+    "id": "skin_duck_playing",
+    "file": "skin_duck_playing.png",
     "role": "playing",
     "cat": "bomb",
-    "group": "TNT Trouble",
+    "group": "Duck and Cover",
     "groupNote": "Unlocks at level 8",
     "template": "Payload",
-    "subject": "TNT Trouble: chubby red TNT dynamite stick with gold caps and a wooden plug, an extra bundle of red TNT dynamite strapped to it with rope. PANIC state: fuse lit with a live spark, sweating nervously, wide frightened pie-cut eyes, sweat drops flying, cheeks puffed."
+    "subject": "Duck and Cover: cute yellow rubber duck with an orange bill and a bundle of red TNT dynamite strapped to it with rope. PANIC state: fuse lit with a live spark, sweating nervously, wide frightened pie-cut eyes, sweat drops flying, cheeks puffed."
   },
   {
-    "id": "skin_tnt_win",
-    "file": "skin_tnt_win.png",
+    "id": "skin_duck_win",
+    "file": "skin_duck_win.png",
     "role": "win",
     "cat": "bomb",
-    "group": "TNT Trouble",
+    "group": "Duck and Cover",
     "groupNote": "Unlocks at level 8",
     "template": "Payload",
-    "subject": "TNT Trouble: chubby red TNT dynamite stick with gold caps and a wooden plug, an extra bundle of red TNT dynamite strapped to it with rope. WIN state: fuse extinguished, relieved happy pie-cut eyes, soft smile, a breath of relief."
+    "subject": "Duck and Cover: cute yellow rubber duck with an orange bill and a bundle of red TNT dynamite strapped to it with rope. WIN state: fuse extinguished, relieved happy pie-cut eyes, soft smile, a breath of relief."
   },
   {
-    "id": "skin_tnt_lose",
-    "file": "skin_tnt_lose.png",
+    "id": "skin_duck_lose",
+    "file": "skin_duck_lose.png",
     "role": "lose",
     "cat": "bomb",
-    "group": "TNT Trouble",
+    "group": "Duck and Cover",
     "groupNote": "Unlocks at level 8",
     "template": "Payload",
-    "subject": "TNT Trouble: chubby red TNT dynamite stick with gold caps and a wooden plug, an extra bundle of red TNT dynamite strapped to it with rope. FAIL state: mid-explosion, cracked sooty shell, dizzy spiral pie-cut eyes, smoke."
+    "subject": "Duck and Cover: cute yellow rubber duck with an orange bill and a bundle of red TNT dynamite strapped to it with rope. FAIL state: mid-explosion, cracked sooty shell, dizzy spiral pie-cut eyes, smoke."
   },
   {
-    "id": "skin_apple_playing",
-    "file": "skin_apple_playing.png",
+    "id": "skin_clock_playing",
+    "file": "skin_clock_playing.png",
     "role": "playing",
     "cat": "bomb",
-    "group": "Apple of Discord",
+    "group": "Wake-Up Call",
     "groupNote": "Unlocks at level 12 · or watch an ad",
     "template": "Payload",
-    "subject": "Apple of Discord: cute glossy red apple with a small leaf on top and a bundle of red TNT dynamite strapped to it with rope. PANIC state: fuse lit with a live spark, sweating nervously, wide frightened pie-cut eyes, sweat drops flying, cheeks puffed."
+    "subject": "Wake-Up Call: cute round retro alarm clock with two bells on top and a bundle of red TNT dynamite strapped to it with rope. PANIC state: fuse lit with a live spark, sweating nervously, wide frightened pie-cut eyes, sweat drops flying, cheeks puffed."
   },
   {
-    "id": "skin_apple_win",
-    "file": "skin_apple_win.png",
+    "id": "skin_clock_win",
+    "file": "skin_clock_win.png",
     "role": "win",
     "cat": "bomb",
-    "group": "Apple of Discord",
+    "group": "Wake-Up Call",
     "groupNote": "Unlocks at level 12 · or watch an ad",
     "template": "Payload",
-    "subject": "Apple of Discord: cute glossy red apple with a small leaf on top and a bundle of red TNT dynamite strapped to it with rope. WIN state: fuse extinguished, relieved happy pie-cut eyes, soft smile, a breath of relief."
+    "subject": "Wake-Up Call: cute round retro alarm clock with two bells on top and a bundle of red TNT dynamite strapped to it with rope. WIN state: fuse extinguished, relieved happy pie-cut eyes, soft smile, a breath of relief."
   },
   {
-    "id": "skin_apple_lose",
-    "file": "skin_apple_lose.png",
+    "id": "skin_clock_lose",
+    "file": "skin_clock_lose.png",
     "role": "lose",
     "cat": "bomb",
-    "group": "Apple of Discord",
+    "group": "Wake-Up Call",
     "groupNote": "Unlocks at level 12 · or watch an ad",
     "template": "Payload",
-    "subject": "Apple of Discord: cute glossy red apple with a small leaf on top and a bundle of red TNT dynamite strapped to it with rope. FAIL state: mid-explosion, cracked sooty shell, dizzy spiral pie-cut eyes, smoke."
+    "subject": "Wake-Up Call: cute round retro alarm clock with two bells on top and a bundle of red TNT dynamite strapped to it with rope. FAIL state: mid-explosion, cracked sooty shell, dizzy spiral pie-cut eyes, smoke."
   },
   {
-    "id": "skin_cheese_playing",
-    "file": "skin_cheese_playing.png",
+    "id": "skin_bulb_playing",
+    "file": "skin_bulb_playing.png",
     "role": "playing",
     "cat": "bomb",
-    "group": "Cheese Bomb",
+    "group": "Bright Idea",
     "groupNote": "Unlocks at level 16",
     "template": "Payload",
-    "subject": "Cheese Bomb: cute wedge of swiss cheese with round holes and a bundle of red TNT dynamite strapped to it with rope. PANIC state: fuse lit with a live spark, sweating nervously, wide frightened pie-cut eyes, sweat drops flying, cheeks puffed."
+    "subject": "Bright Idea: cute glowing lightbulb with a warm yellow glow and a bundle of red TNT dynamite strapped to it with rope. PANIC state: fuse lit with a live spark, sweating nervously, wide frightened pie-cut eyes, sweat drops flying, cheeks puffed."
   },
   {
-    "id": "skin_cheese_win",
-    "file": "skin_cheese_win.png",
+    "id": "skin_bulb_win",
+    "file": "skin_bulb_win.png",
     "role": "win",
     "cat": "bomb",
-    "group": "Cheese Bomb",
+    "group": "Bright Idea",
     "groupNote": "Unlocks at level 16",
     "template": "Payload",
-    "subject": "Cheese Bomb: cute wedge of swiss cheese with round holes and a bundle of red TNT dynamite strapped to it with rope. WIN state: fuse extinguished, relieved happy pie-cut eyes, soft smile, a breath of relief."
+    "subject": "Bright Idea: cute glowing lightbulb with a warm yellow glow and a bundle of red TNT dynamite strapped to it with rope. WIN state: fuse extinguished, relieved happy pie-cut eyes, soft smile, a breath of relief."
   },
   {
-    "id": "skin_cheese_lose",
-    "file": "skin_cheese_lose.png",
+    "id": "skin_bulb_lose",
+    "file": "skin_bulb_lose.png",
     "role": "lose",
     "cat": "bomb",
-    "group": "Cheese Bomb",
+    "group": "Bright Idea",
     "groupNote": "Unlocks at level 16",
     "template": "Payload",
-    "subject": "Cheese Bomb: cute wedge of swiss cheese with round holes and a bundle of red TNT dynamite strapped to it with rope. FAIL state: mid-explosion, cracked sooty shell, dizzy spiral pie-cut eyes, smoke."
+    "subject": "Bright Idea: cute glowing lightbulb with a warm yellow glow and a bundle of red TNT dynamite strapped to it with rope. FAIL state: mid-explosion, cracked sooty shell, dizzy spiral pie-cut eyes, smoke."
   },
   {
-    "id": "skin_coco_playing",
-    "file": "skin_coco_playing.png",
+    "id": "skin_sock_playing",
+    "file": "skin_sock_playing.png",
     "role": "playing",
     "cat": "bomb",
-    "group": "Coco-Nut",
+    "group": "Dirty Bomb",
     "groupNote": "Unlocks at level 20 · or watch an ad",
     "template": "Payload",
-    "subject": "Coco-Nut: cute round hairy brown coconut and a bundle of red TNT dynamite strapped to it with rope. PANIC state: fuse lit with a live spark, sweating nervously, wide frightened pie-cut eyes, sweat drops flying, cheeks puffed."
+    "subject": "Dirty Bomb: cute striped tube sock with a bundle of red TNT dynamite strapped to it with rope. PANIC state: fuse lit with a live spark, sweating nervously, wide frightened pie-cut eyes, sweat drops flying, cheeks puffed."
   },
   {
-    "id": "skin_coco_win",
-    "file": "skin_coco_win.png",
+    "id": "skin_sock_win",
+    "file": "skin_sock_win.png",
     "role": "win",
     "cat": "bomb",
-    "group": "Coco-Nut",
+    "group": "Dirty Bomb",
     "groupNote": "Unlocks at level 20 · or watch an ad",
     "template": "Payload",
-    "subject": "Coco-Nut: cute round hairy brown coconut and a bundle of red TNT dynamite strapped to it with rope. WIN state: fuse extinguished, relieved happy pie-cut eyes, soft smile, a breath of relief."
+    "subject": "Dirty Bomb: cute striped tube sock with a bundle of red TNT dynamite strapped to it with rope. WIN state: fuse extinguished, relieved happy pie-cut eyes, soft smile, a breath of relief."
   },
   {
-    "id": "skin_coco_lose",
-    "file": "skin_coco_lose.png",
+    "id": "skin_sock_lose",
+    "file": "skin_sock_lose.png",
     "role": "lose",
     "cat": "bomb",
-    "group": "Coco-Nut",
+    "group": "Dirty Bomb",
     "groupNote": "Unlocks at level 20 · or watch an ad",
     "template": "Payload",
-    "subject": "Coco-Nut: cute round hairy brown coconut and a bundle of red TNT dynamite strapped to it with rope. FAIL state: mid-explosion, cracked sooty shell, dizzy spiral pie-cut eyes, smoke."
+    "subject": "Dirty Bomb: cute striped tube sock with a bundle of red TNT dynamite strapped to it with rope. FAIL state: mid-explosion, cracked sooty shell, dizzy spiral pie-cut eyes, smoke."
   },
   {
-    "id": "skin_egg_playing",
-    "file": "skin_egg_playing.png",
+    "id": "skin_piggy_playing",
+    "file": "skin_piggy_playing.png",
     "role": "playing",
     "cat": "bomb",
-    "group": "Eggsplosive",
+    "group": "Piggy Boom",
     "groupNote": "Unlocks at level 24",
     "template": "Payload",
-    "subject": "Eggsplosive: cute smooth white egg, gently speckled, with a bundle of red TNT dynamite strapped to it with rope. PANIC state: fuse lit with a live spark, sweating nervously, wide frightened pie-cut eyes, sweat drops flying, cheeks puffed."
+    "subject": "Piggy Boom: cute pink piggy bank with a coin slot on top and a bundle of red TNT dynamite strapped to it with rope. PANIC state: fuse lit with a live spark, sweating nervously, wide frightened pie-cut eyes, sweat drops flying, cheeks puffed."
   },
   {
-    "id": "skin_egg_win",
-    "file": "skin_egg_win.png",
+    "id": "skin_piggy_win",
+    "file": "skin_piggy_win.png",
     "role": "win",
     "cat": "bomb",
-    "group": "Eggsplosive",
+    "group": "Piggy Boom",
     "groupNote": "Unlocks at level 24",
     "template": "Payload",
-    "subject": "Eggsplosive: cute smooth white egg, gently speckled, with a bundle of red TNT dynamite strapped to it with rope. WIN state: fuse extinguished, relieved happy pie-cut eyes, soft smile, a breath of relief."
+    "subject": "Piggy Boom: cute pink piggy bank with a coin slot on top and a bundle of red TNT dynamite strapped to it with rope. WIN state: fuse extinguished, relieved happy pie-cut eyes, soft smile, a breath of relief."
   },
   {
-    "id": "skin_egg_lose",
-    "file": "skin_egg_lose.png",
+    "id": "skin_piggy_lose",
+    "file": "skin_piggy_lose.png",
     "role": "lose",
     "cat": "bomb",
-    "group": "Eggsplosive",
+    "group": "Piggy Boom",
     "groupNote": "Unlocks at level 24",
     "template": "Payload",
-    "subject": "Eggsplosive: cute smooth white egg, gently speckled, with a bundle of red TNT dynamite strapped to it with rope. FAIL state: mid-explosion, cracked sooty shell, dizzy spiral pie-cut eyes, smoke."
+    "subject": "Piggy Boom: cute pink piggy bank with a coin slot on top and a bundle of red TNT dynamite strapped to it with rope. FAIL state: mid-explosion, cracked sooty shell, dizzy spiral pie-cut eyes, smoke."
   },
   {
-    "id": "skin_pineapple_playing",
-    "file": "skin_pineapple_playing.png",
+    "id": "skin_boot_playing",
+    "file": "skin_boot_playing.png",
     "role": "playing",
     "cat": "bomb",
-    "group": "Pineapple Express",
+    "group": "Sole Survivor",
     "groupNote": "Unlocks at level 28",
     "template": "Payload",
-    "subject": "Pineapple Express: cute golden pineapple with a leafy green crown and a bundle of red TNT dynamite strapped to it with rope. PANIC state: fuse lit with a live spark, sweating nervously, wide frightened pie-cut eyes, sweat drops flying, cheeks puffed."
+    "subject": "Sole Survivor: cute worn leather boot with a bundle of red TNT dynamite strapped to it with rope. PANIC state: fuse lit with a live spark, sweating nervously, wide frightened pie-cut eyes, sweat drops flying, cheeks puffed."
   },
   {
-    "id": "skin_pineapple_win",
-    "file": "skin_pineapple_win.png",
+    "id": "skin_boot_win",
+    "file": "skin_boot_win.png",
     "role": "win",
     "cat": "bomb",
-    "group": "Pineapple Express",
+    "group": "Sole Survivor",
     "groupNote": "Unlocks at level 28",
     "template": "Payload",
-    "subject": "Pineapple Express: cute golden pineapple with a leafy green crown and a bundle of red TNT dynamite strapped to it with rope. WIN state: fuse extinguished, relieved happy pie-cut eyes, soft smile, a breath of relief."
+    "subject": "Sole Survivor: cute worn leather boot with a bundle of red TNT dynamite strapped to it with rope. WIN state: fuse extinguished, relieved happy pie-cut eyes, soft smile, a breath of relief."
   },
   {
-    "id": "skin_pineapple_lose",
-    "file": "skin_pineapple_lose.png",
+    "id": "skin_boot_lose",
+    "file": "skin_boot_lose.png",
     "role": "lose",
     "cat": "bomb",
-    "group": "Pineapple Express",
+    "group": "Sole Survivor",
     "groupNote": "Unlocks at level 28",
     "template": "Payload",
-    "subject": "Pineapple Express: cute golden pineapple with a leafy green crown and a bundle of red TNT dynamite strapped to it with rope. FAIL state: mid-explosion, cracked sooty shell, dizzy spiral pie-cut eyes, smoke."
+    "subject": "Sole Survivor: cute worn leather boot with a bundle of red TNT dynamite strapped to it with rope. FAIL state: mid-explosion, cracked sooty shell, dizzy spiral pie-cut eyes, smoke."
   },
   {
-    "id": "skin_pumpkin_playing",
-    "file": "skin_pumpkin_playing.png",
+    "id": "skin_chili_playing",
+    "file": "skin_chili_playing.png",
     "role": "playing",
     "cat": "bomb",
-    "group": "Pumpkin Panic",
+    "group": "Hot Head",
     "groupNote": "Unlocks at level 32",
     "template": "Payload",
-    "subject": "Pumpkin Panic: cute round orange pumpkin with a leafy stem and a bundle of red TNT dynamite strapped to it with rope. PANIC state: fuse lit with a live spark, sweating nervously, wide frightened pie-cut eyes, sweat drops flying, cheeks puffed."
+    "subject": "Hot Head: cute fiery red chili pepper with a green stem and a bundle of red TNT dynamite strapped to it with rope. PANIC state: fuse lit with a live spark, sweating nervously, wide frightened pie-cut eyes, sweat drops flying, cheeks puffed."
   },
   {
-    "id": "skin_pumpkin_win",
-    "file": "skin_pumpkin_win.png",
+    "id": "skin_chili_win",
+    "file": "skin_chili_win.png",
     "role": "win",
     "cat": "bomb",
-    "group": "Pumpkin Panic",
+    "group": "Hot Head",
     "groupNote": "Unlocks at level 32",
     "template": "Payload",
-    "subject": "Pumpkin Panic: cute round orange pumpkin with a leafy stem and a bundle of red TNT dynamite strapped to it with rope. WIN state: fuse extinguished, relieved happy pie-cut eyes, soft smile, a breath of relief."
+    "subject": "Hot Head: cute fiery red chili pepper with a green stem and a bundle of red TNT dynamite strapped to it with rope. WIN state: fuse extinguished, relieved happy pie-cut eyes, soft smile, a breath of relief."
   },
   {
-    "id": "skin_pumpkin_lose",
-    "file": "skin_pumpkin_lose.png",
+    "id": "skin_chili_lose",
+    "file": "skin_chili_lose.png",
     "role": "lose",
     "cat": "bomb",
-    "group": "Pumpkin Panic",
+    "group": "Hot Head",
     "groupNote": "Unlocks at level 32",
     "template": "Payload",
-    "subject": "Pumpkin Panic: cute round orange pumpkin with a leafy stem and a bundle of red TNT dynamite strapped to it with rope. FAIL state: mid-explosion, cracked sooty shell, dizzy spiral pie-cut eyes, smoke."
+    "subject": "Hot Head: cute fiery red chili pepper with a green stem and a bundle of red TNT dynamite strapped to it with rope. FAIL state: mid-explosion, cracked sooty shell, dizzy spiral pie-cut eyes, smoke."
   },
   {
-    "id": "skin_star_playing",
-    "file": "skin_star_playing.png",
+    "id": "skin_tv_playing",
+    "file": "skin_tv_playing.png",
     "role": "playing",
     "cat": "bomb",
-    "group": "Super Star",
+    "group": "Tube Trouble",
     "groupNote": "Unlocks at level 36 · or watch an ad",
     "template": "Payload",
-    "subject": "Super Star: cute five-pointed golden star with a bundle of red TNT dynamite strapped to it with rope. PANIC state: fuse lit with a live spark, sweating nervously, wide frightened pie-cut eyes, sweat drops flying, cheeks puffed."
+    "subject": "Tube Trouble: cute retro tube television with rabbit-ear antennas and a bundle of red TNT dynamite strapped to it with rope. PANIC state: fuse lit with a live spark, sweating nervously, wide frightened pie-cut eyes, sweat drops flying, cheeks puffed."
   },
   {
-    "id": "skin_star_win",
-    "file": "skin_star_win.png",
+    "id": "skin_tv_win",
+    "file": "skin_tv_win.png",
     "role": "win",
     "cat": "bomb",
-    "group": "Super Star",
+    "group": "Tube Trouble",
     "groupNote": "Unlocks at level 36 · or watch an ad",
     "template": "Payload",
-    "subject": "Super Star: cute five-pointed golden star with a bundle of red TNT dynamite strapped to it with rope. WIN state: fuse extinguished, relieved happy pie-cut eyes, soft smile, a breath of relief."
+    "subject": "Tube Trouble: cute retro tube television with rabbit-ear antennas and a bundle of red TNT dynamite strapped to it with rope. WIN state: fuse extinguished, relieved happy pie-cut eyes, soft smile, a breath of relief."
   },
   {
-    "id": "skin_star_lose",
-    "file": "skin_star_lose.png",
+    "id": "skin_tv_lose",
+    "file": "skin_tv_lose.png",
     "role": "lose",
     "cat": "bomb",
-    "group": "Super Star",
+    "group": "Tube Trouble",
     "groupNote": "Unlocks at level 36 · or watch an ad",
     "template": "Payload",
-    "subject": "Super Star: cute five-pointed golden star with a bundle of red TNT dynamite strapped to it with rope. FAIL state: mid-explosion, cracked sooty shell, dizzy spiral pie-cut eyes, smoke."
+    "subject": "Tube Trouble: cute retro tube television with rabbit-ear antennas and a bundle of red TNT dynamite strapped to it with rope. FAIL state: mid-explosion, cracked sooty shell, dizzy spiral pie-cut eyes, smoke."
   },
   {
     "id": "skin_matchstick_idle",
@@ -321,7 +321,7 @@ const ITEMS = [
     "group": "Matchstick",
     "groupNote": "Starter · always owned",
     "template": "Igniter",
-    "subject": "Matchstick: plain red-tipped wooden match. IDLE state: dormant igniter lying still, blank calm pie-cut eyes."
+    "subject": "Matchstick: plain red-tipped wooden match. IDLE state: quiet sinister smirk, red head unlit."
   },
   {
     "id": "skin_matchstick_ignition",
@@ -331,7 +331,7 @@ const ITEMS = [
     "group": "Matchstick",
     "groupNote": "Starter · always owned",
     "template": "Igniter",
-    "subject": "Matchstick: plain red-tipped wooden match. IGNITION state: igniter burning bright, sparking, wide energetic pie-cut eyes."
+    "subject": "Matchstick: plain red-tipped wooden match. IGNITION state: evil wide-open laughing mouth, red head glowing bright yellow and orange with a fiery spark."
   },
   {
     "id": "skin_matchstick_dud",
@@ -341,7 +341,7 @@ const ITEMS = [
     "group": "Matchstick",
     "groupNote": "Starter · always owned",
     "template": "Igniter",
-    "subject": "Matchstick: plain red-tipped wooden match. DUD state: snuffed out, small smoke wisp, droopy defeated pie-cut eyes."
+    "subject": "Matchstick: plain red-tipped wooden match. DUD state: frustrated and angry, crossed stick-figure arms, broken burnt-out black head."
   },
   {
     "id": "skin_lighter_idle",
@@ -351,7 +351,7 @@ const ITEMS = [
     "group": "Lighter",
     "groupNote": "Unlocks at level 4 · or watch an ad",
     "template": "Igniter",
-    "subject": "Lighter: retro metal pocket lighter with a thumb-wheel striker. IDLE state: dormant igniter lying still, blank calm pie-cut eyes."
+    "subject": "Lighter: retro metal pocket lighter with a thumb-wheel striker. IDLE state: quiet sinister smirk, flame out."
   },
   {
     "id": "skin_lighter_ignition",
@@ -361,7 +361,7 @@ const ITEMS = [
     "group": "Lighter",
     "groupNote": "Unlocks at level 4 · or watch an ad",
     "template": "Igniter",
-    "subject": "Lighter: retro metal pocket lighter with a thumb-wheel striker. IGNITION state: igniter burning bright, sparking, wide energetic pie-cut eyes."
+    "subject": "Lighter: retro metal pocket lighter with a thumb-wheel striker. IGNITION state: evil wide-open laughing mouth, flame burning bright yellow and orange with a fiery spark."
   },
   {
     "id": "skin_lighter_dud",
@@ -371,36 +371,36 @@ const ITEMS = [
     "group": "Lighter",
     "groupNote": "Unlocks at level 4 · or watch an ad",
     "template": "Igniter",
-    "subject": "Lighter: retro metal pocket lighter with a thumb-wheel striker. DUD state: snuffed out, small smoke wisp, droopy defeated pie-cut eyes."
+    "subject": "Lighter: retro metal pocket lighter with a thumb-wheel striker. DUD state: frustrated and angry, crossed stick-figure arms, battered dud lighter with no flame."
   },
   {
-    "id": "skin_bolt_idle",
-    "file": "skin_bolt_idle.png",
+    "id": "skin_cigar_idle",
+    "file": "skin_cigar_idle.png",
     "role": "idle",
     "cat": "igniter",
-    "group": "Lightning Bolt",
+    "group": "Big Cigar",
     "groupNote": "Unlocks at level 10 · or watch an ad",
     "template": "Igniter",
-    "subject": "Lightning Bolt: zigzag yellow lightning bolt with a cartoon face. IDLE state: dormant igniter lying still, blank calm pie-cut eyes."
+    "subject": "Big Cigar: chubby fat brown cigar with a gold paper band and a rounded ember tip. IDLE state: quiet sinister smirk, ember tip unlit."
   },
   {
-    "id": "skin_bolt_ignition",
-    "file": "skin_bolt_ignition.png",
+    "id": "skin_cigar_ignition",
+    "file": "skin_cigar_ignition.png",
     "role": "ignition",
     "cat": "igniter",
-    "group": "Lightning Bolt",
+    "group": "Big Cigar",
     "groupNote": "Unlocks at level 10 · or watch an ad",
     "template": "Igniter",
-    "subject": "Lightning Bolt: zigzag yellow lightning bolt with a cartoon face. IGNITION state: igniter burning bright, sparking, wide energetic pie-cut eyes."
+    "subject": "Big Cigar: chubby fat brown cigar with a gold paper band and a rounded ember tip. IGNITION state: evil wide-open laughing mouth, ember tip glowing bright red-orange with a fiery spark."
   },
   {
-    "id": "skin_bolt_dud",
-    "file": "skin_bolt_dud.png",
+    "id": "skin_cigar_dud",
+    "file": "skin_cigar_dud.png",
     "role": "dud",
     "cat": "igniter",
-    "group": "Lightning Bolt",
+    "group": "Big Cigar",
     "groupNote": "Unlocks at level 10 · or watch an ad",
     "template": "Igniter",
-    "subject": "Lightning Bolt: zigzag yellow lightning bolt with a cartoon face. DUD state: snuffed out, small smoke wisp, droopy defeated pie-cut eyes."
+    "subject": "Big Cigar: chubby fat brown cigar with a gold paper band and a rounded ember tip. DUD state: frustrated and angry, crossed stick-figure arms, burnt-down stub with a black charred tip."
   }
 ];

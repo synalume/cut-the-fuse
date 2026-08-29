@@ -29,9 +29,21 @@ const PAYLOAD_STATES = {
 };
 
 const IGNITER_STATES = {
-  idle: { role: "idle", prompt: "IDLE state: dormant igniter lying still, blank calm pie-cut eyes" },
-  ignition: { role: "ignition", prompt: "IGNITION state: igniter burning bright, sparking, wide energetic pie-cut eyes" },
-  dud: { role: "dud", prompt: "DUD state: snuffed out, small smoke wisp, droopy defeated pie-cut eyes" },
+  matchstick: {
+    idle: { role: "idle", prompt: "IDLE state: quiet sinister smirk, red head unlit" },
+    ignition: { role: "ignition", prompt: "IGNITION state: evil wide-open laughing mouth, red head glowing bright yellow and orange with a fiery spark" },
+    dud: { role: "dud", prompt: "DUD state: frustrated and angry, crossed stick-figure arms, broken burnt-out black head" },
+  },
+  lighter: {
+    idle: { role: "idle", prompt: "IDLE state: quiet sinister smirk, flame out" },
+    ignition: { role: "ignition", prompt: "IGNITION state: evil wide-open laughing mouth, flame burning bright yellow and orange with a fiery spark" },
+    dud: { role: "dud", prompt: "DUD state: frustrated and angry, crossed stick-figure arms, battered dud lighter with no flame" },
+  },
+  cigar: {
+    idle: { role: "idle", prompt: "IDLE state: quiet sinister smirk, ember tip unlit" },
+    ignition: { role: "ignition", prompt: "IGNITION state: evil wide-open laughing mouth, ember tip glowing bright red-orange with a fiery spark" },
+    dud: { role: "dud", prompt: "DUD state: frustrated and angry, crossed stick-figure arms, burnt-down stub with a black charred tip" },
+  },
 };
 
 const unlockLabel = (item) => {
@@ -59,7 +71,8 @@ for (const skin of PAYLOAD_SKINS) {
 }
 
 for (const ign of IGNITER_TYPES) {
-  for (const [state, s] of Object.entries(IGNITER_STATES)) {
+  const states = IGNITER_STATES[ign.id] ?? {};
+  for (const [state, s] of Object.entries(states)) {
     ITEMS.push({
       id: `skin_${ign.id}_${state}`,
       file: ign.assets[state],
