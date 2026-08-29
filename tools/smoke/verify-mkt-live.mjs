@@ -24,7 +24,7 @@ console.log(JSON.stringify(info, null, 2));
 // favicon pixel check: loaded? 
 const favOK = await page.evaluate(async () => {
   const img = new Image();
-  img.src = "/favicon-32.png?v=ctf1";
+  img.src = "/favicon-32.png?v=ctf2";
   await img.decode();
   return img.width === 32 && img.height === 32;
 });

@@ -75,18 +75,18 @@ elif (not poki) and "window.__CUT_THE_FUSE_PORTAL__" not in html:
     html = html.replace("<head>", "<head>\n" + portal_flag, 1)
 
 # Absolute host / root paths — portal zips live under a subdirectory on itch/CDN.
-html = html.replace("https://play.cutthefuse.com/apple-touch-icon.png?v=ctf1", "apple-touch-icon.png")
-html = re.sub(r'href="/favicon-(\d+)\.png\?v=ctf1"', r'href="favicon-\1.png"', html)
-html = html.replace('href="/favicon.ico?v=ctf1"', 'href="favicon.ico"')
-html = html.replace('href="/site.webmanifest?v=ctf1"', 'href="site.webmanifest"')
+html = html.replace("https://play.cutthefuse.com/apple-touch-icon.png?v=ctf2", "apple-touch-icon.png")
+html = re.sub(r'href="/favicon-(\d+)\.png\?v=ctf2"', r'href="favicon-\1.png"', html)
+html = html.replace('href="/favicon.ico?v=ctf2"', 'href="favicon.ico"')
+html = html.replace('href="/site.webmanifest?v=ctf2"', 'href="site.webmanifest"')
 html = re.sub(r'https://play\.cutthefuse\.com[^\s\"\']+', '', html)
 Path(sys.argv[1]).write_text(html, encoding="utf-8")
 
 manifest = src_manifest.read_text(encoding="utf-8")
 manifest = manifest.replace('"start_url": "/"', '"start_url": "./"')
-manifest = manifest.replace("/icon-192.png?v=ctf1", "icon-192.png")
-manifest = manifest.replace("/icon-512.png?v=ctf1", "icon-512.png")
-manifest = re.sub(r'"src": "/og\.png\?v=ctf1"', '"src": "icon-512.png"', manifest)
+manifest = manifest.replace("/icon-192.png?v=ctf2", "icon-192.png")
+manifest = manifest.replace("/icon-512.png?v=ctf2", "icon-512.png")
+manifest = re.sub(r'"src": "/og\.png\?v=ctf2"', '"src": "icon-512.png"', manifest)
 (stage / "site.webmanifest").write_text(manifest, encoding="utf-8")
 PY
 

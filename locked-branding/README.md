@@ -3,18 +3,20 @@
 Brand-lock files (icons, favicons, OG images) that must **never** be packed into
 any distribution zip (`dist/`, `playgama/`, `cert/` all assert this).
 
-**Status: LOCKED (2026-08-29, nano-banana-pro).** Shipping share / tab / home-screen
+**Status: LOCKED (2026-08-29 v2, nano-banana-pro).** Shipping share / tab / home-screen
 assets for `play.cutthefuse.com`. Same layout family as Big Fluff / Wobble Run.
-Do not overwrite without an intentional unlock + new `?v=` cache bust.
+v2 regenerated the banana to match the in-game art (TNT-strapped banana, pie-cut
+eyes, black-ink flat-vintage style). Do not overwrite without an intentional
+unlock + new `?v=` cache bust.
 
 ## Live (play.cutthefuse.com)
 
 | Asset | Live file | Cache bust |
 |-------|-----------|------------|
-| Open Graph / share | `/og.png` | `?v=ctf1` |
-| Favicons | `/favicon-{16,32,48}.png`, `/favicon.ico` | `?v=ctf1` |
-| Apple home screen | `/apple-touch-icon.png` | `?v=ctf1` |
-| PWA icons + manifest | `/icon-192.png`, `/icon-512.png`, `/site.webmanifest` | `?v=ctf1` |
+| Open Graph / share | `/og.png` | `?v=ctf2` |
+| Favicons | `/favicon-{16,32,48}.png`, `/favicon.ico` | `?v=ctf2` |
+| Apple home screen | `/apple-touch-icon.png` | `?v=ctf2` |
+| PWA icons + manifest | `/icon-192.png`, `/icon-512.png`, `/site.webmanifest` | `?v=ctf2` |
 
 ## What's locked here
 
@@ -37,5 +39,5 @@ cd tools/gen-marketing
 node gen-covers.mjs --generate      # MuAPI nano-banana-pro
 python3 derive-assets.py            # all sizes → cert/ playgama/ locked-branding/ root
 cd ../..
-# bump ?v=ctf1 → ?v=ctf2 in index.html + site.webmanifest, then ./deploy.sh
+# bump ?v=ctf2 → ?v=ctf3 in index.html + site.webmanifest, then ./deploy.sh
 ```

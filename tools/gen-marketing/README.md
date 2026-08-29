@@ -52,6 +52,15 @@ python3 tools/gen-marketing/derive-assets.py
   font (Luckiest Guy) by `derive-assets.py`.
 - `locked-branding/` is brand-lock only — never packed into any distribution zip.
 
+## Style lock
+
+The style lock in `gen-covers.mjs` matches the in-game 2D art prompt used for the
+game sprites: **1930s rubber-hose / Cuphead vintage cartoon, 2D vector mobile game
+asset, thick black ink outlines, flat muted vintage colors, no shading / no 3D /
+no realism / no complex details**. Hero is the game's cute yellow banana with a
+red TNT dynamite bundle strapped with rope (pie-cut frightened eyes, sweat drops).
+Threat is wooden matchsticks with orange sparks, matching the in-game wicks.
+
 ## API key
 
 `MUAPI_KEY` — env var, `tools/gen-marketing/.env`, or
@@ -66,4 +75,6 @@ python3 tools/gen-marketing/derive-assets.py
 ## Status
 
 - [x] 2026-08-29 — first LOCKED set generated (nano-banana-pro), all sizes derived
+- [x] 2026-08-29 — v2 regen: banana redrawn to match the in-game art (TNT-strapped
+      banana, pie-cut eyes, black-ink flat-vintage style); cache bust → `?v=ctf2`
 - [ ] Portal pixel sizes confirmed if suite differs: _____ × _____

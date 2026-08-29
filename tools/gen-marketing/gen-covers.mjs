@@ -114,22 +114,27 @@ function sleep(ms) {
 
 /* ----------------------------- Prompts -----------------------------
    Mirror the wobble-run / big-fluff shelf-punch composition briefs.
-   Style lock is the game's 1930s rubber-hose cartoon look. */
+   Style lock matches the in-game 2D art (the same prompt used to generate
+   the banana matchstick sprites): 1930s rubber-hose Cuphead vintage look,
+   thick black ink outlines, flat muted vintage colors, no shading. */
 const STYLE_LOCK =
-  "1930s rubber-hose cartoon game key art, Fleischer Studios animation cel style, " +
-  "thick hand-inked outline in warm dark brown #2B1F14, flat vintage cel colors with high saturation, " +
-  "clean soft shading, light from top-left, subtle darker rim on bottom-right, " +
+  "1930s rubber-hose animation style, Cuphead vintage cartoon aesthetic, " +
+  "2D vector mobile game asset. Thick black ink outlines, flat muted vintage colors, " +
+  "clean flat cel coloring with no shading, no gradients, light from top-left only, " +
   "aged off-white vintage note-paper desk as the ground with faint pencil-drawn fuse sketch lines. " +
-  "No neon, no photo-realism, no gradients, no text, no letters, no logo, no watermark, no score UI, no UI chrome.";
+  "No shading, no 3D, no photo-realism, no realism, no complex details, no neon, " +
+  "no text, no letters, no logo, no watermark, no score UI, no UI chrome.";
 
 const HERO =
-  "the hero: a chubby banana-shaped yellow cartoon bomb (Bananabomb) with a perky green top, " +
-  "wide worried panicked eyes with pupils, sweat drops, puffed cheeks, and a short lit fuse on top " +
-  "with one bright orange spark, glossy subtle shading, thick warm dark-brown ink outline";
+  "the hero: the game's cute yellow banana with a bundle of red TNT dynamite strapped to its body " +
+  "with rope, sweating nervously with wide frightened pie-cut eyes (white eyes with black pie-cut " +
+  "pupils) and a small open mouth, a few sweat drops flying off, thick black ink outline, " +
+  "flat muted vintage colors, clean 2D vector mobile game asset look";
 
 const THREAT =
-  "two or three long dark-brown braided fuses snaking across the frame, each with a glowing bright orange " +
-  "spark racing along it toward the bomb, thin smoke wisps trailing, motion energy";
+  "two or three long wooden matchsticks snaking across the frame, each with a bright orange spark " +
+  "burning toward the banana with a glowing amber live-wire trail and a thin dark smoke wisp behind, " +
+  "motion energy";
 
 const ONE_IDEA =
   "one clear idea: a spark is burning down the fuse toward the bomb and the player must snip it in time.";
@@ -174,9 +179,9 @@ function promptFor(key) {
       ].join(" ");
     case "icon":
       return [
-        "Square 1:1 app icon, single isolated object centered: a chubby banana-shaped yellow cartoon bomb (Bananabomb) with a perky green top, wide worried panicked eyes, sweat drops, puffed cheeks, and a short lit fuse on top with one bright orange spark.",
-        "1930s rubber-hose cartoon style, Fleischer Studios animation cel, thick hand-inked outline in warm dark brown #2B1F14, flat vintage cel colors, clean soft shading, light from top-left.",
-        "The bomb fills about 80% of the frame, centered, floating with a soft drop shadow only.",
+        "Square 1:1 app icon, single isolated object centered: the game's cute yellow banana with a bundle of red TNT dynamite strapped to its body with rope, sweating nervously with wide frightened pie-cut eyes (white eyes with black pie-cut pupils) and a small open mouth, a few sweat drops.",
+        "1930s rubber-hose animation style, Cuphead vintage cartoon aesthetic, 2D vector mobile game asset, thick black ink outlines, flat muted vintage colors, clean flat cel coloring with no shading.",
+        "The banana fills about 80% of the frame, centered, floating with a soft flat drop shadow only.",
         "Solid warm cream #F6ECD1 background, no desk, no fuses, no ground lines, no text, no letters, no logo, no watermark.",
       ].join(" ");
     default:
