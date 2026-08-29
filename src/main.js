@@ -602,9 +602,13 @@ function renderArmory() {
         } else {
             const unlock = document.createElement("div");
             unlock.className = "unlock";
-            unlock.textContent = item.unlock?.ad ? `Or reach Level ${item.unlock.level}` : `Reach Level ${item.unlock.level}`;
+            // On the live URL build there are no rewarded ads — the armory is
+            // progression-only, so the copy reads "Reach Level N" (not "Or reach").
+            unlock.textContent = item.unlock?.ad && platform.canShowRewarded
+                ? `Or reach Level ${item.unlock.level}`
+                : `Reach Level ${item.unlock.level}`;
             footer.appendChild(unlock);
-            if (item.unlock?.ad) {
+            if (item.unlock?.ad && platform.canShowRewarded) {
                 const adBtn = document.createElement("button");
                 adBtn.className = "watch-ad";
                 adBtn.textContent = "Watch Ad";

@@ -25,6 +25,13 @@ export class Platform {
     get isPoki() { return IN_POKI; }
     get isPlayables() { return IN_PLAYABLES; }
 
+    /** True only when a rewarded-ad SDK is actually wired (Poki / Playgama
+     *  portal builds). The live URL build has no ad SDK, so the armory unlocks
+     *  purely by progression (levels/stars) and never offers a Watch Ad button. */
+    get canShowRewarded() {
+        return IN_POKI || IN_PLAYGAMA;
+    }
+
     _boot() {
         if (IN_POKI && typeof PokiSDK !== "undefined") {
             this._pokiBoot();

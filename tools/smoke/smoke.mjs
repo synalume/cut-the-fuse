@@ -1092,24 +1092,31 @@ if (!bootError) {
     check(ig[1].className.includes("locked"), "Armory: lighter locked until level 4", ig[1].className);
     const lighterFooter = ig[1].children[ig[1].children.length - 1];
     const lighterAdBtn = lighterFooter.children[1];
-    check(lighterAdBtn && lighterAdBtn.className.includes("watch-ad"), "Armory: locked ad skin shows a Watch Ad button");
+    // Live URL build has no rewarded-ad SDK wired — the armory is
+    // progression-only, so locked ad skins show NO Watch Ad button.
+    check(!lighterAdBtn || !lighterAdBtn.className.includes("watch-ad"), "Armory: live build hides Watch Ad (progression-only)", lighterAdBtn ? lighterAdBtn.className : "");
+    check(lighterFooter.children[0] && lighterFooter.children[0].textContent.includes("Reach Level 4"), "Armory: unlock copy reads Reach Level 4 on live", lighterFooter.children[0]?.textContent);
 
-    // Dev build has no ad platform wired: watching the ad grants the reward free.
-    const fakeEvent = { stopPropagation() {} };
-    lighterAdBtn.dispatch("click", fakeEvent);
+    // Live build: progression unlock — simulate reaching level 4 (the lighter's
+    // threshold) via the save instance, then confirm it unlocks without any ad.
+    win.__CTF__.save.setUnlockedLevel(4);
+    elements["tab-igniters"].dispatch("click", {});
     await new Promise((r) => setTimeout(r, 30));
-    check(elements["skin-grid"].children[1].className.includes("selected"), "Armory: ad unlock grants + selects lighter (dev fallback)", elements["skin-grid"].children[1].className);
-    check(elements["skin-grid"].children[1].className.includes("locked") === false, "Armory: lighter no longer locked after unlock");
+    check(elements["skin-grid"].children[1].className.includes("locked") === false, "Armory: lighter unlocks at level 4 (progression)", elements["skin-grid"].children[1].className);
+    check(elements["skin-grid"].children[1].children[3].children[0]?.textContent === "Select", "Armory: unlocked lighter shows Select tag", elements["skin-grid"].children[1].children[3].children[0]?.textContent);
+    elements["skin-grid"].children[1].dispatch("click", {});
+    check(JSON.parse(localStorage.getItem("cut_the_fuse_save_v1")).selectedIgniter === "lighter", "Armory: igniter selection persisted to save");
 
     // Selecting another payload skin persists to the save and is applied to the loadout.
+    // Melon is owned once the player reaches level 4 — the footer shows Select.
     elements["tab-payloads"].dispatch("click", {});
     const melonFooter = elements["skin-grid"].children[1].children[3];
-    const melonAdBtn = melonFooter.children[1];
-    melonAdBtn.dispatch("click", fakeEvent);
+    check(elements["skin-grid"].children[1].className.includes("locked") === false, "Armory: melon unlocked by level 4 (progression)", elements["skin-grid"].children[1].className);
+    check(melonFooter.children[0]?.textContent === "Select", "Armory: unlocked melon shows Select tag", melonFooter.children[0]?.textContent);
+    elements["skin-grid"].children[1].dispatch("click", {});
     await new Promise((r) => setTimeout(r, 30));
-    check(elements["skin-grid"].children[1].className.includes("selected"), "Armory: ad-unlocked melon selected", elements["skin-grid"].children[1].className);
+    check(elements["skin-grid"].children[1].className.includes("selected"), "Armory: unlocked melon selected", elements["skin-grid"].children[1].className);
     check(JSON.parse(localStorage.getItem("cut_the_fuse_save_v1")).selectedSkin === "melon", "Armory: payload skin selection persisted to save");
-    check(JSON.parse(localStorage.getItem("cut_the_fuse_save_v1")).selectedIgniter === "lighter", "Armory: igniter selection persisted to save");
     elements["btn-skins-close"].dispatch("click", {});
     check(elements["modal-skins"].style.display === "none", "Armory: BACK returns to the hub");
     check(elements["modal-menu"].style.display === "flex", "Hub: shown after closing the armory");
