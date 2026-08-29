@@ -593,6 +593,7 @@ function renderArmory() {
         blurb.textContent = item.blurb;
 
         const footer = document.createElement("div");
+        footer.className = "skin-footer";
         if (owned) {
             const tag = document.createElement("div");
             tag.className = "selected-tag";
