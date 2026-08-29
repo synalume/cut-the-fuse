@@ -12,6 +12,9 @@ const CUES = {
     dud: { file: "dud.mp3", synth: null, gain: 0.1 },
     blast: { file: "blast.mp3", synth: null, gain: 0.5 },
     win_star: { file: "win_star.mp3", synth: null, gain: 0.55 },
+    // Unbaked: file stays null so loadAll skips the 404 — the synth fallback
+    // plays until a take is approved and the filename is filled in.
+    win: { file: null, synth: "win", gain: 0.7 },
     wick_crackle: { file: "wick_crackle.wav", loop: true, synth: null, gain: 0.5 },
 };
 
@@ -49,10 +52,13 @@ export class AudioManager {
 
     /** Load every baked cue from assets/audio/, silently skipping any that aren't
      *  baked yet (placeholder-first: the game stays quiet until a cue is approved
-     *  and wired in). */
+     *  and wired in). Cues whose `file` is still null are never fetched, so an
+     *  unbaked synth-only cue doesn't 404 in the console. */
     async loadAll() {
         await Promise.allSettled(
-            Object.entries(CUES).map(([cueId, cue]) => this.loadBaked(cueId, AUDIO_PREFIX + cue.file))
+            Object.entries(CUES)
+                .filter(([, cue]) => cue.file)
+                .map(([cueId, cue]) => this.loadBaked(cueId, AUDIO_PREFIX + cue.file))
         );
     }
 
@@ -93,6 +99,8 @@ export class AudioManager {
             this._playBuffer(cueId, this._buffers[cueId], cue.loop, opts.rate);
         } else if (cue.synth === "snip") {
             this._synthSnip();
+        } else if (cue.synth === "win") {
+            this._synthWin();
         }
     }
 
@@ -170,5 +178,41 @@ export class AudioManager {
 
         osc.start();
         osc.stop(ctx.currentTime + 0.1);
+    }
+
+    /** Prototype win sting (dev fallback until baked win.mp3 is approved): a
+     *  short ascending fanfare — three rising notes into a high sparkle, ~0.6s.
+     *  The level-clear beat should land, not drag, so it stays a sting. */
+    _synthWin() {
+        const ctx = this.ensureCtx();
+        if (!ctx) return;
+
+        const notes = [523.25, 659.25, 783.99, 1046.5]; // C5 E5 G5 C6
+        const t0 = ctx.currentTime;
+        for (let i = 0; i < notes.length; i++) {
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.type = "triangle";
+            osc.frequency.setValueAtTime(notes[i], t0 + i * 0.08);
+            gain.gain.setValueAtTime(0, t0 + i * 0.08);
+            gain.gain.linearRampToValueAtTime(0.2, t0 + i * 0.08 + 0.02);
+            gain.gain.exponentialRampToValueAtTime(0.001, t0 + i * 0.08 + 0.32);
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.start(t0 + i * 0.08);
+            osc.stop(t0 + i * 0.08 + 0.34);
+        }
+        // A quick octave sparkle rides on top of the last note for the "ding!".
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = "sine";
+        osc.frequency.setValueAtTime(2093, t0 + 0.32);
+        gain.gain.setValueAtTime(0, t0 + 0.32);
+        gain.gain.linearRampToValueAtTime(0.08, t0 + 0.34);
+        gain.gain.exponentialRampToValueAtTime(0.001, t0 + 0.5);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(t0 + 0.32);
+        osc.stop(t0 + 0.52);
     }
 }

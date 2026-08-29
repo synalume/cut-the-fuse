@@ -16,13 +16,15 @@ All product audio the game needs, generated one cue at a time via
 | `dud` | one-shot | sound_effect | 1s (trimmed to 0.6s) | Spark snuffed out in a cut gap — a sad fizzle | **approved** |
 | `blast` | one-shot | sound_effect | 2s (trimmed to 1.2s) | Bomb detonation on failure — big but cartoonish | **approved** |
 | `win_star` | one-shot | sound_effect | 1s (trimmed to 0.16s) | Coin ping as each star lights in the win modal — ascending pitch per star | **approved** |
+| `win` | one-shot | music_sting | 0.8s (sting) | Level-clear fanfare: a short ascending fanfare that lands the win beat (synth fallback plays a C5-E5-G5-C6 arpeggio until baked) | pending |
 | `wick_crackle` | loop | sound_effect | 3s (loop seed) | Fuse wick burning bed — plays while any spark is travelling | **approved** |
 
 ## Notes
 
-1. **One-shots** (5): requested ~1–2s and trimmed to the game's play length at bake time
+1. **One-shots** (6): requested ~1–2s and trimmed to the game's play length at bake time
    (`AudioManager` plays the whole baked buffer). The trim also prevents echo stacking on rapid
-   snip triggers — `snip` plays at 0.15s and is rate-limited to one hit per 60ms.
+   snip triggers — `snip` plays at 0.15s and is rate-limited to one hit per 60ms. The `win` sting
+   is the exception: it's a composed 0.8s fanfare, not a trimmed foley hit.
 2. **Loops** (1): request a short 3s seed, then crossfade + shorten it into a seamless WAV at bake time
    (the `process` command does loop-seam crossfade). Do NOT ship an un-looped seed.
 3. **Prompt grammar** (learned from the big-fluff pipeline): material + action + mic placement +

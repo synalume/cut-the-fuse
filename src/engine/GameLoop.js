@@ -539,6 +539,9 @@ export class GameLoop {
             this.wonAt = this.frameCount;
             this.lastLevelWin = stars;
             this.comicWord = COMIC_WORDS.won[Math.floor(Math.random() * COMIC_WORDS.won.length)];
+            // The win sting lands the beat: a short ascending fanfare instead
+            // of a silent sprite swap.
+            if (this.audio) this.audio.play("win");
             if (this.analytics) {
                 this.analytics.track("level_win", {
                     level: this.level.level_id, stars, attempts: this.attempts,

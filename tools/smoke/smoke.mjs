@@ -1270,6 +1270,13 @@ if (!bootError) {
             break;
         }
     }
+    // The win panel now waits ~750ms so the defuse burst + sting land first,
+    // so it can't appear inside the synchronous frame pump — settle it on the
+    // real event loop instead.
+    if (outcome === "timeout") {
+        const shown = await waitFor(() => elements["modal-win"].style.display === "block");
+        outcome = shown ? "win-modal" : "timeout";
+    }
     check(outcome === "win-modal", `Boot: loop reaches WON in ${frame} frames`, outcome);
     check(elements["win-stars"].children.length === 3, "Boot: win modal renders 3 star slots", String(elements["win-stars"].children.length));
     // Star reveal: with a 3-star clear all stars end lit (dim removed in sequence).

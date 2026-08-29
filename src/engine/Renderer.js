@@ -212,8 +212,15 @@ export class Renderer {
             jx = (Math.random() - 0.5) * amp;
             jy = (Math.random() - 0.5) * amp;
         }
+        // A win lands with a quick zoom punch (up ~4%, settles in a third of a
+        // second) so the defuse reads as a physical "pop", not a UI swap.
+        let winZoom = 1;
+        if (game.gameState === "won" && game.wonAt != null) {
+            const wt = Math.min(1, (game.frameCount - game.wonAt) / 16);
+            winZoom = 1 + 0.04 * Math.pow(1 - wt, 2);
+        }
         ctx.translate(this.width / 2, this.height / 2);
-        ctx.scale(game.camera.zoom, game.camera.zoom);
+        ctx.scale(game.camera.zoom * winZoom, game.camera.zoom * winZoom);
         ctx.translate(-this.width / 2 + game.camera.x + jx, -this.height / 2 + game.camera.y + jy);
 
         this._drawHint(game);
@@ -230,7 +237,12 @@ export class Renderer {
         this._drawPayloadLink(game);
         this._drawAssets(game);
         if (game.gameState === "lost") this._drawComicText(game, game.comicWord || "KABOOM!", "#ef4444", game.lostAt);
-        if (game.gameState === "won") this._drawComicText(game, game.comicWord || "PHEW!", "#22c55e", game.wonAt);
+        if (game.gameState === "won") {
+            // The defuse pop: a short gold burst + ring + flash from the bomb,
+            // then the comic word sits on top of the settle.
+            this._drawWinBurst(game);
+            this._drawComicText(game, game.comicWord || "PHEW!", "#22c55e", game.wonAt);
+        }
         this._drawSwipePreview(game);
         this._drawSnipFeedback(game);
         // Onboarding demo hand rides on top of everything while the tutorial is up.
@@ -1084,6 +1096,15 @@ export class Renderer {
         const bombLost = game.gameState === "lost"; // twin bombs fail together
         if (game.gameState === "playing") {
             rot = Math.sin(game.frameCount * 0.1) * 0.05;
+        } else if (game.gameState === "won" && game.wonAt != null) {
+            // The defuse hop: one little bounce on the spot, then a happy idle
+            // wiggle — the bomb's "phew!" reaction while the burst plays.
+            const t = Math.min(1, (game.frameCount - game.wonAt) / 38);
+            const hop = Math.sin(t * Math.PI);
+            dy = -16 * hop;
+            scaleY = 1 - 0.07 * hop;
+            scaleX = 1 + 0.07 * hop;
+            rot = Math.sin(game.frameCount * 0.22) * 0.05 * (1 - Math.max(0, Math.min(1, (game.frameCount - game.wonAt - 24) / 18)));
         } else if (bombLost && game.lostAt != null) {
             // Cartoon blast backdrop behind the art, then bounce the PNG with it.
             this._drawBlast(game, node);
@@ -1187,6 +1208,63 @@ export class Renderer {
             ctx.stroke();
         }
 
+        ctx.restore();
+    }
+
+    /** The "defused" pop when a level clears: one white-gold flash, a single
+     *  expanding ring and a short radial burst of gold sparks from the bomb.
+     *  A burst, not a rain — it dies in ~0.7s so the win beats, then hands
+     *  over to the star reveal in the modal. Twin bombs pop together.
+     *  Spark angles/lengths are deterministic per level, so the pop reads as a
+     *  single composed moment instead of re-randomizing every frame. */
+    _drawWinBurst(game) {
+        const payloads = (game.nodes || []).filter((n) => n.type === "payload");
+        if (!payloads.length || game.wonAt == null) return;
+        const t = (game.frameCount - game.wonAt) / 42; // 0 → 1 over ~0.7s
+        if (t < 0 || t > 1) return;
+        const ctx = this.ctx;
+        const ease = 1 - Math.pow(1 - t, 3);
+        const seed = game.level.level_id * 7.3;
+
+        ctx.save();
+        for (const node of payloads) {
+            ctx.save();
+            ctx.translate(node.x, node.y);
+
+            // White-gold flash that pops and dies fast.
+            const flashR = 26 + ease * 100;
+            const fg = this._radialGradient(0, 0, 0, 0, 0, flashR);
+            fg.addColorStop(0, `rgba(255,255,255,${(0.9 * (1 - t)).toFixed(3)})`);
+            fg.addColorStop(0.4, `rgba(250,204,21,${(0.55 * (1 - t)).toFixed(3)})`);
+            fg.addColorStop(1, "rgba(250,204,21,0)");
+            ctx.fillStyle = fg;
+            ctx.beginPath();
+            ctx.arc(0, 0, flashR, 0, Math.PI * 2);
+            ctx.fill();
+
+            // One clean expanding ring — the defuse "pop".
+            const ringR = 14 + ease * 92;
+            ctx.strokeStyle = `rgba(251,191,36,${(0.85 * (1 - t)).toFixed(3)})`;
+            ctx.lineWidth = 5 * (1 - t) + 1;
+            ctx.beginPath();
+            ctx.arc(0, 0, ringR, 0, Math.PI * 2);
+            ctx.stroke();
+
+            // Radial gold sparks — short burst, deterministic per level.
+            for (let i = 0; i < 24; i++) {
+                const a = (i / 24) * Math.PI * 2 + Math.sin(seed + i * 1.7) * 0.45;
+                const dist = ease * (42 + 60 * (((i * 37) % 10) / 10));
+                const p = {
+                    x: Math.cos(a) * dist,
+                    y: Math.sin(a) * dist,
+                    size: 3 + ((i * 13) % 5),
+                    life: Math.max(0, 1 - t) * (0.8 + 0.2 * Math.sin(seed + i * 2.1)),
+                    color: i % 3 === 0 ? "#fef08a" : i % 3 === 1 ? "#fbbf24" : "#4ade80",
+                };
+                this._drawParticleStar(p);
+            }
+            ctx.restore();
+        }
         ctx.restore();
     }
 

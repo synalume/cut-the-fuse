@@ -345,14 +345,15 @@ function showStars(stars) {
         winStars.appendChild(img);
         spans.push(img);
     }
-    // Wobble Run-style star reveal: each earned star lights with an ascending
-    // coin chime. Skipped if the player closes the modal mid-reveal.
+    // Star reveal: each earned star pops into the case with an ascending coin
+    // chime — the Cut the Rope-style burst-into-the-slot beat. Skipped if the
+    // player closes the modal mid-reveal.
     let delay = 120;
     for (let i = 0; i < stars; i++) {
         const idx = i;
         setTimeout(() => {
             if (modalWin.style.display !== "block") return;
-            spans[idx].className = "";
+            spans[idx].className = "pop";
             audio.play("win_star", { rate: 1.0 + idx * 0.3 });
         }, delay);
         delay += 190;
@@ -389,7 +390,6 @@ game.onLevelComplete = (levelId, stars, won) => {
         const earned = perfect + multi;
         if (earned > 0) save.depositStars(earned);
         updateUi();
-        showStars(stars);
 
         // Speed record: clear time vs the level's par, plus perfect-snip count.
         const seconds = Math.round((game.clearFrames / 60) * 10) / 10;
@@ -427,8 +427,16 @@ game.onLevelComplete = (levelId, stars, won) => {
             btnNext.innerHTML = `<img src="assets/ui/ui-icon-next.png" alt="">NEXT LEVEL`;
         }
 
-        modalWin.style.display = "block";
-        platform.commercialBreak();
+        // Let the defuse beat land first — burst + sting + bomb hop + comic
+        // word play on the canvas for ~0.75s, then the panel slides in and the
+        // earned stars pop one at a time (mirrors the lose path, which waits
+        // for the blast to settle before showing the retry card).
+        setTimeout(() => {
+            if (game.gameState !== STATE.WON) return; // level was reloaded meanwhile
+            modalWin.style.display = "block";
+            platform.commercialBreak();
+            showStars(stars);
+        }, 750);
     } else {
         // Let the blast FX + payload bounce play out before covering the canvas.
         setTimeout(() => {
