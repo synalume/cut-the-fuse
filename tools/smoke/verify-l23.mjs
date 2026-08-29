@@ -14,6 +14,10 @@ await page.waitForFunction(() => window.__CTF__.game.level?.level_id === 1, null
 const r = [];
 let pass = (ok, label, extra = "") => { r.push([ok, label, extra]); return ok; };
 
+// The tutorial freezes the simulation — dismiss it before cutting.
+await page.evaluate(() => { const ov = document.getElementById("tutorial-overlay"); if (ov.style.display === "flex") document.getElementById("tutorial-next").click(); });
+await page.waitForTimeout(100);
+
 // ---- L1 win to reach L2 ----
 const winL1 = await page.evaluate(() => {
     const g = window.__CTF__.game;

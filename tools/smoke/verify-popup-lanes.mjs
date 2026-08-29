@@ -33,6 +33,12 @@ async function openLevel(idx) {
         const g = window.__CTF__.game;
         return g?.gameState === "playing";
     }, null, { timeout: 10000 });
+    // Dismiss a teaching card if it's up (sim frozen until OK). The card for a
+    // freshly-picked level shows synchronously, so an immediate check is safe —
+    // never poll here (a spark left burning would run to the bomb and lose).
+    const tutShown = await page.evaluate(() => document.getElementById("tutorial-overlay").style.display === "flex");
+    if (tutShown) await page.click("#tutorial-next").catch(() => {});
+    await page.waitForTimeout(120);
 }
 
 // Mirrors Renderer._activeReactionObstacles + _drawPopupWords collision model.

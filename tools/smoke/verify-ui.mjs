@@ -187,6 +187,9 @@ await page.evaluate(() => {
     const cell = document.getElementById("level-grid").children[3];
     cell.click();
 });
+// L4 teaches staggered delays — dismiss its tutorial so the sim starts.
+await page.waitForFunction(() => document.getElementById("tutorial-overlay").style.display === "flex", null, { timeout: 8000 });
+await page.click("#tutorial-next");
 // Wait until the first spark is ignited and moving.
 await page.waitForFunction(() => {
     const g = window.__CTF__.game;

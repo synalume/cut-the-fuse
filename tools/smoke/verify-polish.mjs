@@ -101,6 +101,9 @@ console.log("  → screenshot tools/smoke/verify-polish-win.png");
 console.log("\n[verify] comic word on lose");
 await page.click("#btn-next"); // closes the win modal → advances to L2 (2 fuses)
 await page.waitForFunction(() => window.__CTF__?.game?.gameState === "playing", null, { timeout: 10000 });
+// Dismiss L2's teaching card — the level doesn't start until OK.
+const tutShown = await page.evaluate(() => document.getElementById("tutorial-overlay").style.display === "flex");
+if (tutShown) await page.click("#tutorial-next").catch(() => {});
 // Don't cut: let a spark reach the payload → LOST.
 await page.waitForFunction(() => window.__CTF__?.game?.gameState === "lost", null, { timeout: 30000 });
 await page.waitForTimeout(400); // comic word visible mid-animation

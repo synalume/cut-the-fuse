@@ -148,6 +148,7 @@ function openModal(el, display = "flex") {
         if (m !== el) m.style.display = "none";
     }
     tutorialOverlay.style.display = "none";
+    game.tutorialActive = false; // a menu over a teaching card ends the pre-level pause
     if (game.gameState === STATE.PLAYING) {
         selectorPaused = true;
         game.setPaused(true);
@@ -177,6 +178,7 @@ function closeModals() {
     modalLevels.style.display = "none";
     modalMenu.style.display = "none";
     tutorialOverlay.style.display = "none";
+    game.tutorialActive = false;
     resumeIfPausedByMenu();
 }
 

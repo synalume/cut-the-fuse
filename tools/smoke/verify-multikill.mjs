@@ -34,6 +34,9 @@ await page.waitForFunction(() => {
     const g = window.__CTF__.game;
     return g?.gameState === "playing" && g?.level?.level_id === 4;
 }, null, { timeout: 10000 });
+// Dismiss L4's teaching card — the sim stays frozen until OK.
+const tutShown = await page.evaluate(() => document.getElementById("tutorial-overlay").style.display === "flex");
+if (tutShown) await page.click("#tutorial-next").catch(() => {});
 
 // ---- 2. One snip at the shared chokepoint -----------------------------------
 console.log("\n[verify] one snip severs 2 wicks");

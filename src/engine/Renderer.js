@@ -1058,7 +1058,9 @@ export class Renderer {
         const p0 = fuse.startNode;
         const p3 = fuse.endNode;
         const ctx = this.ctx;
-        const t = game.frameCount;
+        // Wall-clock "frames" so the demo hand keeps sliding while the tutorial
+        // freezes the simulation (game.frameCount is held on teach levels).
+        const t = performance.now() / 16.667;
 
         // Red cut line (visible): a pulsing slash across the wick where the snip goes.
         const cutU = 0.42;

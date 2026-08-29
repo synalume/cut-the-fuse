@@ -150,7 +150,8 @@ export class GameLoop {
     // ---- Cutting (spatial, from the prototype's handlePointerUp) -------------
 
     tryCut(swipeStart, swipeEnd, trail) {
-        if (this.gameState !== STATE.PLAYING || this.snipsRemaining <= 0) return false;
+        // No cutting while a teaching card is up — the level starts on OK.
+        if (this.gameState !== STATE.PLAYING || this.tutorialActive || this.snipsRemaining <= 0) return false;
 
         // Track the closest point on every fuse, then pick the best *eligible*
         // one. A fuse is ineligible when it already has a cut within 30 units
@@ -407,7 +408,10 @@ export class GameLoop {
         const dt = Math.min(32, t - this._lastT);
         this._lastT = t;
 
-        if (this.gameState !== STATE.PAUSED) {
+        // Teaching cards freeze the simulation: sparks don't ignite, delay
+        // timers don't tick, and the clear-time clock doesn't run until the
+        // player dismisses the card and the level actually starts.
+        if (this.gameState !== STATE.PAUSED && !this.tutorialActive) {
             this.frameCount++;
             this._update();
         }
