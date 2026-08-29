@@ -200,6 +200,7 @@ function closeLevelSelect() {
  *  everything else (daily, level select, armory) opens its own modal. */
 function openMenu() {
     updateUi();
+    renderDailyRow(); // keep the hub daily button in sync (REPLAY after a clear)
     openModal(modalMenu, "flex");
 }
 
@@ -216,9 +217,7 @@ $("btn-menu-play").addEventListener("click", () => {
         loadLevel(levelIndex);
     }
 });
-$("btn-menu-daily").addEventListener("click", () => {
-    if (!save.isDailyComplete(todayStr())) openDaily();
-});
+$("btn-menu-daily").addEventListener("click", openDaily);
 $("btn-menu-levels").addEventListener("click", openLevelSelect);
 $("btn-menu-armory").addEventListener("click", openArmory);
 
@@ -291,14 +290,21 @@ function exitDaily() {
     btnNext.innerHTML = `<img src="assets/ui/ui-icon-next.png" alt="">NEXT LEVEL`;
 }
 
-/** Refresh the daily banner (today's status + streak) in the level selector. */
+/** Refresh the daily banner (today's status + streak + best) in the level
+ *  selector AND the hub button. The buttons ALWAYS re-enter the challenge —
+ *  even after today's clear — so a player can replay and chase their best. */
 function renderDailyRow() {
     const today = todayStr();
     const done = save.isDailyComplete(today);
-    const btn = $("btn-daily");
-    btn.textContent = done ? "✓ TODAY DONE" : "🔥 TODAY'S CHALLENGE";
-    btn.disabled = done;
-    $("daily-streak").textContent = `STREAK ${save.getDailyStreak()}`;
+    const label = done ? "🔥 REPLAY TODAY'S CHALLENGE" : "🔥 TODAY'S CHALLENGE";
+    $("btn-daily").textContent = label;
+    $("btn-daily").disabled = false;
+    $("btn-menu-daily").textContent = label;
+    const idx = dailyLevelIndex(dayNumber());
+    const best = save.getBestScore(levels[idx].level_id);
+    const streak = $("daily-streak");
+    streak.textContent = `STREAK ${save.getDailyStreak()}`;
+    if (done && best > 0) streak.textContent += ` · BEST ${best}`;
 }
 
 $("btn-daily").addEventListener("click", openDaily);

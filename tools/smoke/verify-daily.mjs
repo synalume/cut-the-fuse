@@ -98,13 +98,23 @@ const after = await page.evaluate(() => ({
     streak: document.getElementById("daily-streak")?.textContent,
     save: JSON.parse(localStorage.getItem("cut_the_fuse_save_v1")),
 }));
-check(after.disabled === true, "daily: button disabled (done today)", String(after.disabled));
-check((after.btn || "").includes("DONE"), "daily: button reads DONE for today", after.btn);
-check(after.streak === "STREAK 1", "daily: streak pill shows 1", after.streak);
+check(after.disabled === false, "daily: button stays enabled after a clear (replay)", String(after.disabled));
+check((after.btn || "").includes("REPLAY"), "daily: button reads REPLAY for today", after.btn);
+check(/^STREAK 1/.test(after.streak || ""), "daily: streak pill shows 1", after.streak);
 check(after.save.dailyStreak === 1 && !!after.save.lastDailyDay, "daily: streak persisted to the save", JSON.stringify({ s: after.save.dailyStreak, d: after.save.lastDailyDay }));
 
-// ---- 5. Picking a story level exits daily mode ------------------------------
+// ---- 5. Replaying after a clear re-enters the challenge ----------------------
+console.log("\n[verify] replay after clear");
+await page.evaluate(() => document.getElementById("btn-daily").click());
+await page.waitForFunction(() => document.getElementById("level-label").textContent === "DAILY ▾", null, { timeout: 10000 });
+check(true, "daily: replay button re-enters the challenge", "");
+const replayLevel = await page.evaluate(() => window.__CTF__.game.level?.level_id);
+check(replayLevel != null, "daily: replay loads the daily level", String(replayLevel));
+
+// ---- 6. Picking a story level exits daily mode ------------------------------
 console.log("\n[verify] exit daily mode");
+await page.evaluate(() => document.getElementById("level-label").click());
+await page.waitForFunction(() => document.getElementById("modal-levels").style.display !== "none", null, { timeout: 8000 });
 await page.evaluate(() => document.getElementById("level-grid").children[0].click());
 await page.waitForFunction(() => document.getElementById("level-label").textContent === "LEVEL 1", null, { timeout: 10000 });
 check(true, "daily: story pick exits daily mode (LEVEL 1)", "");
