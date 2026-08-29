@@ -146,6 +146,14 @@ export class Renderer {
         ctx.imageSmoothingQuality = "high";
         ctx.clearRect(0, 0, this.width, this.height);
 
+        // Home screen (no level loaded yet): an ambient spark loops around and
+        // behind the menu card. The hub pauses the game, so this animates on
+        // wall-clock time — and the level's own rendering doesn't apply.
+        if (!game.level) {
+            this._drawMenuSpark();
+            return;
+        }
+
         ctx.save();
         // Camera transform (prototype).
         ctx.translate(this.width / 2, this.height / 2);
@@ -168,6 +176,92 @@ export class Renderer {
         // Onboarding demo hand rides on top of everything while the tutorial is up.
         this._drawTutorialDemo(game);
 
+        ctx.restore();
+    }
+
+    /** Home-screen ambient: a burning spark loops around and behind the menu
+     *  card while the hub is up (no level loaded yet). The hub pauses the game,
+     *  so frameCount is frozen — the whole effect runs on wall-clock time. */
+    _drawMenuSpark() {
+        const ctx = this.ctx;
+        const t = performance.now() / 16.667; // wall-clock "frames"
+        const cx = this.width / 2;
+        const cy = this.height / 2;
+        // A tall wobbling loop: rx keeps the orbit behind the card's sides while
+        // ry pushes the top/bottom arcs out past the card, so the spark is
+        // visible sweeping over/under it and dives behind between.
+        const rx = Math.min(this.width * 0.30, Math.max(150, this.width * 0.24));
+        const ry = Math.min(this.height * 0.46, Math.max(240, this.height * 0.40));
+
+        const at = (u) => {
+            const a = u * Math.PI * 2;
+            const wob = 1 + 0.05 * Math.sin(a * 3 + 1.7) + 0.032 * Math.sin(a * 5 + 0.4) + 0.018 * Math.sin(a * 7 + 2.9);
+            return { x: cx + Math.cos(a) * rx * wob, y: cy + Math.sin(a) * ry * wob };
+        };
+
+        const loopFrames = 520; // one full orbit ≈ 8.7s
+        const headU = (t / loopFrames) % 1;
+        const head = at(headU);
+
+        ctx.save();
+        ctx.lineCap = "round";
+        ctx.lineJoin = "round";
+
+        // The full loop as the unburnt fuse, drawn under the hot trail.
+        ctx.strokeStyle = "rgba(120, 53, 15, 0.65)";
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        for (let i = 0; i <= 120; i++) {
+            const p = at(i / 120);
+            if (i === 0) ctx.moveTo(p.x, p.y);
+            else ctx.lineTo(p.x, p.y);
+        }
+        ctx.stroke();
+
+        // Live burn: the arc just behind the head glows and cools off.
+        const trail = 0.15;
+        const tail = at(headU - trail);
+        ctx.shadowColor = "rgba(249, 115, 22, 0.45)";
+        ctx.shadowBlur = 10;
+        const grad = this._linearGradient(head.x, head.y, tail.x, tail.y);
+        grad.addColorStop(0, "#fbbf24");
+        grad.addColorStop(0.45, "#f59e0b");
+        grad.addColorStop(1, "#b45309");
+        ctx.strokeStyle = grad;
+        ctx.lineWidth = 5;
+        ctx.beginPath();
+        const steps = 26;
+        for (let i = 0; i <= steps; i++) {
+            const p = at(headU - trail + (trail * i) / steps);
+            if (i === 0) ctx.moveTo(p.x, p.y);
+            else ctx.lineTo(p.x, p.y);
+        }
+        ctx.stroke();
+        ctx.shadowBlur = 0;
+
+        // Ember glow at the burn front.
+        const ember = this._radialGradient(head.x, head.y, 0, head.x, head.y, 26);
+        ember.addColorStop(0, "rgba(254, 240, 138, 0.95)");
+        ember.addColorStop(0.4, "rgba(249, 115, 22, 0.55)");
+        ember.addColorStop(1, "rgba(249, 115, 22, 0)");
+        ctx.fillStyle = ember;
+        ctx.beginPath();
+        ctx.arc(head.x, head.y, 26, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Ember dots twinkling along the trail.
+        for (let k = 1; k <= 3; k++) {
+            const e = at(headU - trail * k * 0.28);
+            const alpha = 0.35 + 0.3 * Math.sin(t * 0.12 + k * 2.1);
+            if (alpha <= 0) continue;
+            ctx.fillStyle = `rgba(251, 146, 60, ${alpha.toFixed(3)})`;
+            ctx.beginPath();
+            ctx.arc(e.x, e.y, 2.5 + (k % 2) * 1.5, 0, Math.PI * 2);
+            ctx.fill();
+        }
+
+        // The spark head rides on top.
+        this._drawRetroSpark(head.x, head.y, t);
         ctx.restore();
     }
 
