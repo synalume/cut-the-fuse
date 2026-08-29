@@ -182,33 +182,33 @@ function knobsForLevel(n) {
             // 65-68 Water drops (tutorial at 65): doused wicks need no cut.
             Object.assign(k, { spawns: 4 + (n % 2), chokepoints: 2, delay: "spread", speed: 0.0011, douse: n === 65 ? 1 : 2 });
         } else if (n <= 72) {
-            // 69-72 Kevlar (tutorial at 69): two-snip wicks.
-            Object.assign(k, { spawns: 5, chokepoints: 2, delay: "close", speed: 0.0012, armor: n === 69 ? 1 : 2 });
+            // 69-72 Color + water compound (tutorial at 69): the legend still
+            // rules, but some wicks self-douse. Read before you cut.
+            Object.assign(k, { spawns: 5, chokepoints: 2, delay: "close", speed: 0.0011, color: true, douse: n === 69 ? 1 : 2 });
         } else if (n <= 76) {
             // 73-76 Color compounds: forbidden wires + one other mechanic.
             Object.assign(k, {
                 spawns: 5, chokepoints: 2, delay: "spread", speed: 0.0011,
-                color: true, douse: n % 2 === 0 ? 1 : 0, armor: n % 2 === 1 ? 1 : 0,
+                color: true, douse: n % 2 === 0 ? 1 : 0, stars: n % 2 === 1 ? 1 : 0,
             });
         } else if (n <= 84) {
-            // 77-84 Compounding: stars + water + kevlar + color in combos.
+            // 77-84 Compounding: stars + water + color in combos.
             Object.assign(k, {
                 spawns: 5 + (n % 2), chokepoints: 3, delay: "spread", speed: 0.0011,
-                color: n % 2 === 0, stars: 1 + (n % 3 === 0 ? 1 : 0),
-                douse: n % 3 === 1 ? 1 : 0, armor: n % 3 === 2 ? 1 : 0,
+                color: true, stars: 1 + (n % 2 === 0 ? 1 : 0), douse: n % 3 === 2 ? 1 : 0,
             });
         } else if (n <= 88) {
-            // 85-88 Escalation: two forks, armored+colored crossroads, and a
+            // 85-88 Escalation: two forks, colored crossroads, and a
             // star-critical budget (snips = minCuts, so the 3-star needs a star).
             Object.assign(k, {
                 spawns: 6 + (n % 2), chokepoints: 3, delay: "spread", speed: 0.0010,
-                color: true, armor: 2, stars: 3, starCritical: true,
+                color: true, stars: 3, starCritical: true, douse: n % 2 === 0 ? 1 : 0,
             });
         } else {
             // 89-90 Act bosses: zero slack, calm burn.
             Object.assign(k, {
                 spawns: 7, chokepoints: 3, delay: "spread", speed: 0.0009,
-                color: true, armor: 1, stars: 2, douse: 1, boss: true,
+                color: true, stars: 2, douse: 1, boss: true,
             });
         }
     } else {
@@ -222,20 +222,22 @@ function knobsForLevel(n) {
             // 95-98 Twin + stars.
             Object.assign(k, { spawns: 5, chokepoints: 2, delay: "close", speed: 0.0011, stars: 1 });
         } else if (n <= 102) {
-            // 99-102 Twin + kevlar.
-            Object.assign(k, { spawns: 5 + (n % 2), chokepoints: 3, delay: "close", speed: 0.0011, armor: 2 });
+            // 99-102 Twin + water.
+            Object.assign(k, { spawns: 5 + (n % 2), chokepoints: 3, delay: "spread", speed: 0.0011, douse: 2 });
         } else if (n <= 106) {
-            // 103-106 Twin + water.
-            Object.assign(k, { spawns: 5 + (n % 2), chokepoints: 2, delay: "spread", speed: 0.0011, douse: 2 });
-        } else if (n <= 110) {
-            // 107-110 Twin + color.
+            // 103-106 Twin + color (per-bomb wire rules).
             Object.assign(k, { spawns: 5, chokepoints: 2, delay: "spread", speed: 0.0010, color: true });
+        } else if (n <= 110) {
+            // 107-110 Twin + color compounds (stars/water on the colored net).
+            Object.assign(k, {
+                spawns: 5 + (n % 2), chokepoints: 3, delay: "spread", speed: 0.0010,
+                color: true, stars: 1 + (n % 2 === 0 ? 1 : 0), douse: n % 3 === 1 ? 1 : 0,
+            });
         } else if (n <= 116) {
-            // 111-116 Escalation: all five mechanics, full nets, 3-4 chokepoints,
-            // per-bomb color rules.
+            // 111-116 Escalation: full nets, 3-4 chokepoints, per-bomb color rules.
             Object.assign(k, {
                 spawns: 7 + (n % 2), chokepoints: 3 + (n % 2 === 0 ? 1 : 0),
-                delay: "spread", speed: 0.0010, color: true, armor: 2, stars: 2, douse: 1,
+                delay: "spread", speed: 0.0010, color: true, stars: 2, douse: 1 + (n % 2),
             });
         } else if (n <= 118) {
             // 117-118 Relief: a calm two-bomb breather.
@@ -244,7 +246,7 @@ function knobsForLevel(n) {
             // 119-120 Final bosses: everything compounded, calmest burn, zero slack.
             Object.assign(k, {
                 spawns: 8, chokepoints: 4, delay: "spread", speed: 0.0009,
-                color: true, armor: 2, stars: 2, douse: 2, boss: true,
+                color: true, stars: 2, douse: 2, boss: true,
             });
         }
     }
@@ -306,7 +308,7 @@ function branchCurveMag(n) {
  * Lives in acts 1-3 (plus compounding in acts 4-5 via the `color` knob).
  *
  * Real-world-accurate palette: forbidden (do not cut) = red (hot/live) and
- * orange in later acts; safe (cut) = blue (neutral), white (neutral), green
+ * orange in later acts; safe (cut) = blue (neutral), purple (neutral), green
  * (ground). Black/amber are excluded (burnt ash / the burning fire).
  *
  *   L9      — gentle teaser: the legend appears with one forbidden decoy,
@@ -323,19 +325,19 @@ function colorSchemeFor(n) {
     const act = actFor(n);
     if (act > 3 || n <= 8) return null; // pure-tutorial band untouched
 
-    const A = { red: "no", blue: "cut", white: "cut" };                       // 2 safe
-    const B = { red: "no", blue: "cut", white: "cut", green: "cut" };         // 3 safe
-    const C = { red: "no", orange: "no", blue: "cut", white: "cut", green: "cut" }; // 2 forbidden
+    const A = { red: "no", blue: "cut", purple: "cut" };                       // 2 safe
+    const B = { red: "no", blue: "cut", purple: "cut", green: "cut" };         // 3 safe
+    const C = { red: "no", orange: "no", blue: "cut", purple: "cut", green: "cut" }; // 2 forbidden
 
-    if (n === 9) return { legend: A, forbidden: ["red"], safe: ["blue", "white"], mixed: false, forbiddenCount: 1 };
-    if (n === 10) return { legend: A, forbidden: ["red"], safe: ["blue", "white"], mixed: true, forbiddenCount: 1 };
+    if (n === 9) return { legend: A, forbidden: ["red"], safe: ["blue", "purple"], mixed: false, forbiddenCount: 1 };
+    if (n === 10) return { legend: A, forbidden: ["red"], safe: ["blue", "purple"], mixed: true, forbiddenCount: 1 };
 
     if (act === 1) {
         const mixed = n >= 18;
         return {
             legend: A,
             forbidden: ["red"],
-            safe: ["blue", "white"],
+            safe: ["blue", "purple"],
             mixed,
             forbiddenCount: n === 20 ? 2 : 1,
         };
@@ -354,12 +356,12 @@ function colorSchemeFor(n) {
     // Act 3: dense colored mazes. Orange joins red as a second forbidden color
     // from the mid-act; bosses and the finale run mixed everywhere.
     if (n >= 56) {
-        return { legend: C, forbidden: ["red", "orange"], safe: ["blue", "white", "green"], mixed: true, forbiddenCount: 2 };
+        return { legend: C, forbidden: ["red", "orange"], safe: ["blue", "purple", "green"], mixed: true, forbiddenCount: 2 };
     }
     return {
         legend: C,
         forbidden: ["red", "orange"],
-        safe: ["blue", "white", "green"],
+        safe: ["blue", "purple", "green"],
         mixed: n % 3 === 0,
         forbiddenCount: n % 2 === 0 ? 2 : 1,
     };
@@ -375,12 +377,11 @@ function isForbiddenFuse(fuse, wireRule) {
  * budget that `snipsAllowed` is built on.
  *
  *   - A chokepoint whose routed fuses are ALL safe costs 1 cut (it severs every
- *     non-doused safe wick routed through it), +1 per armored fuse routed there
- *     (first snip frays, second severs).
+ *     non-doused safe wick routed through it).
  *   - A MIXED chokepoint (a forbidden wick shares the cut) is poisoned: the cut
  *     there is always denied, so every non-doused safe fuse routed through it
- *     must be cut upstream on its own leg — 1 each, +1 if armored.
- *   - Direct (unrouted) safe fuses cost 1 each (+1 if armored).
+ *     must be cut upstream on its own leg — 1 each.
+ *   - Direct (unrouted) safe fuses cost 1 each.
  *   - Forbidden decoys and doused fuses cost 0 (they never need cutting).
  */
 function computeMinCuts(level) {
@@ -397,16 +398,15 @@ function computeMinCuts(level) {
         const hasForbidden = grp.some((f) => isForbiddenFuse(f, wr));
         const cuttable = grp.filter((f) => !isForbiddenFuse(f, wr) && !doused.has(f.id));
         if (hasForbidden) {
-            for (const f of cuttable) minCuts += 1 + (f.armor ? 1 : 0);
+            for (const f of cuttable) minCuts += 1;
         } else if (cuttable.length) {
             minCuts += 1;
-            for (const f of cuttable) minCuts += f.armor ? 1 : 0;
         }
     }
     for (const f of level.fuses) {
         if (f.routeThrough) continue;
         if (isForbiddenFuse(f, wr) || doused.has(f.id)) continue;
-        minCuts += 1 + (f.armor ? 1 : 0);
+        minCuts += 1;
     }
     return minCuts;
 }
@@ -438,8 +438,6 @@ function mechTag(level) {
     const douse = level.douse || [];
     if (pickups.length) parts.push(`s${pickups.length}`);
     if (douse.length) parts.push(`w${douse.length}`);
-    const armor = level.fuses.filter((f) => f.armor).length;
-    if (armor) parts.push(`k${armor}`);
     return parts.join("+") || "plain";
 }
 
@@ -1194,6 +1192,20 @@ function validatePlacement(level) {
         if (!byCp.has(f.routeThrough)) byCp.set(f.routeThrough, []);
         byCp.get(f.routeThrough).push(f);
     }
+    // No cross-section may bunch more than 3 ROOT wicks through one cut point
+    // (a 4-5 wick knot reads as a thick folded band and one snip would sever
+    // everything). The exception is a single SHARED chokepoint where every wick
+    // is meant to converge on one blade.
+    {
+        const roots = fuses.filter((f) => !f.branchOf);
+        const sharedSingle = roots.length > 0 && roots.every((f) => f.routeThrough === roots[0].routeThrough);
+        if (!sharedSingle) {
+            for (const [cpId, grp] of byCp) {
+                const nRoots = grp.filter((f) => !f.branchOf).length;
+                if (nRoots > 3) return { ok: false, reason: `cross-section ${cpId} bunches ${nRoots} wicks` };
+            }
+        }
+    }
     for (const [cpId, grp] of byCp) {
         const hasForbidden = grp.some(isForb);
         const cuttable = grp.filter((f) => !isForb(f) && !doused.has(f.id));
@@ -1616,7 +1628,7 @@ function twinLayout(n, k, rng, look) {
  *     that never light) + the color tax (readFactor) on burn speed
  *   - mixed crossroads: a forbidden decoy shares a busy chokepoint with safe
  *     wicks, so the "efficient" cut there is denied and the player must trace
- *   - kevlar armor (two-snip wicks), water-drop douse, gold-star pickups
+ *   - water-drop douse, gold-star pickups
  * Branch fuses later inherit their parent's color/end.
  */
 function applyMechanics(level, k, rng, shift = 0) {
@@ -1629,11 +1641,11 @@ function applyMechanics(level, k, rng, shift = 0) {
         wire = { legend: scheme.legend, forbidden: scheme.forbidden, safe: scheme.safe, mixed: scheme.mixed, forbiddenCount: scheme.forbiddenCount };
     } else if (k.color) {
         // Act 4-5 color compounding.
-        const legend = { red: "no", blue: "cut", white: "cut", green: "cut" };
+        const legend = { red: "no", blue: "cut", purple: "cut", green: "cut" };
         wire = {
             legend,
             forbidden: ["red"],
-            safe: ["blue", "white", "green"],
+            safe: ["blue", "purple", "green"],
             mixed: n % 2 === 0,
             forbiddenCount: 1 + (n % 2),
         };
@@ -1800,22 +1812,11 @@ function applyMechanics(level, k, rng, shift = 0) {
             if (forbiddenSet.has(f)) {
                 f.color = wire.forbidden[fi % wire.forbidden.length];
                 f.neverLights = true;
-                fi++;
             } else {
                 f.color = wire.safe[fi % wire.safe.length];
             }
+            fi++;
         }
-    }
-
-    // Kevlar armor: safe fuses need a second snip (first frays, second severs).
-    const armorCount = k.armor || 0;
-    if (armorCount > 0) {
-        const candidates = level.fuses.filter((f) => !f.branchOf && !isForbiddenFuse(f, level.wireRule));
-        for (let i = candidates.length - 1; i > 0; i--) {
-            const j = Math.floor(rng() * (i + 1));
-            [candidates[i], candidates[j]] = [candidates[j], candidates[i]];
-        }
-        for (let i = 0; i < Math.min(armorCount, candidates.length); i++) candidates[i].armor = true;
     }
 
     // Water drops: a doused fuse's spark self-extinguishes before the bomb —
@@ -1824,7 +1825,7 @@ function applyMechanics(level, k, rng, shift = 0) {
     const douseCount = k.douse || 0;
     if (douseCount > 0) {
         const candidates = level.fuses.filter(
-            (f) => !f.branchOf && !f.armor && !isForbiddenFuse(f, level.wireRule)
+            (f) => !f.branchOf && !isForbiddenFuse(f, level.wireRule)
         );
         for (let i = candidates.length - 1; i > 0; i--) {
             const j = Math.floor(rng() * (i + 1));
@@ -1847,7 +1848,7 @@ function applyMechanics(level, k, rng, shift = 0) {
     const starCount = k.stars || 0;
     if (starCount > 0) {
         const notDoused = (f) => !(level.douse || []).some((d) => d.fuse === f.id);
-        const eligible = (f) => !f.branchOf && !f.armor && !isForbiddenFuse(f, level.wireRule) && notDoused(f);
+        const eligible = (f) => !f.branchOf && !isForbiddenFuse(f, level.wireRule) && notDoused(f);
         const directFuses = level.fuses.filter((f) => eligible(f) && !f.routeThrough);
         const routedFuses = level.fuses.filter((f) => eligible(f) && f.routeThrough);
         for (const arr of [directFuses, routedFuses]) {
@@ -1994,7 +1995,7 @@ function placeLevel(n, k, seedOffset = 0, salt = 0, opts = {}) {
         }
     }
 
-    // Color pillar + mechanics (wire colors, armor, douse, pickups, color tax).
+    // Color pillar + mechanics (wire colors, douse, pickups, color tax).
     // Runs before chains so branch fuses can inherit parent color/end below.
     // `opts.mechanics === false` (pinned 1-60 path) defers the color overlay so
     // the frozen geometry can be matched first and colors retried against it.
@@ -2279,8 +2280,8 @@ function buildLevels() {
         prevSig = lookSignature(look, n > 60 ? mechTag(placed) : "legacy");
 
         // Snips = minimum cuts the geometry requires + slack. The minimum is
-        // computed from the FINAL geometry (poisoned crossroads, kevlar second
-        // hits, doused/forbidden freebies) so 3-star is always reachable.
+        // computed from the FINAL geometry (poisoned crossroads, doused/
+        // forbidden freebies) so 3-star is always reachable.
         const minCuts = computeMinCuts(placed);
         const snips = minCuts + slackForLevel(n);
 
@@ -2335,9 +2336,9 @@ function buildLevels() {
                 focus: "spawn",
                 highlight: "s1",
             };
-        } else if (n === 10) {
+        } else if (n === 9) {
             level.tutorial = {
-                text: "Color-coded wires! The legend shows which color is SAFE to cut. Cutting the wrong color gives one warning — then boom.",
+                text: "Color-coded wires! Check the legend at the top of the screen: blue and purple are SAFE to cut. Red is a trap — cutting it gives one warning, then boom.",
                 focus: "spawn",
                 highlight: "s1",
             };
@@ -2367,7 +2368,7 @@ function buildLevels() {
             };
         } else if (n === 69) {
             level.tutorial = {
-                text: "Kevlar wicks take TWO snips! The first frays them — the fire keeps burning. Cut the same spot again to sever it.",
+                text: "Water drops douse some wicks — but the color rule still applies! Read the legend before you cut: never touch the red wires, and let doused wicks burn themselves out.",
                 focus: "spawn",
                 highlight: "s1",
             };

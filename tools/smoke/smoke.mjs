@@ -53,7 +53,7 @@ function makeStubs() {
 }
 
 /** A horizontal swipe across a point, driven through the REAL cut pipeline
- *  (budget, dedupe, forbidden-wire rule, armor hits all apply). */
+ *  (budget, dedupe, forbidden-wire rule all apply). */
 function swipeAcross(game, x, y) {
     return game.tryCut(
         { x: x - 26, y }, { x: x + 26, y },
@@ -63,10 +63,10 @@ function swipeAcross(game, x, y) {
 
 /** Place the required cuts for a level's final geometry, then simulate.
  *  Teaches the new rules exactly like the generator's winnability math:
- *   - a safe chokepoint costs 1 cut (+1 per armored fuse routed through it),
+ *   - a safe chokepoint costs 1 cut,
  *   - a MIXED (poisoned) crossroad is uncuttable, so each safe fuse routed
- *     there is severed upstream on its own leg at u=0.24 (+1 if armored),
- *   - direct safe fuses cost 1 each (+1 if armored),
+ *     there is severed upstream on its own leg at u=0.24,
+ *   - direct safe fuses cost 1 each,
  *   - doused and forbidden (never-lights decoy) fuses need no cut at all.
  *  Returns { ok, reason, placed, denied }. */
 function sweepLevel(config) {
@@ -94,18 +94,15 @@ function sweepLevel(config) {
             for (const f of cuttable) {
                 const leg = legPt(f, 0.24);
                 actions.push({ x: leg.x, y: leg.y });
-                if (f.armor) actions.push({ x: leg.x, y: leg.y });
             }
         } else if (cuttable.length) {
             const cp = level.intersectionMap[cpId];
             actions.push({ x: cp.x, y: cp.y });
-            for (const f of cuttable) if (f.armor) actions.push({ x: cp.x, y: cp.y });
         }
     }
     for (const f of level.fuses) {
         if (f.routeThrough || isForb(f) || dousedIds.has(f.id)) continue;
         actions.push({ x: f.intersectionPt.x, y: f.intersectionPt.y });
-        if (f.armor) actions.push({ x: f.intersectionPt.x, y: f.intersectionPt.y });
     }
 
     let placed = 0;
@@ -149,7 +146,7 @@ for (const c of levels) {
     if (res.ok) swept++;
     else console.error(`  ✗ L${c.level_id} not winnable: ${res.reason}`);
 }
-check(swept === levels.length, `winnability sweep: all ${levels.length} levels winnable (colors, water, kevlar, stars, twin bombs)`);
+check(swept === levels.length, `winnability sweep: all ${levels.length} levels winnable (colors, water, stars, twin bombs)`);
 
 // Shared-chokepoint regression: levels route several wicks through the same
 // intersection (e.g. L4's cut1). ONE snip at the shared spot severs EVERY
@@ -542,7 +539,7 @@ check(swept === levels.length, `winnability sweep: all ${levels.length} levels w
     // The 3-star goal ("finish with a snip left") must stay reachable on every
     // level: either a spare snip, or — on star-critical zero-slack levels — a
     // gold pickup star that banks one. min-cuts uses the NEW winnability math
-    // (poisoned crossroads, armored second hits, doused/forbidden freebies).
+    // (poisoned crossroads, doused/forbidden freebies).
     const minCutsFor = (c) => {
         const wr = c.wireRule || null;
         const isForb = (f) => !!(wr && wr.legend[f.color] === "no");
@@ -558,15 +555,14 @@ check(swept === levels.length, `winnability sweep: all ${levels.length} levels w
             const hasForbidden = grp.some(isForb);
             const cuttable = grp.filter((f) => !isForb(f) && !doused.has(f.id));
             if (hasForbidden) {
-                for (const f of cuttable) min += 1 + (f.armor ? 1 : 0);
+                for (const f of cuttable) min += 1;
             } else if (cuttable.length) {
                 min += 1;
-                for (const f of cuttable) min += f.armor ? 1 : 0;
             }
         }
         for (const f of c.fuses) {
             if (f.routeThrough || isForb(f) || doused.has(f.id)) continue;
-            min += 1 + (f.armor ? 1 : 0);
+            min += 1;
         }
         return min;
     };
@@ -786,7 +782,7 @@ check(swept === levels.length, `winnability sweep: all ${levels.length} levels w
         "multikill: single-wick snip is not a multi-cut");
 }
 
-// New mechanics for 61-120 (color pillar + stars + water + kevlar + twin bombs).
+// New mechanics for 61-120 (color pillar + stars + water + twin bombs).
 {
     // Forbidden-wire rule: the first wrong-color cut is DENIED with a warning
     // (no snip consumed, level stays alive); the second detonates.
@@ -816,7 +812,7 @@ check(swept === levels.length, `winnability sweep: all ${levels.length} levels w
         }
         check(g10.wireOffenses >= 1, "color: L10 blind chokepoint play trips the wrong-wire warning", `offenses=${g10.wireOffenses}`);
     }
-    // A safe-colored cut works normally (L10's legend marks blue/white safe).
+    // A safe-colored cut works normally (L10's legend marks blue/purple safe).
     {
         const gs = new GameLoop({ canvas: null, ...makeStubs() });
         gs.loadLevel(buildLevel(cfg10, { width: 1280, height: 720 }), 0);
@@ -848,11 +844,11 @@ check(swept === levels.length, `winnability sweep: all ${levels.length} levels w
     // Water drops: a doused direct wick needs NO cut — its spark douses itself
     // at the drop and the level still clears.
     {
-        const cfg = levels.find((l) => l.level_id === 103);
+        const cfg = levels.find((l) => l.level_id === 100);
         const g = new GameLoop({ canvas: null, ...makeStubs() });
         g.loadLevel(buildLevel(cfg, { width: 1280, height: 720 }), 0);
         const dousedIds = new Set(g.level.douse.map((d) => d.fuseId));
-        check(dousedIds.size === 2, "water: L103 douses two direct wicks");
+        check(dousedIds.size === 2, "water: L100 douses two wicks");
         const byCp = new Map();
         for (const f of g.fuses) {
             if (!f.routeThrough) continue;
@@ -874,23 +870,7 @@ check(swept === levels.length, `winnability sweep: all ${levels.length} levels w
             g._update();
         }
         check(dousedSparks.every((s) => s.doused && !s.active), "water: doused sparks self-extinguish at the drop");
-        check(g.gameState === STATE.WON, "water: L103 clears without cutting the doused wicks");
-    }
-
-    // Kevlar wicks: the first snip frays (still burning), the second severs.
-    {
-        const cfg = levels.find((l) => l.level_id === 69);
-        const g = new GameLoop({ canvas: null, ...makeStubs() });
-        g.loadLevel(buildLevel(cfg, { width: 1280, height: 720 }), 0);
-        const arm = g.fuses.find((f) => f.armor);
-        check(arm != null, "kevlar: L69 carries an armored wick");
-        if (arm) {
-            const p = arm.intersectionPt;
-            check(swipeAcross(g, p.x, p.y) === true && arm.hits === 1 && arm.frayed && !g._fuseFullySevered(arm),
-                "kevlar: the first snip frays the wick (1 hit, still burning)");
-            check(swipeAcross(g, p.x, p.y) === true && arm.hits === 2 && g._fuseFullySevered(arm),
-                "kevlar: the second snip severs it");
-        }
+        check(g.gameState === STATE.WON, "water: L100 clears without cutting the doused wicks");
     }
 
     // Twin bombs: fuses split between two payloads; an un-cut spark reaching

@@ -26,7 +26,7 @@ YouTube Playables / MC Play upload. Build: `./cert/make-bundle.sh` → `cert/out
 - [ ] Zero external network calls (no analytics, no CDN) — `Analytics` is disabled by the flag
 - [ ] Audio files play from the zip (no live-only synth bed)
 - [ ] Color pillar: wire legend renders near the bomb; a forbidden-color cut is denied once with a red "WRONG WIRE!" warning, then detonates on the second offense
-- [ ] Mechanics sweep: gold stars bank a snip (chime + "SNIP +1"), water drops douse their fuse, armored wicks fray then sever on a second hit, twin bombs both show reaction words when threatened
+- [ ] Mechanics sweep: gold stars bank a snip (chime + "SNIP +1"), water drops douse their fuse, twin bombs both show reaction words when threatened
 
 ## Ref (Mediacube / review bookmarks)
 

@@ -26,13 +26,13 @@ export const COMIC_WORDS = {
  *  changes — the pulsing/drifting band, ember glow, retro spark and ash trail
  *  behave identically, and fire always stays amber so a red wire burning still
  *  reads as "red wire + orange fire". Colors follow real electrical wiring
- *  conventions: red = live/forbidden, blue/white/green = neutral/ground (safe). */
+ *  conventions: red = live/forbidden, blue/purple/green = neutral/ground (safe). */
 const WIRE_STOPS = {
     amber: ["#f59e0b", "#fbbf24", "#d97706", "#b45309"],
     red: ["#ef4444", "#f87171", "#dc2626", "#991b1b"],
     orange: ["#f97316", "#fb923c", "#ea580c", "#c2410c"],
     blue: ["#3b82f6", "#60a5fa", "#2563eb", "#1e40af"],
-    white: ["#f5f5f4", "#fefefe", "#d6d3d1", "#a8a29e"],
+    purple: ["#c084fc", "#a855f7", "#9333ea", "#7e22ce"],
     green: ["#22c55e", "#4ade80", "#16a34a", "#15803d"],
 };
 /** Fill colors for the legend chips (solid, slightly darker than the live stops). */
@@ -40,24 +40,15 @@ const WIRE_CHIP = {
     red: "#dc2626",
     orange: "#ea580c",
     blue: "#2563eb",
-    white: "#e7e5e4",
+    purple: "#9333ea",
     green: "#16a34a",
 };
 const WIRE_CHIP_BORDER = {
     red: "#7f1d1d",
     orange: "#7c2d12",
     blue: "#1e3a8a",
-    white: "#78716c",
+    purple: "#581c87",
     green: "#14532d",
-};
-/** Matchstick-head cap fills (saturated solid so the cap reads at a glance). */
-const WIRE_CAP = {
-    red: "#ef4444",
-    orange: "#f97316",
-    blue: "#3b82f6",
-    white: "#e8e6e1",
-    green: "#22c55e",
-    amber: "#f59e0b",
 };
 
 /** Deterministic pick from a word list keyed on level + node id, so a character
@@ -212,14 +203,21 @@ export class Renderer {
         }
 
         ctx.save();
-        // Camera transform (prototype).
+        // Camera transform (prototype). A wrong-wire offense jolts the level
+        // for a moment so the denied cut reads as a physical "no".
+        let jx = 0, jy = 0;
+        const wo = game.wireOffenseAt;
+        if (wo && game.frameCount >= wo.at && game.frameCount - wo.at < 18) {
+            const amp = (1 - (game.frameCount - wo.at) / 18) * 7;
+            jx = (Math.random() - 0.5) * amp;
+            jy = (Math.random() - 0.5) * amp;
+        }
         ctx.translate(this.width / 2, this.height / 2);
         ctx.scale(game.camera.zoom, game.camera.zoom);
-        ctx.translate(-this.width / 2 + game.camera.x, -this.height / 2 + game.camera.y);
+        ctx.translate(-this.width / 2 + game.camera.x + jx, -this.height / 2 + game.camera.y + jy);
 
         this._drawHint(game);
         this._drawFuses(game);
-        this._drawFrayedMarks(game);
         this._drawCuts(game);
         this._drawCutFlash(game);
         this._drawBranchFlares(game);
@@ -228,6 +226,8 @@ export class Renderer {
         if (game.gameState === "playing") this._drawSparkEffects(game);
         this._drawWaterDrops(game);
         this._drawPickups(game);
+        // The red link between twin bombs sits under the bomb art.
+        this._drawPayloadLink(game);
         this._drawAssets(game);
         if (game.gameState === "lost") this._drawComicText(game, game.comicWord || "KABOOM!", "#ef4444", game.lostAt);
         if (game.gameState === "won") this._drawComicText(game, game.comicWord || "PHEW!", "#22c55e", game.wonAt);
@@ -240,6 +240,9 @@ export class Renderer {
 
         // Screen-space HUD: the color-coded wire legend (pinned near the top).
         this._drawWireLegend(game);
+        // Red flash when a forbidden wire is cut — the level keeps running but
+        // the denial must be obvious, not feel like a working snip.
+        this._drawWireOffenseOverlay(game);
     }
 
     /** Home-screen ambient: a burning spark wanders a random organic loop and
@@ -490,26 +493,35 @@ export class Renderer {
         }
         ctx.setLineDash([]);
 
-        // Glowing green crosshairs on the exact [x,y] target intersections.
+        // Glowing green crosshairs on the exact [x,y] cut targets. Targets are
+        // precomputed per level (game.hintTargets) so a marker never sits on a
+        // forbidden wire: forbidden decoys get none, and a safe wick sharing a
+        // crossroad with a decoy has its marker slid onto the clear part of
+        // its own line.
         const seen = new Set();
-        for (const fuse of game.fuses) {
-            const it = fuse.intersectionPt;
-            const key = `${it.x},${it.y}`;
-            if (seen.has(key)) continue;
+        const drawCrosshair = (pt) => {
+            const key = `${pt.x.toFixed(1)},${pt.y.toFixed(1)}`;
+            if (seen.has(key)) return;
             seen.add(key);
 
             ctx.beginPath();
-            ctx.arc(it.x, it.y, 25, 0, Math.PI * 2);
+            ctx.arc(pt.x, pt.y, 25, 0, Math.PI * 2);
             ctx.strokeStyle = "rgba(34, 197, 94, 0.8)";
             ctx.lineWidth = 3;
             ctx.stroke();
 
             ctx.beginPath();
-            ctx.moveTo(it.x - 35, it.y);
-            ctx.lineTo(it.x + 35, it.y);
-            ctx.moveTo(it.x, it.y - 35);
-            ctx.lineTo(it.x, it.y + 35);
+            ctx.moveTo(pt.x - 35, pt.y);
+            ctx.lineTo(pt.x + 35, pt.y);
+            ctx.moveTo(pt.x, pt.y - 35);
+            ctx.lineTo(pt.x, pt.y + 35);
             ctx.stroke();
+        };
+
+        if (game.hintTargets) {
+            for (const { point } of game.hintTargets) drawCrosshair(point);
+        } else {
+            for (const fuse of game.fuses) drawCrosshair(fuse.intersectionPt);
         }
     }
 
@@ -608,42 +620,6 @@ export class Renderer {
                     ctx.fill();
                 }
             }
-        }
-    }
-
-    /** Frayed armored wicks: after a first snip the wick is charred and split
-     *  but the fire keeps burning through — short dark strands + a faint ember
-     *  at the hit point until the second snip severs it. */
-    _drawFrayedMarks(game) {
-        const ctx = this.ctx;
-        for (const fr of game.frayedAt || []) {
-            const elapsed = game.frameCount - fr.at;
-            if (elapsed > 140) continue;
-            const alpha = Math.min(1, (140 - elapsed) / 40);
-            ctx.save();
-            ctx.translate(fr.x, fr.y);
-            ctx.rotate(fr.angle || 0);
-            ctx.lineCap = "round";
-            for (let s = 0; s < 4; s++) {
-                const spread = (s - 1.5) * 5 + Math.sin(game.frameCount * 0.3 + s) * 2;
-                ctx.strokeStyle = `rgba(41, 37, 36, ${0.7 * alpha})`;
-                ctx.lineWidth = 2.2;
-                ctx.beginPath();
-                ctx.moveTo(-8, spread);
-                ctx.lineTo(10, spread + Math.sin(game.frameCount * 0.4 + s * 2) * 2.5);
-                ctx.stroke();
-            }
-            // Small amber embers where the fray smolders.
-            if (elapsed < 90) {
-                const grad = this._radialGradient(0, 0, 0, 0, 0, 12);
-                grad.addColorStop(0, `rgba(254, 240, 138, ${0.5 * alpha})`);
-                grad.addColorStop(1, "rgba(249, 115, 22, 0)");
-                ctx.fillStyle = grad;
-                ctx.beginPath();
-                ctx.arc(0, 0, 12, 0, Math.PI * 2);
-                ctx.fill();
-            }
-            ctx.restore();
         }
     }
 
@@ -753,68 +729,69 @@ export class Renderer {
         ctx.restore();
     }
 
-    /** Screen-space legend for color-coded wire levels: a chip row near the top
-     *  showing which colors are SAFE to cut (✓) and which are traps (✗). Pinned
-     *  under the header so the player reads it once and traces before sniping. */
+    /** Screen-space legend for color-coded wire levels: a centered card near
+     *  the top showing which colors are SAFE to cut (✓) and which are traps
+     *  (✗). Pinned under the header so the player reads it once and traces
+     *  before sniping. Scales down only when the row would overflow a narrow
+     *  portrait screen. */
     _drawWireLegend(game) {
         const wr = game.level?.wireRule;
         if (!wr || !wr.legend) return;
         const ctx = this.ctx;
         const colors = Object.keys(wr.legend);
 
-        // Build the chip row (measure first).
-        ctx.font = "600 13px 'Baloo 2', 'Luckiest Guy', 'Courier New', Courier, monospace";
-        const chips = colors.map((c) => {
-            const safe = wr.legend[c] === "cut";
-            const label = safe ? "CUT" : "DON'T CUT";
-            return { c, safe, label, w: 17 + ctx.measureText(label).width + 10 };
-        });
-        const gap = 10;
-        const totalW = chips.reduce((s, ch, i) => s + ch.w + (i < chips.length - 1 ? gap : 0), 0) + 18;
-        const x0 = (this.width - totalW) / 2;
+        // Compact chip row: colored boxes with a ✓ (safe) / ✗ (forbidden)
+        // mark. No card, no title, no labels — just the chips, centered under
+        // the star counter so the play field stays clear on small screens.
+        const chip = 22;
+        const gap = 8;
+        const rowW = colors.length * chip + (colors.length - 1) * gap;
+        const scale = Math.min(1, (this.width - 24) / (rowW + 4));
+        const x0 = (this.width - rowW * scale) / 2;
         const y0 = 58;
 
         ctx.save();
-        // Card backdrop (cream, hard offset shadow like the UI).
-        ctx.fillStyle = "rgba(246, 236, 209, 0.94)";
-        ctx.strokeStyle = "#2b1f14";
-        ctx.lineWidth = 2;
-        ctx.beginPath();
-        this._roundRectPath(ctx, x0, y0, totalW, 30, 8);
-        ctx.fill();
-        ctx.shadowColor = "rgba(43, 31, 20, 0.45)";
-        ctx.shadowBlur = 0;
-        ctx.shadowOffsetX = 3;
-        ctx.shadowOffsetY = 3;
-        ctx.stroke();
-        ctx.shadowOffsetX = 0;
-        ctx.shadowOffsetY = 0;
-
-        let x = x0 + 9;
-        for (const ch of chips) {
-            // Colored chip.
-            const cy = y0 + 6.5;
-            ctx.fillStyle = WIRE_CHIP[ch.c] || "#78716c";
+        ctx.translate(x0, y0);
+        ctx.scale(scale, scale);
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        for (let i = 0; i < colors.length; i++) {
+            const c = colors[i];
+            const safe = wr.legend[c] === "cut";
+            const x = i * (chip + gap);
+            ctx.fillStyle = WIRE_CHIP[c] || "#78716c";
             ctx.beginPath();
-            this._roundRectPath(ctx, x, cy, 17, 17, 5);
+            this._roundRectPath(ctx, x, 0, chip, chip, 6);
             ctx.fill();
             ctx.lineWidth = 1.6;
-            ctx.strokeStyle = WIRE_CHIP_BORDER[ch.c] || "#1c1917";
+            ctx.strokeStyle = WIRE_CHIP_BORDER[c] || "#1c1917";
             ctx.stroke();
-            // ✓ / ✗ mark.
-            ctx.font = "12px 'Baloo 2', 'Luckiest Guy', 'Courier New', Courier, monospace";
-            ctx.textAlign = "center";
-            ctx.textBaseline = "middle";
-            ctx.fillStyle = ch.c === "white" ? "#1c1917" : "#ffffff";
-            ctx.fillText(ch.safe ? "✓" : "✗", x + 8.5, cy + 8.5);
-            // Label.
-            ctx.font = "600 13px 'Baloo 2', 'Luckiest Guy', 'Courier New', Courier, monospace";
-            ctx.textAlign = "left";
-            ctx.fillStyle = ch.safe ? "#15803d" : "#b91c1c";
-            ctx.fillText(ch.label, x + 22, y0 + 15.5);
-            x += ch.w + gap;
+            ctx.font = "700 16px 'Baloo 2', 'Luckiest Guy', 'Courier New', Courier, monospace";
+            ctx.fillStyle = "#ffffff";
+            ctx.fillText(safe ? "✓" : "✗", x + chip / 2, chip / 2 + 1);
         }
         ctx.restore();
+    }
+
+    /** Red flash when a forbidden wire is cut: a quick screen-edge vignette that
+     *  fades out over ~30 frames. Paired with the red denied slash, the camera
+     *  jolt and the "WRONG WIRE!" popup so the first offense — which denies the
+     *  cut but keeps the level running — can never read as a working snip. */
+    _drawWireOffenseOverlay(game) {
+        const o = game.wireOffenseAt;
+        if (!o) return;
+        const t = game.frameCount - o.at;
+        if (t < 0 || t > 30) return;
+        const ctx = this.ctx;
+        const a = Math.max(0, 1 - t / 30);
+        const grad = ctx.createRadialGradient(
+            this.width / 2, this.height / 2, this.height * 0.2,
+            this.width / 2, this.height / 2, this.height * 0.78
+        );
+        grad.addColorStop(0, `rgba(239, 68, 68, ${(a * 0.16).toFixed(3)})`);
+        grad.addColorStop(1, `rgba(153, 27, 27, ${(a * 0.3).toFixed(3)})`);
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, this.width, this.height);
     }
 
     /** Gradient along the live wire: hot at the burn front, cooling toward the
@@ -952,6 +929,110 @@ export class Renderer {
         }
     }
 
+    /** Twin bombs are linked: if one goes off, the other does too. A red wick
+     *  sags between the two payloads so that shared fate reads at a glance —
+     *  the same forbidden-red visual language as the decoy wires. Purely
+     *  decorative: it is not in game.fuses, so it can't be cut. */
+    _drawPayloadLink(game) {
+        const payloads = (game.nodes || []).filter((n) => n.type === "payload");
+        if (payloads.length < 2) return;
+        const ctx = this.ctx;
+        const p0 = payloads[0];
+        const p1 = payloads[1];
+
+        // Gentle sag perpendicular to the chord so it reads as a wick, not a
+        // ruler line.
+        const mx = (p0.x + p1.x) / 2;
+        const my = (p0.y + p1.y) / 2;
+        const dx = p1.x - p0.x;
+        const dy = p1.y - p0.y;
+        const len = Math.hypot(dx, dy) || 1;
+        const sag = 10;
+        const cx = mx - (dy / len) * sag;
+        const cy = my + (dx / len) * sag;
+
+        // Quadratic-bezier point + unit tangent, sampled like a fuse curve so
+        // the burnt link can wear the same organic ash wobble as every wick.
+        const qPoint = (u) => {
+            const mt = 1 - u;
+            return {
+                x: mt * mt * p0.x + 2 * mt * u * cx + u * u * p1.x,
+                y: mt * mt * p0.y + 2 * mt * u * cy + u * u * p1.y,
+            };
+        };
+        const qTangent = (u) => {
+            const mt = 1 - u;
+            const tx = 2 * mt * (cx - p0.x) + 2 * u * (p1.x - cx);
+            const ty = 2 * mt * (cy - p0.y) + 2 * u * (p1.y - cy);
+            const l = Math.hypot(tx, ty) || 1;
+            return { x: tx / l, y: ty / l };
+        };
+
+        ctx.save();
+        ctx.lineCap = "round";
+        const lost = game.gameState === "lost";
+        const stops = WIRE_STOPS.red;
+        if (lost) {
+            // Twin bombs burnt out together — the link chars like a real wick:
+            // flat ash with the same deterministic organic wobble as _drawFuses.
+            const seed = [...String(game.level.level_id + ":" + p0.id)].reduce((s, ch) => s + ch.charCodeAt(0), 0);
+            const ashAt = (u) => {
+                const pt = qPoint(u);
+                const t = qTangent(u);
+                const amp = Math.sin(u * 41 + seed * 1.7) * 1.1 + Math.sin(u * 13 + seed) * 0.5;
+                return { x: pt.x - t.y * amp, y: pt.y + t.x * amp };
+            };
+            ctx.beginPath();
+            ctx.strokeStyle = "rgba(41, 37, 36, 0.85)";
+            ctx.lineWidth = 3;
+            ctx.moveTo(ashAt(0).x, ashAt(0).y);
+            for (let u = 0.02; u <= 1; u += 0.02) {
+                const at = ashAt(u);
+                ctx.lineTo(at.x, at.y);
+            }
+            ctx.stroke();
+            // A few ash flecks settle along the dead line.
+            for (let i = 0; i < 6; i++) {
+                const u = (i + 1) / 7;
+                const at = ashAt(u);
+                ctx.fillStyle = "rgba(41, 37, 36, 0.5)";
+                ctx.beginPath();
+                ctx.arc(at.x, at.y, 1.3, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            ctx.restore();
+            return;
+        }
+
+        const pulse = 0.5 + 0.5 * Math.sin(game.frameCount * 0.05);
+        ctx.shadowColor = "rgba(220, 38, 38, 0.55)";
+        ctx.shadowBlur = 5 + 5 * pulse;
+        const grad = ctx.createLinearGradient(p0.x, p0.y, p1.x, p1.y);
+        grad.addColorStop(0, stops[0]);
+        grad.addColorStop(0.5, stops[1]);
+        grad.addColorStop(1, stops[3]);
+        ctx.strokeStyle = grad;
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        ctx.moveTo(p0.x, p0.y);
+        ctx.quadraticCurveTo(cx, cy, p1.x, p1.y);
+        ctx.stroke();
+        ctx.shadowBlur = 0;
+
+        // Small energy ticks flowing along the link (the shared fuse alive).
+        const steps = 6;
+        for (let i = 0; i < steps; i++) {
+            const t = ((game.frameCount * 0.004) + i / steps) % 1;
+            const pt = qPoint(t);
+            const alpha = 0.35 + 0.3 * Math.sin(t * Math.PI);
+            ctx.fillStyle = `rgba(254, 226, 226, ${alpha.toFixed(3)})`;
+            ctx.beginPath();
+            ctx.arc(pt.x, pt.y, 1.8, 0, Math.PI * 2);
+            ctx.fill();
+        }
+        ctx.restore();
+    }
+
     _drawAssets(game) {
         const ctx = this.ctx;
         for (const node of game.nodes) {
@@ -968,11 +1049,10 @@ export class Renderer {
         let src = game.level.payloadAssets.playing;
         if (game.gameState === "won") src = game.level.payloadAssets.win;
         else if (game.gameState === "lost") {
-            // Only the bomb that actually detonated shows the fail art + blast;
-            // a surviving twin-bomb keeps its playing art.
-            src = game.detonatedNodeId == null || node.id === game.detonatedNodeId
-                ? game.level.payloadAssets.lose
-                : game.level.payloadAssets.playing;
+            // Twin bombs mirror each other: when one detonates, they ALL show
+            // the fail art + blast (they're wired together — one going off
+            // takes the rest down).
+            src = game.level.payloadAssets.lose;
         }
 
         const img = this._img(ASSET_PREFIX + src);
@@ -993,7 +1073,7 @@ export class Renderer {
         const mass = spawns.length ? spawns : game.nodes.filter((n) => n.type === "spawn");
         const flipX = mass.length ? (mass.reduce((s, n) => s + n.x, 0) / mass.length < node.x ? -1 : 1) : 1;
 
-        const bombLost = game.gameState === "lost" && (game.detonatedNodeId == null || node.id === game.detonatedNodeId);
+        const bombLost = game.gameState === "lost"; // twin bombs fail together
         if (game.gameState === "playing") {
             rot = Math.sin(game.frameCount * 0.1) * 0.05;
         } else if (bombLost && game.lostAt != null) {
@@ -1214,27 +1294,6 @@ export class Renderer {
 
         ctx.drawImage(img, -targetWidth / 2, -targetHeight / 2, targetWidth, targetHeight);
 
-        // Color-coded wire pillar: the matchstick head wears a cap in its fuse's
-        // color (blue/red/white/green) so the player can trace which wire each
-        // matchstick lights before sniping. Band overlays the existing PNG art.
-        if (fuse && fuse.color) {
-            const head = WIRE_CAP[fuse.color];
-            ctx.fillStyle = head;
-            ctx.strokeStyle = "rgba(28, 25, 23, 0.9)";
-            ctx.lineWidth = 1.6;
-            ctx.beginPath();
-            // The red head sits in the top-center of the art (measured from the
-            // 800x436 master): x≈-13..13, y≈-35..-8 in this scaled local space.
-            this._roundRectPath(ctx, -13, -35.5, 26, 27.5, 8);
-            ctx.fill();
-            ctx.stroke();
-            // A glossy top sheen keeps the 2D cartoon feel.
-            ctx.fillStyle = "rgba(255,255,255,0.35)";
-            ctx.beginPath();
-            this._roundRectPath(ctx, -9, -33, 9, 6, 3);
-            ctx.fill();
-        }
-
         ctx.restore();
 
         // Reaction word: panic word pops when this matchstick's fuse lights and
@@ -1386,9 +1445,37 @@ export class Renderer {
      *  - Grey denied slash + "NO MORE SNIPS!" when the player swipes with nothing
      *    left — the swipe visibly registers but reads as "no cut", so hitting
      *    the limit never feels like the game stopped responding.
-     *  - A brief "LAST SNIP!" heads-up right after spending the second-to-last cut. */
+     *  - A brief "LAST SNIP!" heads-up right after spending the second-to-last cut.
+     *  A wrong-wire offense also lands here: a bold RED slash + X so the denied
+     *  cut reads as a warning, not a working snip. */
     _drawSnipFeedback(game) {
         const ctx = this.ctx;
+
+        if (game.wireDeniedSlash && game.wireDeniedSlash.life > 0.02) {
+            const d = game.wireDeniedSlash;
+            const mx = (d.start.x + d.end.x) / 2;
+            const my = (d.start.y + d.end.y) / 2;
+            ctx.save();
+            ctx.lineCap = "round";
+            ctx.globalAlpha = 0.9 * d.life;
+            ctx.lineWidth = 11 * d.life + 2;
+            ctx.strokeStyle = "#dc2626";
+            ctx.beginPath();
+            ctx.moveTo(d.start.x, d.start.y);
+            ctx.lineTo(d.end.x, d.end.y);
+            ctx.stroke();
+            // Red X at the middle of the swipe marks it as a denied cut.
+            ctx.lineWidth = 5;
+            ctx.strokeStyle = `rgba(220, 38, 38, ${(0.95 * d.life).toFixed(3)})`;
+            const r = 9 * d.life + 2;
+            ctx.beginPath();
+            ctx.moveTo(mx - r, my - r);
+            ctx.lineTo(mx + r, my + r);
+            ctx.moveTo(mx + r, my - r);
+            ctx.lineTo(mx - r, my + r);
+            ctx.stroke();
+            ctx.restore();
+        }
 
         if (game.deniedSlash && game.deniedSlash.life > 0.02) {
             const d = game.deniedSlash;
@@ -1432,8 +1519,14 @@ export class Renderer {
     _activePopupWords(game) {
         const active = (at, dur) => at != null && game.frameCount >= at && game.frameCount - at < dur;
         const out = [];
+        if (game.wireOffenseAt && active(game.wireOffenseAt.at, 75)) {
+            out.push({ kind: "word", text: "WRONG WIRE!", color: "#ef4444", x: game.wireOffenseAt.x, y: game.wireOffenseAt.y, size: 27, at: game.wireOffenseAt.at, duration: 75, dy: -52 });
+        }
         if (game.noSnipsAt && active(game.noSnipsAt.at, 85)) {
             out.push({ kind: "word", text: "NO MORE SNIPS!", color: "#ef4444", x: game.noSnipsAt.x, y: game.noSnipsAt.y, size: 24, at: game.noSnipsAt.at, duration: 85, dy: -26 });
+        }
+        if (game.deadCutAt && active(game.deadCutAt.at, 70)) {
+            out.push({ kind: "word", text: "ALREADY CUT!", color: "#9ca3af", x: game.deadCutAt.x, y: game.deadCutAt.y, size: 20, at: game.deadCutAt.at, duration: 70, dy: -36 });
         }
         if (game.lastSnipAt != null) {
             const last = game.cuts[game.cuts.length - 1];
@@ -1446,6 +1539,12 @@ export class Renderer {
         }
         for (const mk of game.multikills || []) {
             if (active(mk.at, 55)) out.push({ kind: "bank", text: `+${mk.count}`, count: mk.count, x: mk.x, y: mk.y, size: 30 + mk.count * 5, at: mk.at, duration: 55, dy: -140 });
+        }
+        // Gold star banked: a bonus snip pops at the star in a warm gold.
+        for (const b of game.bonusSnipsAt || []) {
+            if (active(b.at, 70)) {
+                out.push({ kind: "word", text: "SNIP +1", color: "#d97706", x: b.x, y: b.y, size: 22, at: b.at, duration: 70, dy: -44 });
+            }
         }
         return out;
     }

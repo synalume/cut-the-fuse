@@ -360,6 +360,13 @@ function showStars(stars) {
 }
 
 game.onSnipsChange = () => updateUi();
+// A banked gold star pulses the snip counter green so the +1 reads even when
+// the count net-settles (the star refunds the snip the cut just spent).
+game.onStarBanked = () => {
+    snipsCounter.classList.remove("bonus");
+    void snipsCounter.offsetWidth; // restart the CSS animation
+    snipsCounter.classList.add("bonus");
+};
 game.onNoSnips = () => {
     // Shake the snips counter so running out never feels like the game stopped
     // responding. The canvas draws the "NO MORE SNIPS!" bubble as well.

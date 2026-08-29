@@ -57,10 +57,10 @@ console.log("  → screenshot tools/smoke/verify-daily-play.png");
 
 // ---- 3. Win the daily via the QA hook ----------------------------------------
 // Teaches the new mechanics like the generator's winnability math (mirrors the
-// smoke sweep): a safe chokepoint costs 1 cut (+1 per armored fuse routed
-// through it), a MIXED crossroad is cut upstream on each safe fuse's own leg,
-// direct safe fuses cost 1 each (+1 if armored), and doused/forbidden decoys
-// need no cut at all. Runs against the REAL cut pipeline in the page.
+// smoke sweep): a safe chokepoint costs 1 cut, a MIXED crossroad is cut
+// upstream on each safe fuse's own leg, direct safe fuses cost 1 each, and
+// doused/forbidden decoys need no cut at all. Runs against the REAL cut
+// pipeline in the page.
 console.log("\n[verify] daily win → streak + done-today state");
 const placed = await page.evaluate(() => {
     const g = window.__CTF__.game;
@@ -97,18 +97,15 @@ const placed = await page.evaluate(() => {
             for (const f of cuttable) {
                 const leg = bez(0.24, f);
                 actions.push({ x: leg.x, y: leg.y });
-                if (f.armor) actions.push({ x: leg.x, y: leg.y });
             }
         } else if (cuttable.length) {
             const cp = level.intersectionMap[cpId];
             actions.push({ x: cp.x, y: cp.y });
-            for (const f of cuttable) if (f.armor) actions.push({ x: cp.x, y: cp.y });
         }
     }
     for (const f of level.fuses) {
         if (f.routeThrough || isForb(f) || dousedIds.has(f.id)) continue;
         actions.push({ x: f.intersectionPt.x, y: f.intersectionPt.y });
-        if (f.armor) actions.push({ x: f.intersectionPt.x, y: f.intersectionPt.y });
     }
     let placed = 0;
     let denied = 0;

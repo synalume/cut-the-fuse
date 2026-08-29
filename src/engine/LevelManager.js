@@ -179,11 +179,8 @@ export function buildLevel(config, viewport, assets = null) {
         fuse.startNode = start;
         fuse.endNode = end;
         fuse.color = f.color || null;
-        fuse.armor = !!f.armor;
         fuse.neverLights = !!f.neverLights;
         fuse.hits = 0;
-        fuse.frayed = false;
-        fuse.frayedAt = null;
         fuses[i] = fuse;
     });
 
@@ -202,11 +199,8 @@ export function buildLevel(config, viewport, assets = null) {
         fuse.startNode = start;
         fuse.endNode = end;
         fuse.color = f.color || null;
-        fuse.armor = !!f.armor;
         fuse.neverLights = !!f.neverLights;
         fuse.hits = 0;
-        fuse.frayed = false;
-        fuse.frayedAt = null;
         fuses[i] = fuse;
     });
 
