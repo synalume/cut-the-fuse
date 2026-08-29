@@ -25,16 +25,22 @@ fi
 rm -rf "$STAGE"
 mkdir -p "$STAGE/src" "$STAGE/assets" "$OUT_DIR"
 
+for f in favicon.ico favicon-16.png favicon-32.png favicon-48.png \
+         apple-touch-icon.png icon-192.png icon-512.png site.webmanifest; do
+  if [[ -f "$ROOT/$f" ]]; then cp "$ROOT/$f" "$STAGE/"; fi
+done
+
 cp "$CONFIG" "$STAGE/playgama-bridge-config.json"
 cp "$ROOT/index.html" "$STAGE/index.html"
 cp -R "$ROOT/src/." "$STAGE/src/"
 cp -R "$ROOT/assets/." "$STAGE/assets/"
 
-python3 - "$STAGE/index.html" <<'PY'
+python3 - "$STAGE/index.html" "$ROOT/site.webmanifest" "$STAGE" <<'PY'
 import re, sys
 from pathlib import Path
 
 html = Path(sys.argv[1]).read_text(encoding="utf-8")
+src_manifest, stage = Path(sys.argv[2]), Path(sys.argv[3])
 
 # Drop Playables SDK — Bridge loads platform-native scripts when hosted by Playgama.
 html = re.sub(
@@ -54,7 +60,20 @@ if "PLAYGAMA_BUILD" not in html:
         raise SystemExit("error: no <head> in index.html")
     html = html.replace("<head>", "<head>\n" + bridge_inject, 1)
 
+# Absolute host / root paths — Playgama serves the zip from their CDN.
+html = html.replace("https://play.cutthefuse.com/apple-touch-icon.png?v=ctf1", "apple-touch-icon.png")
+html = re.sub(r'href="/favicon-(\d+)\.png\?v=ctf1"', r'href="favicon-\1.png"', html)
+html = html.replace('href="/favicon.ico?v=ctf1"', 'href="favicon.ico"')
+html = html.replace('href="/site.webmanifest?v=ctf1"', 'href="site.webmanifest"')
+html = re.sub(r'https://play\.cutthefuse\.com[^\s\"\']+', '', html)
 Path(sys.argv[1]).write_text(html, encoding="utf-8")
+
+manifest = src_manifest.read_text(encoding="utf-8")
+manifest = manifest.replace('"start_url": "/"', '"start_url": "./"')
+manifest = manifest.replace("/icon-192.png?v=ctf1", "icon-192.png")
+manifest = manifest.replace("/icon-512.png?v=ctf1", "icon-512.png")
+manifest = re.sub(r'"src": "/og\.png\?v=ctf1"', '"src": "icon-512.png"', manifest)
+(stage / "site.webmanifest").write_text(manifest, encoding="utf-8")
 PY
 
 if [[ -e "$STAGE/cert" ]] || [[ -e "$STAGE/locked-branding" ]] || [[ -e "$STAGE/tools" ]]; then
@@ -79,6 +98,11 @@ if ! grep -q 'bridge.playgama.com/v2/stable/playgama-bridge.js' "$STAGE/index.ht
 fi
 if ! grep -q 'window.__CUT_THE_FUSE_PLAYGAMA__ = true' "$STAGE/index.html"; then
   echo "error: Playgama flag assignment missing from index.html" >&2
+  exit 1
+fi
+if grep -qE 'href="/favicon|href="/site\.webmanifest|play\.cutthefuse\.com/' "$STAGE/index.html"; then
+  echo "error: absolute play.cutthefuse.com or root asset paths remain" >&2
+  grep -nE 'play\.cutthefuse\.com|href="/favicon|href="/site' "$STAGE/index.html" >&2 || true
   exit 1
 fi
 if [[ ! -f "$STAGE/playgama-bridge-config.json" ]]; then

@@ -3,7 +3,10 @@ cert/out/
 playgama/out/stage/
 dist/out/stage/
 *.zip
+# MuAPI-generated masters — regenerate via tools/gen-marketing
+tools/gen-marketing/out/
 .DS_Store
 node_modules/
 .firebase/
 analytics-events.jsonl
+tools/gen-marketing/.cache/

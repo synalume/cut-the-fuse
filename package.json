@@ -12,7 +12,10 @@
     "gen:levels": "node tools/level-gen/gen-levels.mjs",
     "audio:list": "node tools/gen-audio/gen-mmaudio.mjs list",
     "art:queue": "echo 'open tools/art-queue/art-queue.html via the dev server'",
-    "art:queue:gen": "node tools/art-queue/gen-art-queue-data.mjs"
+    "art:queue:gen": "node tools/art-queue/gen-art-queue-data.mjs",
+    "marketing:gen": "node tools/gen-marketing/gen-covers.mjs",
+    "marketing:gen:go": "node tools/gen-marketing/gen-covers.mjs --generate",
+    "marketing:derive": "python3 tools/gen-marketing/derive-assets.py"
   },
   "devDependencies": {
     "playwright": "^1.62.1"

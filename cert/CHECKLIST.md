@@ -7,6 +7,7 @@ YouTube Playables / MC Play upload. Build: `./cert/make-bundle.sh` → `cert/out
 - [ ] Placeholder art in `assets/` (lvl1 set) + baked audio in `assets/audio/` (or synth fallback flagged in build log)
 - [ ] `src/data/levels.json` validates with zero warnings (`node tools/level-gen/gen-levels.mjs`)
 - [ ] 60-level ladder playable end-to-end; no black-hole levels (analytics: attempts per level)
+- [x] Marketing thumbnails generated (`tools/gen-marketing/` → `cert/thumbnails/`, `playgama/covers/`, `locked-branding/`)
 
 ## Bundle gate (script enforces)
 

@@ -33,16 +33,22 @@ fi
 rm -rf "$STAGE"
 mkdir -p "$STAGE/src" "$STAGE/assets" "$OUT_DIR"
 
+for f in favicon.ico favicon-16.png favicon-32.png favicon-48.png \
+         apple-touch-icon.png icon-192.png icon-512.png site.webmanifest; do
+  if [[ -f "$ROOT/$f" ]]; then cp "$ROOT/$f" "$STAGE/"; fi
+done
+
 cp "$ROOT/index.html" "$STAGE/index.html"
 cp -R "$ROOT/src/." "$STAGE/src/"
 cp -R "$ROOT/assets/." "$STAGE/assets/"
 
-python3 - "$STAGE/index.html" "$POKI" <<'PY'
+python3 - "$STAGE/index.html" "$ROOT/site.webmanifest" "$STAGE" "$POKI" <<'PY'
 import re, sys
 from pathlib import Path
 
 html = Path(sys.argv[1]).read_text(encoding="utf-8")
-poki = sys.argv[2] == "1"
+src_manifest, stage = Path(sys.argv[2]), Path(sys.argv[3])
+poki = sys.argv[4] == "1"
 
 # Drop Playables SDK — portal / Poki zips must not call youtube.com.
 html = re.sub(
@@ -68,7 +74,20 @@ elif poki and "window.__CUT_THE_FUSE_POKI__" not in html:
 elif (not poki) and "window.__CUT_THE_FUSE_PORTAL__" not in html:
     html = html.replace("<head>", "<head>\n" + portal_flag, 1)
 
+# Absolute host / root paths — portal zips live under a subdirectory on itch/CDN.
+html = html.replace("https://play.cutthefuse.com/apple-touch-icon.png?v=ctf1", "apple-touch-icon.png")
+html = re.sub(r'href="/favicon-(\d+)\.png\?v=ctf1"', r'href="favicon-\1.png"', html)
+html = html.replace('href="/favicon.ico?v=ctf1"', 'href="favicon.ico"')
+html = html.replace('href="/site.webmanifest?v=ctf1"', 'href="site.webmanifest"')
+html = re.sub(r'https://play\.cutthefuse\.com[^\s\"\']+', '', html)
 Path(sys.argv[1]).write_text(html, encoding="utf-8")
+
+manifest = src_manifest.read_text(encoding="utf-8")
+manifest = manifest.replace('"start_url": "/"', '"start_url": "./"')
+manifest = manifest.replace("/icon-192.png?v=ctf1", "icon-192.png")
+manifest = manifest.replace("/icon-512.png?v=ctf1", "icon-512.png")
+manifest = re.sub(r'"src": "/og\.png\?v=ctf1"', '"src": "icon-512.png"', manifest)
+(stage / "site.webmanifest").write_text(manifest, encoding="utf-8")
 PY
 
 if [[ "$POKI" -eq 1 ]]; then
