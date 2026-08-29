@@ -109,6 +109,11 @@ export const IGNITER_TYPES = [
         blurb: "Flick and go",
         theme: "retro metal pocket lighter with a thumb-wheel striker",
         assets: { idle: "skin_lighter_idle.png", ignition: "skin_lighter_ignition.png", dud: "skin_lighter_dud.png" },
+        // The lighter's art fills more of the shared 800×436 canvas than the
+        // other igniters, so it reads oversized next to them in the armory.
+        // Scale its preview slightly down (armory-only; in-game the ignition
+        // frame's flame must stay glued to the fuse).
+        artScale: 0.82,
         unlock: { level: 4, ad: true },
     },
     {

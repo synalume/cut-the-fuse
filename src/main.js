@@ -600,6 +600,12 @@ function renderArmory() {
         img.src = `assets/${firstFrame}`;
         img.onerror = () => { img.onerror = null; img.src = `assets/${fallbackFrame(armoryTab)}`; };
         img.alt = item.name;
+        // Per-skin preview scale: some art fills the shared canvas more than
+        // its peers (e.g. the lighter), so shrink just the preview to match.
+        if (item.artScale) {
+            img.style.transform = `scale(${item.artScale})`;
+            img.style.transformOrigin = "center bottom";
+        }
 
         const name = document.createElement("div");
         name.className = "skin-name";
