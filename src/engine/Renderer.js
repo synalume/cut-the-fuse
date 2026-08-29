@@ -22,6 +22,44 @@ export const COMIC_WORDS = {
     lost: ["KABOOM!", "BOOM!", "BANG!", "BLAM!", "KERBOOM!", "WHAM!"],
 };
 
+/** Live-wire gradient stop sets, keyed by fuse color. Only the WIRE'S hue
+ *  changes — the pulsing/drifting band, ember glow, retro spark and ash trail
+ *  behave identically, and fire always stays amber so a red wire burning still
+ *  reads as "red wire + orange fire". Colors follow real electrical wiring
+ *  conventions: red = live/forbidden, blue/white/green = neutral/ground (safe). */
+const WIRE_STOPS = {
+    amber: ["#f59e0b", "#fbbf24", "#d97706", "#b45309"],
+    red: ["#ef4444", "#f87171", "#dc2626", "#991b1b"],
+    orange: ["#f97316", "#fb923c", "#ea580c", "#c2410c"],
+    blue: ["#3b82f6", "#60a5fa", "#2563eb", "#1e40af"],
+    white: ["#f5f5f4", "#fefefe", "#d6d3d1", "#a8a29e"],
+    green: ["#22c55e", "#4ade80", "#16a34a", "#15803d"],
+};
+/** Fill colors for the legend chips (solid, slightly darker than the live stops). */
+const WIRE_CHIP = {
+    red: "#dc2626",
+    orange: "#ea580c",
+    blue: "#2563eb",
+    white: "#e7e5e4",
+    green: "#16a34a",
+};
+const WIRE_CHIP_BORDER = {
+    red: "#7f1d1d",
+    orange: "#7c2d12",
+    blue: "#1e3a8a",
+    white: "#78716c",
+    green: "#14532d",
+};
+/** Matchstick-head cap fills (saturated solid so the cap reads at a glance). */
+const WIRE_CAP = {
+    red: "#ef4444",
+    orange: "#f97316",
+    blue: "#3b82f6",
+    white: "#e8e6e1",
+    green: "#22c55e",
+    amber: "#f59e0b",
+};
+
 /** Deterministic pick from a word list keyed on level + node id, so a character
  *  always says the same thing within a level but it varies across levels. */
 function pickReactionWord(levelId, nodeId, list) {
@@ -181,12 +219,15 @@ export class Renderer {
 
         this._drawHint(game);
         this._drawFuses(game);
+        this._drawFrayedMarks(game);
         this._drawCuts(game);
         this._drawCutFlash(game);
         this._drawBranchFlares(game);
         // Spark effects draw before the assets so the burning head passes
         // behind the matchstick and banana, not over them.
         if (game.gameState === "playing") this._drawSparkEffects(game);
+        this._drawWaterDrops(game);
+        this._drawPickups(game);
         this._drawAssets(game);
         if (game.gameState === "lost") this._drawComicText(game, game.comicWord || "KABOOM!", "#ef4444", game.lostAt);
         if (game.gameState === "won") this._drawComicText(game, game.comicWord || "PHEW!", "#22c55e", game.wonAt);
@@ -196,6 +237,9 @@ export class Renderer {
         this._drawTutorialDemo(game);
 
         ctx.restore();
+
+        // Screen-space HUD: the color-coded wire legend (pinned near the top).
+        this._drawWireLegend(game);
     }
 
     /** Home-screen ambient: a burning spark wanders a random organic loop and
@@ -567,18 +611,226 @@ export class Renderer {
         }
     }
 
+    /** Frayed armored wicks: after a first snip the wick is charred and split
+     *  but the fire keeps burning through — short dark strands + a faint ember
+     *  at the hit point until the second snip severs it. */
+    _drawFrayedMarks(game) {
+        const ctx = this.ctx;
+        for (const fr of game.frayedAt || []) {
+            const elapsed = game.frameCount - fr.at;
+            if (elapsed > 140) continue;
+            const alpha = Math.min(1, (140 - elapsed) / 40);
+            ctx.save();
+            ctx.translate(fr.x, fr.y);
+            ctx.rotate(fr.angle || 0);
+            ctx.lineCap = "round";
+            for (let s = 0; s < 4; s++) {
+                const spread = (s - 1.5) * 5 + Math.sin(game.frameCount * 0.3 + s) * 2;
+                ctx.strokeStyle = `rgba(41, 37, 36, ${0.7 * alpha})`;
+                ctx.lineWidth = 2.2;
+                ctx.beginPath();
+                ctx.moveTo(-8, spread);
+                ctx.lineTo(10, spread + Math.sin(game.frameCount * 0.4 + s * 2) * 2.5);
+                ctx.stroke();
+            }
+            // Small amber embers where the fray smolders.
+            if (elapsed < 90) {
+                const grad = this._radialGradient(0, 0, 0, 0, 0, 12);
+                grad.addColorStop(0, `rgba(254, 240, 138, ${0.5 * alpha})`);
+                grad.addColorStop(1, "rgba(249, 115, 22, 0)");
+                ctx.fillStyle = grad;
+                ctx.beginPath();
+                ctx.arc(0, 0, 12, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            ctx.restore();
+        }
+    }
+
+    /** Water drops: a droplet rides each doused fuse at its douse point. When
+     *  the spark arrives it snuffs there (blue splash particles do the rest). */
+    _drawWaterDrops(game) {
+        const ctx = this.ctx;
+        for (const d of game.level?.douse || []) {
+            const fuse = d.fuseIndex != null ? game.fuses[d.fuseIndex] : null;
+            if (!fuse) continue;
+            const pos = getBezierXY(d.at, fuse.startNode, fuse.cp1, fuse.cp2, fuse.endNode);
+            const spark = game.sparks[d.fuseIndex];
+            const gone = spark && (!spark.active || spark.progress >= d.at);
+
+            ctx.save();
+            ctx.translate(pos.x, pos.y);
+            if (gone) {
+                // Extinguished: the droplet shrinks and fades.
+                const t = Math.max(0, 1 - ((game.frameCount - spark.diedAt) / 60));
+                ctx.globalAlpha = 0.4 * t;
+                ctx.scale(0.6 + 0.4 * t, 0.6 + 0.4 * t);
+            } else {
+                ctx.globalAlpha = 0.95;
+                ctx.rotate(Math.sin(game.frameCount * 0.08 + pos.x * 0.01) * 0.1);
+            }
+            const bob = Math.sin(game.frameCount * 0.09 + pos.x * 0.02) * 1.2;
+            ctx.translate(0, bob);
+            // Teardrop: a circle body + a pointy top, blue with a white sheen.
+            const grad = this._radialGradient(-2, -2, 0, 0, 0, 9);
+            grad.addColorStop(0, "#dbeafe");
+            grad.addColorStop(0.5, "#60a5fa");
+            grad.addColorStop(1, "#2563eb");
+            ctx.fillStyle = grad;
+            ctx.beginPath();
+            ctx.moveTo(0, -10);
+            ctx.quadraticCurveTo(8, -3, 8, 2);
+            ctx.arc(0, 2, 8, 0, Math.PI);
+            ctx.quadraticCurveTo(-8, -3, 0, -10);
+            ctx.closePath();
+            ctx.fill();
+            ctx.lineWidth = 1.4;
+            ctx.strokeStyle = "rgba(30, 58, 138, 0.85)";
+            ctx.stroke();
+            ctx.fillStyle = "rgba(255,255,255,0.85)";
+            ctx.beginPath();
+            ctx.arc(-2.5, -1.5, 2, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.restore();
+        }
+    }
+
+    /** Gold pickup stars: a bonus snip banks when a cut's circle touches one.
+     *  Uncollected stars pulse with a sparkle; collected ones leave the burst. */
+    _drawPickups(game) {
+        const ctx = this.ctx;
+        for (const p of game.pickups || []) {
+            if (p.collected) continue;
+            const pulse = 1 + Math.sin(game.frameCount * 0.12 + p.x * 0.02) * 0.12;
+            this._drawGoldStar(ctx, p.x, p.y, 11, pulse);
+        }
+        // Collected sparkle trail fades out on the bonus popups.
+        for (const b of game.bonusSnipsAt || []) {
+            const t = game.frameCount - b.at;
+            if (t < 0 || t > 45) continue;
+            const alpha = Math.max(0, 1 - t / 45);
+            for (let i = 0; i < 5; i++) {
+                const a = (i / 5) * Math.PI * 2 + game.frameCount * 0.05;
+                const r = 8 + t * 0.6;
+                ctx.save();
+                ctx.globalAlpha = alpha;
+                ctx.fillStyle = "#fbbf24";
+                ctx.beginPath();
+                ctx.arc(b.x + Math.cos(a) * r, b.y + Math.sin(a) * r, 2.2, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+            }
+        }
+    }
+
+    /** A chunky 5-point gold star (Luckiest-Guy-friendly cartoon shape). */
+    _drawGoldStar(ctx, x, y, r, scale = 1) {
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.rotate(Math.sin(x * 0.03) * 0.1);
+        ctx.scale(scale, scale);
+        ctx.beginPath();
+        for (let i = 0; i < 10; i++) {
+            const ang = (i * Math.PI) / 5 - Math.PI / 2;
+            const rad = i % 2 === 0 ? r : r * 0.45;
+            const px = Math.cos(ang) * rad;
+            const py = Math.sin(ang) * rad;
+            if (i === 0) ctx.moveTo(px, py);
+            else ctx.lineTo(px, py);
+        }
+        ctx.closePath();
+        ctx.fillStyle = "#f59e0b";
+        ctx.fill();
+        ctx.lineJoin = "round";
+        ctx.lineWidth = 2;
+        ctx.strokeStyle = "#78350f";
+        ctx.stroke();
+        // Gleam on the top facet.
+        ctx.fillStyle = "rgba(254, 243, 199, 0.9)";
+        ctx.beginPath();
+        ctx.arc(-r * 0.2, -r * 0.28, r * 0.18, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+    }
+
+    /** Screen-space legend for color-coded wire levels: a chip row near the top
+     *  showing which colors are SAFE to cut (✓) and which are traps (✗). Pinned
+     *  under the header so the player reads it once and traces before sniping. */
+    _drawWireLegend(game) {
+        const wr = game.level?.wireRule;
+        if (!wr || !wr.legend) return;
+        const ctx = this.ctx;
+        const colors = Object.keys(wr.legend);
+
+        // Build the chip row (measure first).
+        ctx.font = "600 13px 'Baloo 2', 'Luckiest Guy', 'Courier New', Courier, monospace";
+        const chips = colors.map((c) => {
+            const safe = wr.legend[c] === "cut";
+            const label = safe ? "CUT" : "DON'T CUT";
+            return { c, safe, label, w: 17 + ctx.measureText(label).width + 10 };
+        });
+        const gap = 10;
+        const totalW = chips.reduce((s, ch, i) => s + ch.w + (i < chips.length - 1 ? gap : 0), 0) + 18;
+        const x0 = (this.width - totalW) / 2;
+        const y0 = 58;
+
+        ctx.save();
+        // Card backdrop (cream, hard offset shadow like the UI).
+        ctx.fillStyle = "rgba(246, 236, 209, 0.94)";
+        ctx.strokeStyle = "#2b1f14";
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        this._roundRectPath(ctx, x0, y0, totalW, 30, 8);
+        ctx.fill();
+        ctx.shadowColor = "rgba(43, 31, 20, 0.45)";
+        ctx.shadowBlur = 0;
+        ctx.shadowOffsetX = 3;
+        ctx.shadowOffsetY = 3;
+        ctx.stroke();
+        ctx.shadowOffsetX = 0;
+        ctx.shadowOffsetY = 0;
+
+        let x = x0 + 9;
+        for (const ch of chips) {
+            // Colored chip.
+            const cy = y0 + 6.5;
+            ctx.fillStyle = WIRE_CHIP[ch.c] || "#78716c";
+            ctx.beginPath();
+            this._roundRectPath(ctx, x, cy, 17, 17, 5);
+            ctx.fill();
+            ctx.lineWidth = 1.6;
+            ctx.strokeStyle = WIRE_CHIP_BORDER[ch.c] || "#1c1917";
+            ctx.stroke();
+            // ✓ / ✗ mark.
+            ctx.font = "12px 'Baloo 2', 'Luckiest Guy', 'Courier New', Courier, monospace";
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+            ctx.fillStyle = ch.c === "white" ? "#1c1917" : "#ffffff";
+            ctx.fillText(ch.safe ? "✓" : "✗", x + 8.5, cy + 8.5);
+            // Label.
+            ctx.font = "600 13px 'Baloo 2', 'Luckiest Guy', 'Courier New', Courier, monospace";
+            ctx.textAlign = "left";
+            ctx.fillStyle = ch.safe ? "#15803d" : "#b91c1c";
+            ctx.fillText(ch.label, x + 22, y0 + 15.5);
+            x += ch.w + gap;
+        }
+        ctx.restore();
+    }
+
     /** Gradient along the live wire: hot at the burn front, cooling toward the
      *  payload. A slow drift of the hot band reads as energy flowing (replaces
-     *  the bright traveling slug). */
+     *  the bright traveling slug). Colored wires hue-shift only the stops —
+     *  the behavior (drift, banding) is identical to the classic amber wire. */
     _liveWireGradient(game, fuse, wob, burnt) {
         const hot = wob(Math.max(0.001, burnt));
         const cool = wob(1);
         const grad = this._linearGradient(hot.x, hot.y, cool.x, cool.y);
         const drift = 0.15 * Math.sin(game.frameCount * 0.05 + burnt * 2);
-        grad.addColorStop(0, "#f59e0b");
-        grad.addColorStop(0.35 + drift, "#fbbf24");
-        grad.addColorStop(0.65 + drift, "#d97706");
-        grad.addColorStop(1, "#b45309");
+        const stops = WIRE_STOPS[fuse.color] || WIRE_STOPS.amber;
+        grad.addColorStop(0, stops[0]);
+        grad.addColorStop(0.35 + drift, stops[1]);
+        grad.addColorStop(0.65 + drift, stops[2]);
+        grad.addColorStop(1, stops[3]);
         return grad;
     }
 
@@ -715,7 +967,13 @@ export class Renderer {
         const ctx = this.ctx;
         let src = game.level.payloadAssets.playing;
         if (game.gameState === "won") src = game.level.payloadAssets.win;
-        else if (game.gameState === "lost") src = game.level.payloadAssets.lose;
+        else if (game.gameState === "lost") {
+            // Only the bomb that actually detonated shows the fail art + blast;
+            // a surviving twin-bomb keeps its playing art.
+            src = game.detonatedNodeId == null || node.id === game.detonatedNodeId
+                ? game.level.payloadAssets.lose
+                : game.level.payloadAssets.playing;
+        }
 
         const img = this._img(ASSET_PREFIX + src);
         if (!img) return;
@@ -727,15 +985,18 @@ export class Renderer {
         let scaleY = 1;
         let rot = 0;
         let dy = 0;
-        // The payload faces the majority of its matchsticks — when the bomb is
-        // pushed off-center (offset/train layouts) it should look at the spawns.
-        // Art is drawn facing +x, so flip when the spawn mass sits to the left.
-        const spawns = game.nodes.filter((n) => n.type === "spawn");
-        const flipX = spawns.length ? (spawns.reduce((s, n) => s + n.x, 0) / spawns.length < node.x ? -1 : 1) : 1;
+        // The payload faces the majority of its own matchsticks — when the bomb
+        // is pushed off-center (offset/train layouts, or twin bombs) it should
+        // look at the spawns that threaten IT. Art is drawn facing +x, so flip
+        // when the spawn mass sits to the left.
+        const spawns = game.nodes.filter((n) => n.type === "spawn" && game.fuses.some((f) => f.startNode === n && f.endNode === node));
+        const mass = spawns.length ? spawns : game.nodes.filter((n) => n.type === "spawn");
+        const flipX = mass.length ? (mass.reduce((s, n) => s + n.x, 0) / mass.length < node.x ? -1 : 1) : 1;
 
+        const bombLost = game.gameState === "lost" && (game.detonatedNodeId == null || node.id === game.detonatedNodeId);
         if (game.gameState === "playing") {
             rot = Math.sin(game.frameCount * 0.1) * 0.05;
-        } else if (game.gameState === "lost" && game.lostAt != null) {
+        } else if (bombLost && game.lostAt != null) {
             // Cartoon blast backdrop behind the art, then bounce the PNG with it.
             this._drawBlast(game, node);
 
@@ -755,7 +1016,8 @@ export class Renderer {
         ctx.scale(scaleX * flipX, scaleY);
         ctx.translate(0, dy);
 
-        const targetHeight = 150; // TEST: 200 → 150
+        // Twin bombs are drawn smaller so both fit the frame comfortably.
+        const targetHeight = (game.level.payloads && game.level.payloads.length > 1) ? 118 : 150;
         const aspect = img.width / img.height;
         const targetWidth = targetHeight * aspect;
 
@@ -763,13 +1025,14 @@ export class Renderer {
         ctx.restore();
 
         // Dramatic reaction word above the banana — pops in the moment a spark
-        // lights, fades out so it doesn't block the view, and reappears on fail.
+        // that threatens THIS bomb lights, fades out, and reappears on fail.
+        // Each payload only panics for its own incoming sparks (twin bombs).
+        const threatened = (s) => s.active && s.ignited && s.ignitedAt != null && s.progress < 1
+            && game.fuses[s.fuseIndex]?.endNode === node;
         if (game.gameState === "playing") {
             let latestIgnite = -1;
             for (const s of game.sparks) {
-                if (s.active && s.ignited && s.ignitedAt != null && s.progress < 1) {
-                    latestIgnite = Math.max(latestIgnite, s.ignitedAt);
-                }
+                if (threatened(s)) latestIgnite = Math.max(latestIgnite, s.ignitedAt);
             }
             if (latestIgnite >= 0) {
                 this._drawReactionText(
@@ -778,7 +1041,7 @@ export class Renderer {
                     "#ef4444", 40, -128, latestIgnite, REACTION_SHOW_FRAMES
                 );
             }
-        } else if (game.gameState === "lost" && game.lostAt != null) {
+        } else if (bombLost && game.lostAt != null) {
             // Reappear as the blast settles, tucked above the KABOOM! word.
             this._drawReactionText(
                 game, node,
@@ -934,8 +1197,10 @@ export class Renderer {
 
         // Every matchstick faces the level's center line: art is drawn facing
         // +x, so spawns on the LEFT of the payload keep facing right (toward
-        // center) and spawns on the RIGHT flip to face left.
-        const payloadNode = game.nodes.find((n) => n.type === "payload");
+        // center) and spawns on the RIGHT flip to face left. With twin bombs,
+        // each matchstick faces the payload it actually feeds.
+        const fuse = fuseIndex >= 0 ? game.fuses[fuseIndex] : null;
+        const payloadNode = fuse ? fuse.endNode : game.nodes.find((n) => n.type === "payload");
         const flip = payloadNode ? node.x > payloadNode.x : false;
 
         ctx.save();
@@ -948,6 +1213,28 @@ export class Renderer {
         const targetWidth = targetHeight * aspect;
 
         ctx.drawImage(img, -targetWidth / 2, -targetHeight / 2, targetWidth, targetHeight);
+
+        // Color-coded wire pillar: the matchstick head wears a cap in its fuse's
+        // color (blue/red/white/green) so the player can trace which wire each
+        // matchstick lights before sniping. Band overlays the existing PNG art.
+        if (fuse && fuse.color) {
+            const head = WIRE_CAP[fuse.color];
+            ctx.fillStyle = head;
+            ctx.strokeStyle = "rgba(28, 25, 23, 0.9)";
+            ctx.lineWidth = 1.6;
+            ctx.beginPath();
+            // The red head sits in the top-center of the art (measured from the
+            // 800x436 master): x≈-13..13, y≈-35..-8 in this scaled local space.
+            this._roundRectPath(ctx, -13, -35.5, 26, 27.5, 8);
+            ctx.fill();
+            ctx.stroke();
+            // A glossy top sheen keeps the 2D cartoon feel.
+            ctx.fillStyle = "rgba(255,255,255,0.35)";
+            ctx.beginPath();
+            this._roundRectPath(ctx, -9, -33, 9, 6, 3);
+            ctx.fill();
+        }
+
         ctx.restore();
 
         // Reaction word: panic word pops when this matchstick's fuse lights and
@@ -1169,11 +1456,14 @@ export class Renderer {
     _activeReactionObstacles(game) {
         const out = [];
         const lit = (at, dur) => at != null && game.frameCount >= at && game.frameCount - at < dur;
-        const payload = game.nodes?.find((n) => n.type === "payload");
-        if (payload) {
+        const payloads = game.nodes?.filter((n) => n.type === "payload") || [];
+        for (const payload of payloads) {
             let latestIgnite = -1;
             for (const s of game.sparks || []) {
-                if (s.active && s.ignited && s.ignitedAt != null && s.progress < 1) latestIgnite = Math.max(latestIgnite, s.ignitedAt);
+                if (s.active && s.ignited && s.ignitedAt != null && s.progress < 1
+                    && game.fuses[s.fuseIndex]?.endNode === payload) {
+                    latestIgnite = Math.max(latestIgnite, s.ignitedAt);
+                }
             }
             if (latestIgnite >= 0 && lit(latestIgnite, REACTION_SHOW_FRAMES)) {
                 out.push({ text: pickReactionWord(game.level.level_id, payload.id, REACTION_WORDS.payloadDanger), x: payload.x, y: payload.y - 128, size: 40 });
@@ -1491,8 +1781,7 @@ export class Renderer {
     }
 
     /** Radial gradient that safely degrades to a no-op on stub contexts. */
-    _radialGradient(x0, y0, r0, x1, y1, r1) {
-        const fn = this.ctx.createRadialGradient;
+    _radialGradient(x0, y0, r0, x1, y1, r1) {        const fn = this.ctx.createRadialGradient;
         if (typeof fn !== "function") return { addColorStop() {} };
         const g = fn.call(this.ctx, x0, y0, r0, x1, y1, r1);
         return g || { addColorStop() {} };
@@ -1504,5 +1793,14 @@ export class Renderer {
         if (typeof fn !== "function") return { addColorStop() {} };
         const g = fn.call(this.ctx, x0, y0, x1, y1);
         return g || { addColorStop() {} };
+    }
+
+    /** Rounded-rect path with a fallback for browsers without ctx.roundRect. */
+    _roundRectPath(ctx, x, y, w, h, r) {
+        if (typeof ctx.roundRect === "function") {
+            ctx.roundRect(x, y, w, h, r);
+            return;
+        }
+        ctx.rect(x, y, w, h);
     }
 }

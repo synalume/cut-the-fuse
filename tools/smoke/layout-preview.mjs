@@ -1,4 +1,4 @@
-// tools/smoke/layout-preview.mjs — render all 60 level layouts as an SVG montage.
+// tools/smoke/layout-preview.mjs — render all level layouts as an SVG montage.
 // Run: node tools/smoke/layout-preview.mjs
 // Writes to tools/smoke/layout-preview.svg for quick visual QA.
 import { readFileSync, writeFileSync } from "node:fs";
@@ -39,11 +39,12 @@ levels.forEach((lvl, i) => {
     const y0 = PAD + row * (TV + PAD);
 
     const all = [
-        { x: lvl.payload.x, y: lvl.payload.y },
+        ...(lvl.payloads || [lvl.payload]),
         ...lvl.spawns,
         ...lvl.intersections,
     ];
     const to = normalize(all);
+    const payloadOf = (end) => (lvl.payloads || []).find((p) => p.id === end) || lvl.payload;
 
     out += `<g transform="translate(${x0},${y0})">`;
     // thumbnail bg
@@ -51,16 +52,16 @@ levels.forEach((lvl, i) => {
     out += `<text x="${TH - 4}" y="11" font-size="9" text-anchor="end" fill="#1c1917" font-weight="bold">${String(lvl.level_id).padStart(2, "0")}</text>`;
 
     const nodes = {
-        bomb: to({ x: lvl.payload.x, y: lvl.payload.y }),
+        bomb: (lvl.payloads || []).map((p) => to(p)),
         spawn: lvl.spawns.map((s) => to(s)),
         cuts: lvl.intersections.map((c) => to(c)),
     };
 
     // fuses
     for (const f of lvl.fuses) {
-        const sNode = lvl.spawns.find((s) => s.id === f.start);
+        const sNode = f.branchOf ? f.branchPoint : lvl.spawns.find((s) => s.id === f.start);
         const p0 = to(sNode);
-        const p3 = nodes.bomb;
+        const p3 = to(payloadOf(f.end));
         const cut = lvl.intersections.find((c) => c.id === f.routeThrough);
         const mid = cut ? to(cut) : { x: (p0.x + p3.x) / 2, y: (p0.y + p3.y) / 2 };
         const cp = { x: (mid.x - 0.125 * (p0.x + p3.x)) / 0.75, y: (mid.y - 0.125 * (p0.y + p3.y)) / 0.75 };
@@ -79,8 +80,10 @@ levels.forEach((lvl, i) => {
     for (const s of nodes.spawn) {
         out += `<rect x="${(s.x - 2.2).toFixed(1)}" y="${(s.y - 2.2).toFixed(1)}" width="4.4" height="4.4" fill="#ef4444" stroke="#1c1917" stroke-width="0.6"/>`;
     }
-    // payload (bomb)
-    out += `<circle cx="${nodes.bomb.x.toFixed(1)}" cy="${nodes.bomb.y.toFixed(1)}" r="5" fill="#1c1917" stroke="#fef08a" stroke-width="1.2"/>`;
+    // payload(s) (bomb art)
+    for (const b of nodes.bomb) {
+        out += `<circle cx="${b.x.toFixed(1)}" cy="${b.y.toFixed(1)}" r="5" fill="#1c1917" stroke="#fef08a" stroke-width="1.2"/>`;
+    }
 
     // layout tag
     out += `<text x="4" y="${TV - 4}" font-size="7.5" fill="#78716c">${lvl.layout || "hub"}</text>`;

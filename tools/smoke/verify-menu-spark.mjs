@@ -13,7 +13,7 @@ page.on("pageerror", (e) => errors.push("pageerror: " + e.message));
 page.on("console", (m) => { if (m.type() === "error") errors.push("console: " + m.text().slice(0, 200)); });
 
 await page.goto("http://localhost:8080");
-await page.waitForFunction(() => window.__CTF__?.levels?.length === 60, null, { timeout: 10000 });
+await page.waitForFunction(() => window.__CTF__?.levels?.length === 120, null, { timeout: 10000 });
 await page.waitForFunction(() => document.getElementById("modal-menu").style.display !== "none", null, { timeout: 5000 });
 
 const r = [];

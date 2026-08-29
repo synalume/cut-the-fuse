@@ -90,16 +90,32 @@ export function buildLevel(config, viewport, assets = null) {
     const nodeMap = {};
     const intersectionMap = {};
 
-    // Payload node.
-    const payloadNode = {
-        id: config.payload.id || "bomb",
-        type: "payload",
-        x: cx + (config.payload.x ?? 0),
-        y: cy + (config.payload.y ?? 0),
-        assets: config.payload.assets || {},
-    };
-    nodes.push(payloadNode);
-    nodeMap[payloadNode.id] = payloadNode;
+    // Payload node(s). Twin-bomb levels carry a `payloads` array (each fuse
+    // ends at one of them); every other level keeps the single `payload`.
+    const payloadNodes = [];
+    if (Array.isArray(config.payloads) && config.payloads.length) {
+        for (const p of config.payloads) {
+            payloadNodes.push({
+                id: p.id || "bomb",
+                type: "payload",
+                x: cx + (p.x ?? 0),
+                y: cy + (p.y ?? 0),
+                assets: config.payload?.assets || p.assets || {},
+            });
+        }
+    } else {
+        payloadNodes.push({
+            id: config.payload.id || "bomb",
+            type: "payload",
+            x: cx + (config.payload.x ?? 0),
+            y: cy + (config.payload.y ?? 0),
+            assets: config.payload.assets || {},
+        });
+    }
+    for (const payloadNode of payloadNodes) {
+        nodes.push(payloadNode);
+        nodeMap[payloadNode.id] = payloadNode;
+    }
 
     // Spawn nodes.
     for (const s of config.spawns || []) {
@@ -162,6 +178,12 @@ export function buildLevel(config, viewport, assets = null) {
         fuse.delayFrames = f.delayFrames ?? 0;
         fuse.startNode = start;
         fuse.endNode = end;
+        fuse.color = f.color || null;
+        fuse.armor = !!f.armor;
+        fuse.neverLights = !!f.neverLights;
+        fuse.hits = 0;
+        fuse.frayed = false;
+        fuse.frayedAt = null;
         fuses[i] = fuse;
     });
 
@@ -179,6 +201,12 @@ export function buildLevel(config, viewport, assets = null) {
         fuse.delayFrames = f.delayFrames ?? 0;
         fuse.startNode = start;
         fuse.endNode = end;
+        fuse.color = f.color || null;
+        fuse.armor = !!f.armor;
+        fuse.neverLights = !!f.neverLights;
+        fuse.hits = 0;
+        fuse.frayed = false;
+        fuse.frayedAt = null;
         fuses[i] = fuse;
     });
 
@@ -199,7 +227,40 @@ export function buildLevel(config, viewport, assets = null) {
             diedAt: null,
             chain,
             triggered: false,
+            // Forbidden decoy wires never light — their spark stays dark forever
+            // (drawn colored, never burning). Skipped by the sim and the win check.
+            decoy: !!fuse.neverLights,
+            doused: false,
         });
+    });
+
+    // Pickups (gold bonus-snip stars) and douse points (water drops) resolve to
+    // world positions on their fuse once all geometry exists.
+    const pickups = (config.pickups || []).map((p, i) => {
+        const fuseIndex = fuseIndexById.get(p.fuse);
+        const fuse = fuseIndex != null ? fuses[fuseIndex] : null;
+        const at = p.at ?? 0.5;
+        const pos = fuse
+            ? getBezierXY(at, fuse.startNode, fuse.cp1, fuse.cp2, fuse.endNode)
+            : { x: 0, y: 0 };
+        return {
+            id: p.id || `pickup${i}`,
+            fuseId: p.fuse,
+            fuseIndex,
+            at,
+            x: pos.x,
+            y: pos.y,
+            collected: false,
+        };
+    });
+    const douse = (config.douse || []).map((d, i) => {
+        const fuseIndex = fuseIndexById.get(d.fuse);
+        return {
+            id: d.id || `douse${i}`,
+            fuseId: d.fuse,
+            fuseIndex,
+            at: d.at ?? 0.5,
+        };
     });
 
     const resolved = assets ?? resolveAssetsSync(config);
@@ -212,12 +273,17 @@ export function buildLevel(config, viewport, assets = null) {
         intersectionMap,
         fuses,
         sparks,
+        payloads: payloadNodes,
         snipsAllowed: config.snipsAllowed ?? 2,
         payloadAssets: resolved.payloadAssets,
         spawnAssets: resolved.spawnAssets,
         tutorial: config.tutorial || null,
         dda: config.dda || { failThreshold: 3, tierSteps: ["snip", "slow", "hint"] },
         camera: config.camera ? { ...config.camera } : null,
+        // New mechanics (all optional, data-driven):
+        wireRule: config.wireRule || null,      // { legend: { red: "no", blue: "cut", ... } }
+        pickups,                                 // [{ id, fuseId, fuseIndex, at, x, y, collected }]
+        douse,                                   // [{ id, fuseId, fuseIndex, at }]
     };
 }
 
@@ -285,8 +351,50 @@ export function validateLevel(config) {
     }
 
     const allIds = new Set(ids);
-    if (config.payload?.id) allIds.add(config.payload.id);
+    const payloadIds = new Set();
+    if (config.payload?.id) { allIds.add(config.payload.id); payloadIds.add(config.payload.id); }
+    for (const p of config.payloads || []) {
+        if (!p.id) warnings.push(`level ${config.level_id}: payload missing id`);
+        else { allIds.add(p.id); payloadIds.add(p.id); }
+    }
     const fuseIds = new Set((config.fuses || []).map((f, i) => f.id || `f${i}`));
+
+    // Color-coded wire rule: the legend must discriminate cut vs no, and every
+    // colored fuse must appear in it. A forbidden fuse must be survivable
+    // without cutting (never-lights decoy or a douse point on it) — otherwise
+    // the level is unwinnable.
+    const wireRule = config.wireRule || null;
+    if (wireRule) {
+        const legend = wireRule.legend || {};
+        const colors = Object.keys(legend);
+        if (!colors.length) warnings.push(`level ${config.level_id}: wireRule has an empty legend`);
+        const forbiddenColors = colors.filter((c) => legend[c] === "no");
+        if (!forbiddenColors.length) warnings.push(`level ${config.level_id}: wireRule legend has no forbidden color`);
+        const safeColors = colors.filter((c) => legend[c] === "cut");
+        if (!safeColors.length) warnings.push(`level ${config.level_id}: wireRule legend has no safe color`);
+        const legendOk = (c) => c == null || legend[c] === "cut" || legend[c] === "no";
+        const fuseWithColor = (config.fuses || []).filter((f) => f.color != null);
+        if (fuseWithColor.length === 0) warnings.push(`level ${config.level_id}: wireRule present but no fuse has a color`);
+        if (fuseWithColor.every((f) => legend[f.color] !== "no")) warnings.push(`level ${config.level_id}: wireRule present but no forbidden fuse`);
+        for (const f of fuseWithColor) {
+            if (!legendOk(f.color)) warnings.push(`level ${config.level_id}: fuse '${f.id}' color '${f.color}' not in legend`);
+        }
+    }
+    const douseFuseIds = new Set((config.douse || []).map((d) => d.fuse));
+    for (const f of config.fuses || []) {
+        if (wireRule && wireRule.legend[f.color] === "no" && !f.neverLights && !douseFuseIds.has(f.id)) {
+            warnings.push(`level ${config.level_id}: forbidden fuse '${f.id}' is neither a never-lights decoy nor doused (unwinnable)`);
+        }
+    }
+
+    for (const p of config.pickups || []) {
+        if (!fuseIds.has(p.fuse)) warnings.push(`level ${config.level_id}: pickup '${p.id}' fuse '${p.fuse}' unknown`);
+        if (typeof p.at !== "number" || p.at <= 0 || p.at >= 1) warnings.push(`level ${config.level_id}: pickup '${p.id}' at must be in (0,1)`);
+    }
+    for (const d of config.douse || []) {
+        if (!fuseIds.has(d.fuse)) warnings.push(`level ${config.level_id}: douse '${d.id}' fuse '${d.fuse}' unknown`);
+        if (typeof d.at !== "number" || d.at <= 0 || d.at >= 1) warnings.push(`level ${config.level_id}: douse '${d.id}' at must be in (0,1)`);
+    }
 
     for (const f of config.fuses || []) {
         if (f.branchOf) {
@@ -297,7 +405,7 @@ export function validateLevel(config) {
             if (typeof f.at !== "number" || f.at <= 0 || f.at >= 1) {
                 warnings.push(`level ${config.level_id}: fuse '${f.id}' branch at must be in (0,1) (got ${f.at})`);
             }
-            if (f.end !== config.payload?.id) {
+            if (!payloadIds.has(f.end)) {
                 warnings.push(`level ${config.level_id}: fuse '${f.id}' does not end at the payload`);
             }
             if (typeof f.speed !== "number" || f.speed <= 0) {
@@ -313,7 +421,7 @@ export function validateLevel(config) {
         if (f.routeThrough && !ids.has(f.routeThrough)) {
             warnings.push(`level ${config.level_id}: fuse routeThrough '${f.routeThrough}' unknown`);
         }
-        if (f.end !== config.payload?.id) {
+        if (!payloadIds.has(f.end)) {
             warnings.push(`level ${config.level_id}: fuse '${f.start}->${f.end}' does not end at the payload`);
         }
         if (typeof f.speed !== "number" || f.speed <= 0) {
@@ -330,14 +438,16 @@ export function validateLevel(config) {
     // segment, the wick folds back on itself and the spark reverses mid-path
     // (looks like the wick ends early / turns around).
     const nodeMap = {};
-    [...(config.spawns || []), config.payload, ...(config.intersections || [])].forEach((n) => n && (nodeMap[n.id] = n));
+    [...(config.spawns || []), config.payload, ...(config.payloads || []), ...(config.intersections || [])].forEach((n) => n && (nodeMap[n.id] = n));
+    const payloadOf = (end) => (end === config.payload?.id || !config.payloads?.length ? config.payload : nodeMap[end]);
     for (const f of config.fuses || []) {
         const start = nodeMap[f.start];
         if (!start) continue;
-        const I = nodeMap[f.routeThrough] || { x: (start.x + config.payload.x) / 2, y: (start.y + config.payload.y) / 2 };
-        const wx = config.payload.x - start.x, wy = config.payload.y - start.y;
+        const endP = payloadOf(f.end) || config.payload;
+        const I = nodeMap[f.routeThrough] || { x: (start.x + endP.x) / 2, y: (start.y + endP.y) / 2 };
+        const wx = endP.x - start.x, wy = endP.y - start.y;
         const L2 = wx * wx + wy * wy;
-        const cp = { x: (I.x - 0.125 * (start.x + config.payload.x)) / 0.75, y: (I.y - 0.125 * (start.y + config.payload.y)) / 0.75 };
+        const cp = { x: (I.x - 0.125 * (start.x + endP.x)) / 0.75, y: (I.y - 0.125 * (start.y + endP.y)) / 0.75 };
         const u = ((cp.x - start.x) * wx + (cp.y - start.y) * wy) / L2;
         if (u < 0.02 || u > 0.98) {
             warnings.push(
@@ -347,8 +457,10 @@ export function validateLevel(config) {
     }
 
     // Timing guard: a spark must reach the payload slowly enough to be cut.
-    // (Branch sparks have no timer — their delay is the parent's burn time.)
+    // (Branch sparks have no timer — their delay is the parent's burn time.
+    // Never-lights decoys don't burn at all and are skipped.)
     for (const f of config.fuses || []) {
+        if (f.neverLights) continue;
         const framesToPayload = (f.branchOf ? 0 : (f.delayFrames ?? 0)) + 1 / f.speed;
         if (framesToPayload < 90) {
             warnings.push(

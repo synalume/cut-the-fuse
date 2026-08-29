@@ -9,7 +9,7 @@ const BASE = "http://localhost:8080";
 const browser = await chromium.launch();
 const page = await browser.newPage({ viewport: { width: 1280, height: 720 } });
 await page.goto(BASE);
-await page.waitForFunction(() => window.__CTF__?.levels?.length === 60, null, { timeout: 10000 });
+await page.waitForFunction(() => window.__CTF__?.levels?.length === 120, null, { timeout: 10000 });
 
 // Home screen first — press PLAY to load a level, then open the map.
 await page.click("#btn-menu-play");

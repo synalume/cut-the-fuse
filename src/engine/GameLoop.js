@@ -98,8 +98,22 @@ export class GameLoop {
         this.perfectSnipsAt = []; // { x, y, at } — drive the PERFECT! popups
         this.multikills = [];
         this._chime = null;
-        // Reset fuse burn + sparks to fresh.
-        for (const f of this.fuses) f.burntProgress = 0;
+        // Forbidden-wire rule state: first offense is denied with a warning,
+        // the second detonates.
+        this.wireOffenses = 0;
+        this.wireOffenseAt = null; // { at, x, y } — "WRONG WIRE!" popup
+        this.wireDeniedSlash = null; // red denied slash for the denied cut
+        // Armor: frays that took a hit but kept burning (drawn charred).
+        this.frayedAt = []; // { x, y, angle, at }
+        // Bonus snips banked by touching a gold pickup star.
+        this.bonusSnipsAt = []; // { x, y, at } — "SNIP +1" popups
+        // Reset fuse burn + sparks to fresh, and clear per-attempt mechanic state.
+        for (const f of this.fuses) {
+            f.burntProgress = 0;
+            f.hits = 0;
+            f.frayed = false;
+            f.frayedAt = null;
+        }
         for (const s of this.sparks) {
             s.progress = 0;
             s.active = true;
@@ -107,7 +121,12 @@ export class GameLoop {
             s.ignitedAt = null; // frameCount when this spark lit (drives reaction words)
             s.diedAt = null;    // frameCount when it was snuffed by a cut
             s.triggered = false; // chained sparks start dark, lit by their parent
+            s.doused = false;
         }
+        // Pickup stars reset to uncollected; douse points resolve per fuse index.
+        this.pickups = (this.level.pickups || []).map((p) => ({ ...p, collected: false }));
+        this._douseMap = new Map((this.level.douse || []).map((d) => [d.fuseIndex, d.at]));
+        this.detonatedNodeId = null; // payload node a spark actually reached (drives the blast)
 
         this.camera = this.level.camera
             ? { x: this.level.camera.x, y: this.level.camera.y, zoom: this.level.camera.zoom }
@@ -149,20 +168,55 @@ export class GameLoop {
 
     // ---- Cutting (spatial, from the prototype's handlePointerUp) -------------
 
+    /** A fuse is "dead" when its spark can no longer be stopped by being near a
+     *  cut: non-armored fuses die to their first hit, armored wicks need two. */
+    _fuseFullySevered(fuse) {
+        return (fuse.hits || 0) >= (fuse.armor ? 2 : 1);
+    }
+
+    /** Whether a fuse is a forbidden color under this level's wire rule. */
+    _isForbiddenFuse(fuse) {
+        const wr = this.level?.wireRule;
+        if (!wr || !fuse.color) return false;
+        return wr.legend[fuse.color] === "no";
+    }
+
+    /** Fuses whose curve passes within CUT_RADIUS of the cut point, excluding
+     *  already-dead fuses. Spark-independent, so a forbidden decoy is caught
+     *  even while its wick never lights. */
+    _fusesTouchedByCut(snipPoint) {
+        const touched = [];
+        for (const fuse of this.fuses) {
+            if (this._fuseFullySevered(fuse)) continue;
+            let minD = Infinity, minT = 0;
+            for (let t = 0; t <= 1; t += 0.02) {
+                const pt = getBezierXY(t, fuse.startNode, fuse.cp1, fuse.cp2, fuse.endNode);
+                const d = Math.hypot(pt.x - snipPoint.x, pt.y - snipPoint.y);
+                if (d < minD) {
+                    minD = d;
+                    minT = t;
+                }
+            }
+            if (minD < CUT_RADIUS) touched.push({ fuse, minT });
+        }
+        return touched;
+    }
+
     tryCut(swipeStart, swipeEnd, trail) {
         // No cutting while a teaching card is up — the level starts on OK.
         if (this.gameState !== STATE.PLAYING || this.tutorialActive || this.snipsRemaining <= 0) return false;
 
         // Track the closest point on every fuse, then pick the best *eligible*
-        // one. A fuse is ineligible when it already has a cut within 30 units
-        // (its spark is already dead there). At a shared chokepoint this lets
-        // the 2nd snip hit the other wick instead of the dead one — otherwise
-        // the distance tie-break always re-selects the first fuse and the
-        // second snip in the same area feels dead.
+        // one. A fuse is ineligible when it is already fully severed, or when it
+        // already has a cut within 30 units (its spark is already dead there).
+        // At a shared chokepoint this lets the 2nd snip hit the other wick
+        // instead of the dead one — except an armored fuse that only FRAYED on
+        // its first hit can be re-snipped at the same spot to sever it.
         let best = null;
         for (const fuse of this.fuses) {
             const p0 = fuse.startNode;
             const p3 = fuse.endNode;
+            if (this._fuseFullySevered(fuse)) continue;
             let minDist = Infinity;
             let minPt = null;
             let minT = 0;
@@ -183,7 +237,9 @@ export class GameLoop {
                     break;
                 }
             }
-            if (deduped) continue;
+            // A frayed armored fuse needs a second hit at the same spot — don't
+            // let the dedupe swallow the cut that severs it.
+            if (deduped && !(fuse.armor && fuse.hits === 1)) continue;
 
             if (!best || minDist < best.dist) best = { fuse, point: minPt, t: minT, dist: minDist };
         }
@@ -192,6 +248,29 @@ export class GameLoop {
         const snipFuse = best.fuse;
         const snipPoint = best.point;
         const snipT = best.t;
+
+        // Forbidden-wire rule: before committing, check every fuse this cut
+        // would touch (the spatial cut severs whatever the blade crosses). A
+        // forbidden color is denied on the first offense (warning, no snip) and
+        // detonates on the second.
+        const touched = this._fusesTouchedByCut(snipPoint);
+        if (this.level?.wireRule) {
+            const bad = touched.find(({ fuse }) => this._isForbiddenFuse(fuse));
+            if (bad) {
+                this.wireOffenses++;
+                if (this.wireOffenses >= 2) {
+                    this._finishLevel(false);
+                    return false;
+                }
+                // Warning: deny the cut, flash red, pop "WRONG WIRE!".
+                const swipeAngle = Math.atan2(swipeEnd.y - swipeStart.y, swipeEnd.x - swipeStart.x);
+                this.wireOffenseAt = { at: this.frameCount, x: snipPoint.x, y: snipPoint.y, fuse: bad.fuse.id };
+                this.wireDeniedSlash = { start: { ...swipeStart }, end: { ...swipeEnd }, life: 1, angle: swipeAngle };
+                if (this.audio) this.audio.play("dud");
+                if (this.analytics) this.analytics.track("wire_offense", { level: this.level.level_id, offense: this.wireOffenses });
+                return false;
+            }
+        }
 
         {
             const swipeAngle = Math.atan2(swipeEnd.y - swipeStart.y, swipeEnd.x - swipeStart.x);
@@ -220,26 +299,45 @@ export class GameLoop {
             }
             // MULTI-CUT: count the live wicks this one snip severs. A wick counts
             // when its curve passes within the cut circle AHEAD of its spark —
-            // those sparks die as they burn into the gap (same rule _update uses).
-            // N>=2 is the dopamine moment: a banking "+N" popup, an ascending coin
-            // chime, and a bonus star per extra wick banked at level clear.
-            let severed = 0;
-            for (let i = 0; i < this.sparks.length; i++) {
-                const s = this.sparks[i];
-                if (!s.active) continue;
-                const fuse = this.fuses[s.fuseIndex];
-                let minD = Infinity, minT = 0;
-                for (let t = s.progress; t <= 1; t += 0.02) {
-                    const pt = getBezierXY(t, fuse.startNode, fuse.cp1, fuse.cp2, fuse.endNode);
-                    const d = Math.hypot(pt.x - snipPoint.x, pt.y - snipPoint.y);
-                    if (d < minD) { minD = d; minT = t; }
+            // those sparks die as they burn into the gap. Armored wicks don't
+            // count until their SECOND hit (the first only frays them). N>=2 is
+            // the dopamine moment: a banking "+N" popup, an ascending coin chime,
+            // and a bonus star per extra wick banked at level clear.
+            let newlySevered = 0;
+            for (const { fuse, minT } of touched) {
+                if (fuse.neverLights) continue; // decoys never burn — nothing to sever
+                const s = this.sparks[this.fuses.indexOf(fuse)];
+                if (!s || !s.active) continue;
+                // The cut must sit at-or-ahead of the spark (one sample step of
+                // tolerance covers a cut landing right on the spark).
+                if (minT < s.progress - 0.02) continue;
+                fuse.hits++;
+                if (fuse.armor && fuse.hits === 1) {
+                    // Frayed: charred but still burning — needs a second snip.
+                    fuse.frayed = true;
+                    fuse.frayedAt = { x: snipPoint.x, y: snipPoint.y, angle: swipeAngle, at: this.frameCount };
+                    this.frayedAt.push(fuse.frayedAt);
+                    if (this.audio) this.audio.play("dud");
+                    continue;
                 }
-                if (minD < CUT_RADIUS && minT > s.progress + 0.005) severed++;
+                if (this._fuseFullySevered(fuse)) newlySevered++;
             }
-            if (severed >= 2) {
-                this.multikills.push({ x: snipPoint.x, y: snipPoint.y, count: severed, at: this.frameCount });
+            if (newlySevered >= 2) {
+                this.multikills.push({ x: snipPoint.x, y: snipPoint.y, count: newlySevered, at: this.frameCount });
                 if (this.audio) this.audio.play("win_star", { rate: 1.0 });
-                this._chime = { total: severed - 1, step: 0, next: performance.now() + 70 };
+                this._chime = { total: newlySevered - 1, step: 0, next: performance.now() + 70 };
+            }
+            // Gold pickup star: a cut whose circle touches an uncollected star
+            // banks +1 snip (chime + "SNIP +1" popup).
+            for (const p of this.pickups || []) {
+                if (p.collected || p.fuseIndex == null) continue;
+                if (Math.hypot(snipPoint.x - p.x, snipPoint.y - p.y) < 26) {
+                    p.collected = true;
+                    this.snipsRemaining++;
+                    this.bonusSnipsAt.push({ x: p.x, y: p.y, at: this.frameCount });
+                    if (this.audio) this.audio.play("win_star", { rate: 1.2 });
+                    if (this.onSnipsChange) this.onSnipsChange(this.snipsRemaining);
+                }
             }
             // Heads-up that the budget is nearly spent (only worth saying when
             // the level started with more than one cut).
@@ -427,6 +525,9 @@ export class GameLoop {
 
         for (const spark of this.sparks) {
             if (!spark.active) continue;
+            // Forbidden decoy wires never light nor threaten — their spark is
+            // a dummy that stays dark and doesn't count toward the win check.
+            if (spark.decoy) continue;
 
             // Chained spark: dark until its parent's burn crosses the trigger
             // point. While dark it doesn't count toward the win condition.
@@ -470,6 +571,26 @@ export class GameLoop {
                 }
             }
 
+            // Water drop: a doused fuse's spark is snuffed at the drop point —
+            // that wick needs no cut at all. The ash trail stops at the drop.
+            const douseAt = this._douseMap?.get(spark.fuseIndex);
+            if (douseAt != null && spark.progress >= douseAt) {
+                spark.active = false;
+                spark.diedAt = this.frameCount;
+                spark.doused = true;
+                fuse.burntProgress = Math.max(fuse.burntProgress, douseAt);
+                if (this.audio) this.audio.play("dud");
+                const dp = getBezierXY(douseAt, fuse.startNode, fuse.cp1, fuse.cp2, fuse.endNode);
+                for (let p = 0; p < 18; p++) {
+                    this.particles.push({
+                        x: dp.x, y: dp.y,
+                        vx: (Math.random() - 0.5) * 5, vy: -Math.random() * 5 - 1,
+                        life: 1.0, size: Math.random() * 4 + 2, color: p % 3 === 0 ? "#bae6fd" : "#60a5fa",
+                    });
+                }
+                continue;
+            }
+
             const pos = getBezierXY(spark.progress, fuse.startNode, fuse.cp1, fuse.cp2, fuse.endNode);
 
             // Cut-circle collision: a spark dies if it travels through ANY cut
@@ -479,7 +600,8 @@ export class GameLoop {
             // gap then passed a converging spark by, so cut marks that looked
             // like they should stop the fire didn't. Spatial cutting keeps the
             // visual and the mechanic consistent: where the blade lands, the
-            // fire dies.)
+            // fire dies.) Armored wicks only die once their SECOND hit lands —
+            // a single snip frays them and the fire keeps burning through.
             let fellIntoGap = false;
             for (const cut of this.cuts) {
                 if (Math.hypot(pos.x - cut.x, pos.y - cut.y) < cut.radius) {
@@ -488,7 +610,7 @@ export class GameLoop {
                 }
             }
 
-            if (fellIntoGap) {
+            if (fellIntoGap && this._fuseFullySevered(fuse)) {
                 spark.active = false;
                 spark.diedAt = this.frameCount;
                 if (this.audio) this.audio.play("dud");
@@ -510,6 +632,7 @@ export class GameLoop {
 
             if (spark.progress >= 1) {
                 if (fuse.endNode.type === "payload") {
+                    this.detonatedNodeId = fuse.endNode.id;
                     this._finishLevel(false);
                     return;
                 }
@@ -541,6 +664,11 @@ export class GameLoop {
         if (this.deniedSlash) {
             this.deniedSlash.life -= 0.09;
             if (this.deniedSlash.life <= 0) this.deniedSlash = null;
+        }
+        // Wrong-wire denied slash fades the same way.
+        if (this.wireDeniedSlash) {
+            this.wireDeniedSlash.life -= 0.07;
+            if (this.wireDeniedSlash.life <= 0) this.wireDeniedSlash = null;
         }
 
         // Multi-cut coin chime: one ascending note per extra wick sliced. Time-

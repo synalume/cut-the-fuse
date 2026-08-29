@@ -22,7 +22,7 @@ page.on("pageerror", (e) => console.error("  [pageerror]", e.message));
 
 async function openLevel(idx) {
     await page.goto(BASE);
-    await page.waitForFunction(() => window.__CTF__?.levels?.length === 60, null, { timeout: 10000 });
+    await page.waitForFunction(() => window.__CTF__?.levels?.length === 120, null, { timeout: 10000 });
     // Home screen first — press PLAY to load a level, then pick from the map.
     await page.click("#btn-menu-play");
     await page.waitForFunction(() => window.__CTF__?.game?.fuses?.length > 0, null, { timeout: 10000 });
@@ -155,18 +155,18 @@ console.log("  → screenshot tools/smoke/verify-popup-lanes.png");
 
 // ---- 2. Spending the last snip + a denied swipe stacks NO MORE SNIPS! --------
 console.log("\n[verify] NO MORE SNIPS! stacks with +N / LAST SNIP, no overlap");
-await openLevel(3);
+await openLevel(1); // L2 — two direct fuses = two distinct cut targets
 const denied = await page.evaluate(() => {
     const g = window.__CTF__.game;
-    const cp = g.level.intersectionMap.cut1;
+    const [fa, fb] = g.fuses;
+    const pa = fa.intersectionPt, pb = fb.intersectionPt;
     const r = g.renderer, c = g.camera;
-    const sx = (cp.x + c.x - r.width / 2) * c.zoom + r.width / 2;
-    const sy = (cp.y + c.y - r.height / 2) * c.zoom + r.height / 2;
-    const cut1 = g.tryCut({ x: cp.x - 26, y: cp.y }, { x: cp.x + 26, y: cp.y }, [{ x: cp.x - 26, y: cp.y }, { x: cp.x + 26, y: cp.y }]);
-    const f = g.fuses.find((x) => x.routeThrough !== "cut1") || g.fuses[0];
-    const p = f.intersectionPt;
-    const cut2 = g.tryCut({ x: p.x - 20, y: p.y }, { x: p.x + 20, y: p.y }, [{ x: p.x - 20, y: p.y }, { x: p.x + 20, y: p.y }]);
-    const denied = g.notifyNoSnips({ x: cp.x - 20, y: cp.y }, { x: cp.x + 20, y: cp.y });
+    const sx = (pa.x + c.x - r.width / 2) * c.zoom + r.width / 2;
+    const sy = (pa.y + c.y - r.height / 2) * c.zoom + r.height / 2;
+    g.snipsRemaining = 2; // force the last-snip state regardless of the level budget
+    const cut1 = g.tryCut({ x: pa.x - 26, y: pa.y }, { x: pa.x + 26, y: pa.y }, [{ x: pa.x - 26, y: pa.y }, { x: pa.x + 26, y: pa.y }]);
+    const cut2 = g.tryCut({ x: pb.x - 20, y: pb.y }, { x: pb.x + 20, y: pb.y }, [{ x: pb.x - 20, y: pb.y }, { x: pb.x + 20, y: pb.y }]);
+    const denied = g.notifyNoSnips({ x: pb.x - 20, y: pb.y }, { x: pb.x + 20, y: pb.y });
     return { cut1, cut2, denied, sx, sy };
 });
 check(denied.cut1 && denied.cut2, "popups: two cuts spent the budget", JSON.stringify(denied));

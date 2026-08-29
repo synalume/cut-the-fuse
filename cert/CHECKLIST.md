@@ -6,7 +6,7 @@ YouTube Playables / MC Play upload. Build: `./cert/make-bundle.sh` → `cert/out
 
 - [ ] Placeholder art in `assets/` (lvl1 set) + baked audio in `assets/audio/` (or synth fallback flagged in build log)
 - [ ] `src/data/levels.json` validates with zero warnings (`node tools/level-gen/gen-levels.mjs`)
-- [ ] 60-level ladder playable end-to-end; no black-hole levels (analytics: attempts per level)
+- [ ] 120-level ladder playable end-to-end; no black-hole levels (analytics: attempts per level)
 - [x] Marketing thumbnails generated (`tools/gen-marketing/` → `cert/thumbnails/`, `playgama/covers/`, `locked-branding/`)
 
 ## Bundle gate (script enforces)
@@ -20,11 +20,13 @@ YouTube Playables / MC Play upload. Build: `./cert/make-bundle.sh` → `cert/out
 ## QA walk (in the Playables test environment)
 
 - [ ] Esc closes every modal (tutorial, win, lose, DDA, skins, end screen)
-- [ ] "No more content" screen after level 60, with replay
+- [ ] "No more content" screen after level 120, with replay
 - [ ] Progress saves between sessions (stars, unlocked level)
 - [ ] Pause on tab hide; resume continues
 - [ ] Zero external network calls (no analytics, no CDN) — `Analytics` is disabled by the flag
 - [ ] Audio files play from the zip (no live-only synth bed)
+- [ ] Color pillar: wire legend renders near the bomb; a forbidden-color cut is denied once with a red "WRONG WIRE!" warning, then detonates on the second offense
+- [ ] Mechanics sweep: gold stars bank a snip (chime + "SNIP +1"), water drops douse their fuse, armored wicks fray then sever on a second hit, twin bombs both show reaction words when threatened
 
 ## Ref (Mediacube / review bookmarks)
 

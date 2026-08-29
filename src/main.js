@@ -270,8 +270,8 @@ $("btn-levels-close").addEventListener("click", openMenu);
 
 // ---- daily challenge -------------------------------------------------------------
 
-// Deterministic pick: 37 is coprime with 60, so consecutive days cycle through
-// all 60 levels with no repeats within a full cycle (same for every player).
+// Deterministic pick: 37 is coprime with 120, so consecutive days cycle through
+// all 120 levels with no repeats within a full cycle (same for every player).
 const dailyLevelIndex = (dayNum) => (dayNum * 37) % levels.length;
 
 function openDaily() {

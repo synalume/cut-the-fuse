@@ -7,7 +7,7 @@ const errors = [];
 page.on("pageerror", (e) => errors.push("pageerror: " + e.message));
 
 await page.goto("http://localhost:8080");
-await page.waitForFunction(() => window.__CTF__?.levels?.length === 60, null, { timeout: 10000 });
+await page.waitForFunction(() => window.__CTF__?.levels?.length === 120, null, { timeout: 10000 });
 await page.click("#btn-menu-play");
 await page.waitForFunction(() => window.__CTF__.game.level?.level_id === 1, null, { timeout: 8000 });
 

@@ -37,7 +37,7 @@ for (const vp of [
     const page = await browser.newPage({ viewport: { width: vp.width, height: vp.height } });
     page.on("pageerror", (e) => console.error("  [pageerror]", e.message));
     await page.goto("http://localhost:8080");
-    await page.waitForFunction(() => window.__CTF__?.levels?.length === 60, null, { timeout: 10000 });
+    await page.waitForFunction(() => window.__CTF__?.levels?.length === 120, null, { timeout: 10000 });
 
     if (!(await dismissUntilRunning(page))) throw new Error(`${vp.name}: spark never ignited`);
     // Cut the live fuse just ahead of the spark to win.
@@ -91,7 +91,7 @@ for (const vp of [
 // L8 fork fit on portrait
 const page = await browser.newPage({ viewport: { width: 390, height: 844 } });
 await page.goto("http://localhost:8080");
-await page.waitForFunction(() => window.__CTF__?.levels?.length === 60, null, { timeout: 10000 });
+await page.waitForFunction(() => window.__CTF__?.levels?.length === 120, null, { timeout: 10000 });
 await dismissUntilRunning(page, 8000);
 await page.click("#level-label");
 await page.waitForFunction(() => document.getElementById("modal-levels").style.display !== "none");

@@ -12,7 +12,7 @@ const page = await browser.newPage({ viewport: { width: 1280, height: 800 } });
 page.on("pageerror", (e) => console.error("  [pageerror]", e.message));
 
 await page.goto(BASE);
-await page.waitForFunction(() => window.__CTF__?.levels?.length === 60, null, { timeout: 10000 });
+await page.waitForFunction(() => window.__CTF__?.levels?.length === 120, null, { timeout: 10000 });
 await page.waitForTimeout(300);
 await page.screenshot({ path: path.join(ROOT, "tools/smoke/shot-hub-menu.png") });
 console.log("→ shot-hub-menu.png");
@@ -47,7 +47,7 @@ console.log(states.levels === "none" && states.skins === "block" ? "OVERLAP FIX 
 // Mobile portrait — hub + level tiles.
 const mob = await browser.newPage({ viewport: { width: 390, height: 844 } });
 await mob.goto(BASE);
-await mob.waitForFunction(() => window.__CTF__?.levels?.length === 60, null, { timeout: 10000 });
+await mob.waitForFunction(() => window.__CTF__?.levels?.length === 120, null, { timeout: 10000 });
 await mob.waitForTimeout(300);
 await mob.screenshot({ path: path.join(ROOT, "tools/smoke/shot-hub-mobile.png") });
 console.log("→ shot-hub-mobile.png");

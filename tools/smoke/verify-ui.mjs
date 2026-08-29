@@ -22,7 +22,7 @@ const page = await browser.newPage({ viewport: { width: 1280, height: 720 } });
 page.on("pageerror", (e) => console.error("  [pageerror]", e.message));
 
 await page.goto(BASE);
-await page.waitForFunction(() => window.__CTF__?.levels?.length === 60, null, { timeout: 10000 });
+await page.waitForFunction(() => window.__CTF__?.levels?.length === 120, null, { timeout: 10000 });
 console.log("[verify] game booted");
 
 // Home screen first — press PLAY to load the level.

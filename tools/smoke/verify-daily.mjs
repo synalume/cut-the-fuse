@@ -20,7 +20,7 @@ const page = await browser.newPage({ viewport: { width: 1280, height: 720 } });
 page.on("pageerror", (e) => console.error("  [pageerror]", e.message));
 
 await page.goto(BASE);
-await page.waitForFunction(() => window.__CTF__?.levels?.length === 60, null, { timeout: 10000 });
+await page.waitForFunction(() => window.__CTF__?.levels?.length === 120, null, { timeout: 10000 });
 
 // ---- 1. Level selector shows the daily banner -------------------------------
 console.log("[verify] daily banner in the level selector");
@@ -55,21 +55,71 @@ await page.waitForTimeout(300);
 await page.screenshot({ path: path.join(ROOT, "tools/smoke/verify-daily-play.png") });
 console.log("  → screenshot tools/smoke/verify-daily-play.png");
 
-// ---- 3. Win the daily via the QA hook (deduped chokepoint cuts) --------------
+// ---- 3. Win the daily via the QA hook ----------------------------------------
+// Teaches the new mechanics like the generator's winnability math (mirrors the
+// smoke sweep): a safe chokepoint costs 1 cut (+1 per armored fuse routed
+// through it), a MIXED crossroad is cut upstream on each safe fuse's own leg,
+// direct safe fuses cost 1 each (+1 if armored), and doused/forbidden decoys
+// need no cut at all. Runs against the REAL cut pipeline in the page.
 console.log("\n[verify] daily win → streak + done-today state");
 const placed = await page.evaluate(() => {
     const g = window.__CTF__.game;
-    const done = [];
-    for (const fuse of g.fuses) {
-        const p = fuse.intersectionPt;
-        if (done.some((q) => Math.hypot(q.x - p.x, q.y - p.y) < 30)) continue;
-        done.push(p);
+    // A daily that lands on a tutorial pin must dismiss its card before sweeping.
+    const tut = document.getElementById("tutorial-overlay");
+    if (tut && tut.style.display === "flex") {
+        document.getElementById("tutorial-next").click();
+        tut.style.display = "none";
+        g.tutorialActive = false;
     }
-    if (done.length > g.snipsRemaining) return { ok: false, need: done.length, have: g.snipsRemaining };
-    for (const p of done) g.cuts.push({ x: p.x, y: p.y, radius: 15, angle: 0, fuseId: null });
-    return { ok: true, cuts: done.length };
+    const level = g.level;
+    const wr = level.wireRule || null;
+    const isForb = (f) => !!(wr && f.color && wr.legend[f.color] === "no");
+    const dousedIds = new Set((level.douse || []).map((d) => d.fuseId));
+    const bez = (u, f) => {
+        const mt = 1 - u;
+        const a = mt * mt * mt, b = 3 * mt * mt * u, c = 3 * mt * u * u, d = u * u * u;
+        return {
+            x: a * f.startNode.x + b * f.cp1.x + c * f.cp2.x + d * f.endNode.x,
+            y: a * f.startNode.y + b * f.cp1.y + c * f.cp2.y + d * f.endNode.y,
+        };
+    };
+    const byCp = new Map();
+    for (const f of level.fuses) {
+        if (!f.routeThrough) continue;
+        if (!byCp.has(f.routeThrough)) byCp.set(f.routeThrough, []);
+        byCp.get(f.routeThrough).push(f);
+    }
+    const actions = [];
+    for (const [cpId, grp] of byCp) {
+        const hasForbidden = grp.some(isForb);
+        const cuttable = grp.filter((f) => !isForb(f) && !dousedIds.has(f.id));
+        if (hasForbidden) {
+            for (const f of cuttable) {
+                const leg = bez(0.24, f);
+                actions.push({ x: leg.x, y: leg.y });
+                if (f.armor) actions.push({ x: leg.x, y: leg.y });
+            }
+        } else if (cuttable.length) {
+            const cp = level.intersectionMap[cpId];
+            actions.push({ x: cp.x, y: cp.y });
+            for (const f of cuttable) if (f.armor) actions.push({ x: cp.x, y: cp.y });
+        }
+    }
+    for (const f of level.fuses) {
+        if (f.routeThrough || isForb(f) || dousedIds.has(f.id)) continue;
+        actions.push({ x: f.intersectionPt.x, y: f.intersectionPt.y });
+        if (f.armor) actions.push({ x: f.intersectionPt.x, y: f.intersectionPt.y });
+    }
+    let placed = 0;
+    let denied = 0;
+    for (const a of actions) {
+        const ok = g.tryCut({ x: a.x - 26, y: a.y }, { x: a.x + 26, y: a.y }, [{ x: a.x - 26, y: a.y }, { x: a.x + 26, y: a.y }]);
+        if (ok) placed++;
+        else denied++;
+    }
+    return { ok: placed <= level.snipsAllowed, need: actions.length, placed, denied, snips: g.snipsRemaining };
 });
-check(placed.ok === true, "daily: chokepoint cuts fit the snip budget", JSON.stringify(placed));
+check(placed.ok === true, "daily: mechanic-aware cuts fit the snip budget", JSON.stringify(placed));
 
 const won = await page
     .waitForFunction(() => document.getElementById("modal-win").style.display === "block", null, { timeout: 30000 })

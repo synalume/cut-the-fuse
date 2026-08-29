@@ -52,31 +52,79 @@ function makeStubs() {
     return { renderer, audio, analytics, platform };
 }
 
-/** Place a cut at every fuse's chokepoint (deduped like the in-game 30px rule),
- *  then simulate. Returns { ok, reason }. */
+/** A horizontal swipe across a point, driven through the REAL cut pipeline
+ *  (budget, dedupe, forbidden-wire rule, armor hits all apply). */
+function swipeAcross(game, x, y) {
+    return game.tryCut(
+        { x: x - 26, y }, { x: x + 26, y },
+        [{ x: x - 26, y }, { x: x + 26, y }]
+    );
+}
+
+/** Place the required cuts for a level's final geometry, then simulate.
+ *  Teaches the new rules exactly like the generator's winnability math:
+ *   - a safe chokepoint costs 1 cut (+1 per armored fuse routed through it),
+ *   - a MIXED (poisoned) crossroad is uncuttable, so each safe fuse routed
+ *     there is severed upstream on its own leg at u=0.24 (+1 if armored),
+ *   - direct safe fuses cost 1 each (+1 if armored),
+ *   - doused and forbidden (never-lights decoy) fuses need no cut at all.
+ *  Returns { ok, reason, placed, denied }. */
 function sweepLevel(config) {
     const level = buildLevel(config, { width: 1280, height: 720 });
     const game = new GameLoop({ canvas: null, ...makeStubs() });
     game.loadLevel(level, 0);
 
-    const placed = [];
-    for (const fuse of level.fuses) {
-        const p = fuse.intersectionPt;
-        const dup = placed.some((q) => Math.hypot(q.x - p.x, q.y - p.y) < 30);
-        if (!dup) placed.push({ x: p.x, y: p.y });
+    const wr = level.wireRule || null;
+    const isForb = (f) => !!(wr && f.color && wr.legend[f.color] === "no");
+    const dousedIds = new Set((level.douse || []).map((d) => d.fuseId));
+    const legPt = (f, u) => getBezierXY(u, f.startNode, f.cp1, f.cp2, f.endNode);
+
+    const byCp = new Map();
+    for (const f of level.fuses) {
+        if (!f.routeThrough) continue;
+        if (!byCp.has(f.routeThrough)) byCp.set(f.routeThrough, []);
+        byCp.get(f.routeThrough).push(f);
     }
-    if (placed.length > config.snipsAllowed) {
-        return { ok: false, reason: `needs ${placed.length} chokepoint cuts but snipsAllowed=${config.snipsAllowed}` };
+    const actions = [];
+    for (const [cpId, grp] of byCp) {
+        const hasForbidden = grp.some(isForb);
+        const cuttable = grp.filter((f) => !isForb(f) && !dousedIds.has(f.id));
+        if (hasForbidden) {
+            // Poisoned crossroad: cut each safe wick upstream of the chokepoint.
+            for (const f of cuttable) {
+                const leg = legPt(f, 0.24);
+                actions.push({ x: leg.x, y: leg.y });
+                if (f.armor) actions.push({ x: leg.x, y: leg.y });
+            }
+        } else if (cuttable.length) {
+            const cp = level.intersectionMap[cpId];
+            actions.push({ x: cp.x, y: cp.y });
+            for (const f of cuttable) if (f.armor) actions.push({ x: cp.x, y: cp.y });
+        }
     }
-    for (const p of placed) game.cuts.push({ x: p.x, y: p.y, radius: 15, angle: 0, fuseId: null });
+    for (const f of level.fuses) {
+        if (f.routeThrough || isForb(f) || dousedIds.has(f.id)) continue;
+        actions.push({ x: f.intersectionPt.x, y: f.intersectionPt.y });
+        if (f.armor) actions.push({ x: f.intersectionPt.x, y: f.intersectionPt.y });
+    }
+
+    let placed = 0;
+    let denied = 0;
+    for (const a of actions) {
+        if (swipeAcross(game, a.x, a.y)) placed++;
+        else denied++;
+    }
+    if (placed > config.snipsAllowed) {
+        return { ok: false, reason: `sweep needed ${placed} snips but snipsAllowed=${config.snipsAllowed}` };
+    }
 
     for (let i = 0; i < 6000; i++) {
         game.frameCount++;
         game._update();
         if (game.gameState !== STATE.PLAYING) break;
     }
-    if (game.gameState === STATE.WON) return { ok: true };
-    return { ok: false, reason: `ended state=${game.gameState} after ${game.frameCount} frames` };
+    if (game.gameState === STATE.WON) return { ok: true, placed, denied };
+    return { ok: false, reason: `ended state=${game.gameState} after ${game.frameCount} frames (placed ${placed}, denied ${denied})` };
 }
 
 console.log("\n[A] Structural validation + winnability sweep");
@@ -101,36 +149,34 @@ for (const c of levels) {
     if (res.ok) swept++;
     else console.error(`  ✗ L${c.level_id} not winnable: ${res.reason}`);
 }
-check(swept === levels.length, `winnability sweep: all ${levels.length} levels winnable via chokepoints`);
+check(swept === levels.length, `winnability sweep: all ${levels.length} levels winnable (colors, water, kevlar, stars, twin bombs)`);
 
 // Shared-chokepoint regression: levels route several wicks through the same
-// intersection (e.g. L4's cut1). The 2nd snip at the same spot must hit the
-// OTHER fuse, not be deduped into a no-op by the first cut.
+// intersection (e.g. L4's cut1). ONE snip at the shared spot severs EVERY
+// wick crossing it — the multi-cut (+N) showcase. A 2nd snip at the same spot
+// is correctly rejected (every fuse there is already severed).
 {
     const cfg = levels.find((l) => l.level_id === 4);
     const g = new GameLoop({ canvas: null, ...makeStubs() });
     g.loadLevel(buildLevel(cfg, { width: 1280, height: 720 }), 0);
     const cp = g.level.intersectionMap.cut1;
 
-    const swipe = () => {
-        const ok = g.tryCut(
-            { x: cp.x - 26, y: cp.y },
-            { x: cp.x + 26, y: cp.y },
-            [{ x: cp.x - 26, y: cp.y }, { x: cp.x + 26, y: cp.y }]
-        );
-        return ok;
-    };
+    const swipe = () => g.tryCut(
+        { x: cp.x - 26, y: cp.y },
+        { x: cp.x + 26, y: cp.y },
+        [{ x: cp.x - 26, y: cp.y }, { x: cp.x + 26, y: cp.y }]
+    );
 
     check(swipe() === true && g.cuts.length === 1 && g.snipsRemaining === 1,
         "L4: first snip at shared chokepoint lands (1 snip left)");
     check(g.cutFlashes.length === 1 && g.cutFlashes[0].life === 1,
         "L4: snip spawns a cut flash (vivid slash burst)");
-    check(swipe() === true && g.cuts.length === 2 && g.snipsRemaining === 0,
-        "L4: 2nd snip in the same area hits the other fuse (2 cuts placed)");
-    check(g.cuts[0].fuseId !== g.cuts[1].fuseId,
-        "L4: both snips cut different fuses at the shared chokepoint");
-    check(swipe() === false && g.cuts.length === 2,
-        "L4: 3rd snip is rejected (both fuses already cut + budget spent)");
+    check(g.multikills.length === 1 && g.multikills[0].count === 2,
+        "L4: one snip severs both wicks at the shared chokepoint (+2)");
+    check(g.fuses.every((f) => g._fuseFullySevered(f)),
+        "L4: both fuses are fully severed by the single snip");
+    check(swipe() === false && g.cuts.length === 1 && g.snipsRemaining === 1,
+        "L4: a 2nd snip at the same spot is rejected (both wicks already cut)");
 }
 
 // Snip-budget onboarding: the LAST SNIP! heads-up fires when dropping to 1, and
@@ -218,8 +264,8 @@ check(swept === levels.length, `winnability sweep: all ${levels.length} levels w
     });
     check(onScreen, "camera fit keeps every node on screen");
 
-    // Regression guard: with 5 layout archetypes, all 60 levels must keep every
-    // node on screen AND the ladder must stay visually diverse.
+    // Regression guard: with several layout archetypes, every level must keep
+    // all nodes on screen AND the ladder must stay visually diverse.
     let allFit = true;
     let worst = "";
     for (const c of levels) {
@@ -232,7 +278,7 @@ check(swept === levels.length, `winnability sweep: all ${levels.length} levels w
         });
         if (!ok) { allFit = false; worst = `L${c.level_id}`; }
     }
-    check(allFit, "camera fit: every node on screen for all 60 levels", worst);
+    check(allFit, `camera fit: every node on screen for all ${levels.length} levels`, worst);
 
     const payloadSpots = new Set(levels.map((l) => `${l.payload.x},${l.payload.y}`));
     check(payloadSpots.size >= 10, `layout diversity: bomb not always centered (${payloadSpots.size} distinct positions)`, [...payloadSpots].slice(0, 6).join(" | "));
@@ -288,11 +334,13 @@ check(swept === levels.length, `winnability sweep: all ${levels.length} levels w
     for (const c of levels) {
         const sMap = Object.fromEntries(c.spawns.map((s) => [s.id, s]));
         const iMap = Object.fromEntries(c.intersections.map((i) => [i.id, i]));
+        const ends = (c.payloads?.length ? c.payloads : [c.payload]);
+        const endOf = (f) => ends.find((p) => p.id === f.end) || ends[0];
         for (const f of c.fuses) {
             if (!f.routeThrough) continue;
             const s = f.branchOf ? f.branchPoint : sMap[f.start];
             if (!s) continue;
-            const u = proj(s, c.payload, iMap[f.routeThrough]);
+            const u = proj(s, endOf(f), iMap[f.routeThrough]);
             if (u < 0.02 || u > 0.98) folds++;
         }
     }
@@ -301,11 +349,14 @@ check(swept === levels.length, `winnability sweep: all ${levels.length} levels w
     let tooClose = 0;
     for (const c of levels) {
         const sMap = Object.fromEntries(c.spawns.map((s) => [s.id, s]));
+        const ends = (c.payloads?.length ? c.payloads : [c.payload]);
+        const endOf = (f) => ends.find((p) => p.id === f.end) || ends[0];
         const pts = c.intersections.map((i) => ({ x: i.x, y: i.y }));
         for (const f of c.fuses) {
             if (!f.routeThrough) {
                 const s = f.branchOf ? f.branchPoint : sMap[f.start];
-                if (s) pts.push({ x: (s.x + c.payload.x) / 2, y: (s.y + c.payload.y) / 2 });
+                const end = endOf(f);
+                if (s) pts.push({ x: (s.x + end.x) / 2, y: (s.y + end.y) / 2 });
             }
         }
         for (let i = 0; i < pts.length; i++)
@@ -323,11 +374,12 @@ check(swept === levels.length, `winnability sweep: all ${levels.length} levels w
     {
         let badEnds = [];
         for (const c of levels) {
+            const ends = new Set([...(c.payloads || []).map((p) => p.id), c.payload?.id].filter(Boolean));
             for (const f of c.fuses) {
-                if (f.end !== c.payload.id) badEnds.push(`L${c.level_id}:${f.id}->${f.end}`);
+                if (!ends.has(f.end)) badEnds.push(`L${c.level_id}:${f.id}->${f.end}`);
             }
         }
-        check(badEnds.length === 0, "single endpoint: every wick ends at the payload center", badEnds.join(", "));
+        check(badEnds.length === 0, "single endpoint: every wick ends at a payload center", badEnds.join(", "));
 
         let offWicks = [];
         let farWicks = [];
@@ -336,8 +388,8 @@ check(swept === levels.length, `winnability sweep: all ${levels.length} levels w
             const cam = computeFitCamera(lvl, { width: 1280, height: 720 });
             const toX = (p) => 640 + cam.zoom * (p.x - (640 - cam.x));
             const toY = (p) => 360 + cam.zoom * (p.y - (360 - cam.y));
-            const pay = lvl.nodeMap[c.payload.id];
             for (const f of lvl.fuses) {
+                const pay = f.endNode; // each wick ends at ITS payload center
                 let maxD = 0;
                 for (let t = 0; t <= 1; t += 0.02) {
                     const p = getBezierXY(t, f.startNode, f.cp1, f.cp2, f.endNode);
@@ -348,7 +400,10 @@ check(swept === levels.length, `winnability sweep: all ${levels.length} levels w
                         break;
                     }
                 }
-                if (maxD > 560) farWicks.push(`L${c.level_id}:${f.id}=${Math.round(maxD)}px`);
+                // The tail-bow guard is a single-payload invariant: with two bombs
+                // the camera already bounds every node (including far chokepoints
+                // twin levels route through), so offWicks is the real check there.
+                if ((c.payloads || []).length <= 1 && maxD > 560) farWicks.push(`L${c.level_id}:${f.id}=${Math.round(maxD)}px`);
             }
         }
         check(offWicks.length === 0, "no wick curve leaves the viewport (tail bows stay in-frame)", offWicks.join(", "));
@@ -398,8 +453,20 @@ check(swept === levels.length, `winnability sweep: all ${levels.length} levels w
             const shared = roots.length > 0 && roots.every((f) => f.routeThrough === "cut1");
             if (shared) continue;
             if (c.spawns.length <= 1) continue; // single-fuse tutorials
+            // Twin-bomb levels scatter their matchsticks around BOTH payloads,
+            // so measure each spawn from its nearest payload center.
+            const centers = (c.payloads?.length ? c.payloads : [c.payload]);
+            const centerOf = (s) => {
+                let best = centers[0], bd = Infinity;
+                for (const p of centers) {
+                    const d = Math.hypot(s.x - p.x, s.y - p.y);
+                    if (d < bd) { bd = d; best = p; }
+                }
+                return best;
+            };
             const angs = c.spawns.map((s) => {
-                let d = Math.atan2(s.y - c.payload.y, s.x - c.payload.x) * (180 / Math.PI);
+                const cen = centerOf(s);
+                let d = Math.atan2(s.y - cen.y, s.x - cen.x) * (180 / Math.PI);
                 return d < 0 ? d + 360 : d;
             });
             if (wedge(angs) < 150) wedged.push(`L${c.level_id}=${wedge(angs).toFixed(0)}°`);
@@ -413,17 +480,19 @@ check(swept === levels.length, `winnability sweep: all ${levels.length} levels w
                 if (grp.length > 3) overGrouped.push(`L${c.level_id}:${cpId}=${grp.length}`);
             }
         }
-        check(wedged.length === 0, "non-shared levels scatter matchsticks around the bomb (spawn wedge ≥ 200°)", wedged.join(", "));
+        check(wedged.length === 0, "non-shared levels scatter matchsticks around the bomb(s) (spawn wedge ≥ 200°)", wedged.join(", "));
         check(overGrouped.length === 0, "non-shared cross-sections serve ≤ 3 wicks each", overGrouped.join(", "));
     }
 
-    // Fit-camera guard: a chokepoint that drifts absurdly far from the payload
+    // Fit-camera guard: a chokepoint that drifts absurdly far from its payload
     // (a relaxed hairpin can wander to 700-1200px) shrinks the whole puzzle on
     // mobile — the fit camera zooms out to cover it and the wicks get tiny.
+    // Twin-bomb levels measure against the NEAREST payload.
     let farCps = [];
     for (const c of levels) {
+        const centers = (c.payloads?.length ? c.payloads : [c.payload]);
         for (const cp of c.intersections) {
-            const d = Math.hypot(cp.x - c.payload.x, cp.y - c.payload.y);
+            const d = Math.min(...centers.map((p) => Math.hypot(cp.x - p.x, cp.y - p.y)));
             if (d > 480) farCps.push(`L${c.level_id}:${cp.id}=${d.toFixed(0)}`);
         }
     }
@@ -470,14 +539,43 @@ check(swept === levels.length, `winnability sweep: all ${levels.length} levels w
     g.snipsUsed = 2;
     check(g.computeStars() === 2, "Stars: all snips used → 2★");
 
-    // Every level must carry at least one spare snip so 3★ is always reachable.
+    // The 3-star goal ("finish with a snip left") must stay reachable on every
+    // level: either a spare snip, or — on star-critical zero-slack levels — a
+    // gold pickup star that banks one. min-cuts uses the NEW winnability math
+    // (poisoned crossroads, armored second hits, doused/forbidden freebies).
+    const minCutsFor = (c) => {
+        const wr = c.wireRule || null;
+        const isForb = (f) => !!(wr && wr.legend[f.color] === "no");
+        const doused = new Set((c.douse || []).map((d) => d.fuse));
+        const byCp = new Map();
+        for (const f of c.fuses) {
+            if (!f.routeThrough) continue;
+            if (!byCp.has(f.routeThrough)) byCp.set(f.routeThrough, []);
+            byCp.get(f.routeThrough).push(f);
+        }
+        let min = 0;
+        for (const [, grp] of byCp) {
+            const hasForbidden = grp.some(isForb);
+            const cuttable = grp.filter((f) => !isForb(f) && !doused.has(f.id));
+            if (hasForbidden) {
+                for (const f of cuttable) min += 1 + (f.armor ? 1 : 0);
+            } else if (cuttable.length) {
+                min += 1;
+                for (const f of cuttable) min += f.armor ? 1 : 0;
+            }
+        }
+        for (const f of c.fuses) {
+            if (f.routeThrough || isForb(f) || doused.has(f.id)) continue;
+            min += 1 + (f.armor ? 1 : 0);
+        }
+        return min;
+    };
     let noSlack = [];
     for (const c of levels) {
-        const used = new Set(c.fuses.filter((f) => f.routeThrough).map((f) => f.routeThrough)).size;
-        const direct = c.fuses.filter((f) => !f.routeThrough).length;
-        if (c.snipsAllowed - (used + direct) < 1) noSlack.push(`L${c.level_id}`);
+        const spare = c.snipsAllowed - minCutsFor(c);
+        if (spare < 1 && !(c.pickups && c.pickups.length)) noSlack.push(`L${c.level_id}`);
     }
-    check(noSlack.length === 0, "Stars: every level has >= 1 spare snip (3★ always reachable)", noSlack.join(", "));
+    check(noSlack.length === 0, "Stars: 3★ reachable via a spare snip or pickup stars", noSlack.join(", "));
 }
 
 // Fork ignition: a branch wick splits off its parent's wick at the fork point.
@@ -532,7 +630,7 @@ check(swept === levels.length, `winnability sweep: all ${levels.length} levels w
     const run = (cuts) => {
         const g = new GameLoop({ canvas: null, ...makeStubs() });
         g.loadLevel(buildLevel(cfg, { width: 1280, height: 720 }), 0);
-        for (const c of cuts) g.cuts.push({ x: c.x, y: c.y, radius: 15, angle: 0, fuseId: c.fuseId ?? null });
+        for (const c of cuts) swipeAcross(g, c.x, c.y);
         for (let i = 0; i < 6000 && g.gameState === STATE.PLAYING; i++) {
             g.frameCount++;
             g._update();
@@ -552,10 +650,11 @@ check(swept === levels.length, `winnability sweep: all ${levels.length} levels w
     );
 
     // Prevention: cut the parent's wick BEFORE the fork → the branch duds and
-    // never lights.
+    // never lights. The early cut must land FIRST (a severed fuse can't take a
+    // second cut through the real pipeline).
     const parentFuse = level.fuses[parentSpark.fuseIndex];
     const early = getBezierXY(childSpark.chain.at - 0.1, parentFuse.startNode, parentFuse.cp1, parentFuse.cp2, parentFuse.endNode);
-    const gPrev = run([...allCuts, { x: early.x, y: early.y, radius: 15, angle: 0, fuseId: parentFuse.id }]);
+    const gPrev = run([{ x: early.x, y: early.y }, ...allCuts]);
     const childPrev = gPrev.sparks.find((s) => s.chain);
     check(
         gPrev.gameState === STATE.WON && !childPrev.ignited && !childPrev.active,
@@ -577,7 +676,7 @@ check(swept === levels.length, `winnability sweep: all ${levels.length} levels w
 
     // Design invariant (the "early win" regression): NO fork may sit at/after
     // its parent's cut target, or the normal cut would silently erase the
-    // branch. Verify across all 60 levels.
+    // branch. Verify across all levels.
     {
         const bad = [];
         for (const c of levels) {
@@ -595,16 +694,18 @@ check(swept === levels.length, `winnability sweep: all ${levels.length} levels w
         const hiddenForks = [];
         const offWick = [];
         for (const c of levels) {
+            const payOf = (end) => (end === c.payload?.id ? c.payload : (c.payloads || []).find((p) => p.id === end) || c.payload);
             for (const f of c.fuses) {
                 if (!f.branchOf) continue;
-                const r = Math.hypot(f.branchPoint.x - c.payload.x, f.branchPoint.y - c.payload.y);
+                const pay = payOf(f.end); // a branch's wick runs to ITS payload, not necessarily the primary
+                const r = Math.hypot(f.branchPoint.x - pay.x, f.branchPoint.y - pay.y);
                 if (r < 160) hiddenForks.push(`L${c.level_id}:${f.id}@r${Math.round(r)}`);
                 if (f.routeThrough) {
                     const cp = c.intersections.find((x) => x.id === f.routeThrough);
                     if (!cp) continue;
-                    const wx = c.payload.x - f.branchPoint.x, wy = c.payload.y - f.branchPoint.y;
+                    const wx = pay.x - f.branchPoint.x, wy = pay.y - f.branchPoint.y;
                     const L2 = wx * wx + wy * wy;
-                    const m = { x: (cp.x - 0.125 * (f.branchPoint.x + c.payload.x)) / 0.75, y: (cp.y - 0.125 * (f.branchPoint.y + c.payload.y)) / 0.75 };
+                    const m = { x: (cp.x - 0.125 * (f.branchPoint.x + pay.x)) / 0.75, y: (cp.y - 0.125 * (f.branchPoint.y + pay.y)) / 0.75 };
                     const u = ((m.x - f.branchPoint.x) * wx + (m.y - f.branchPoint.y) * wy) / L2;
                     if (u < 0.02 || u > 0.98) offWick.push(`L${c.level_id}:${f.id}@u${u.toFixed(2)}`);
                 }
@@ -627,7 +728,7 @@ check(swept === levels.length, `winnability sweep: all ${levels.length} levels w
     // A cut placed right at the bomb, as if the player waited for the sparks
     // to bunch up at the banana and swiped there.
     const bomb = Object.values(level.nodeMap).find((n) => n.type === "payload");
-    g.cuts.push({ x: bomb.x, y: bomb.y, radius: 15, angle: 0, fuseId: level.fuses[0].id });
+    swipeAcross(g, bomb.x, bomb.y);
 
     let s0Died = false, s1Died = false;
     for (let i = 0; i < 6000 && g.gameState === STATE.PLAYING; i++) {
@@ -685,6 +786,130 @@ check(swept === levels.length, `winnability sweep: all ${levels.length} levels w
         "multikill: single-wick snip is not a multi-cut");
 }
 
+// New mechanics for 61-120 (color pillar + stars + water + kevlar + twin bombs).
+{
+    // Forbidden-wire rule: the first wrong-color cut is DENIED with a warning
+    // (no snip consumed, level stays alive); the second detonates.
+    const cfg10 = levels.find((l) => l.level_id === 10);
+    const g = new GameLoop({ canvas: null, ...makeStubs() });
+    g.loadLevel(buildLevel(cfg10, { width: 1280, height: 720 }), 0);
+    const forbidden = g.fuses.find((f) => g.level.wireRule?.legend[f.color] === "no");
+    check(forbidden != null, "color: L10 teaches a forbidden red wire", forbidden?.color);
+    if (forbidden) {
+        const fp = getBezierXY(0.5, forbidden.startNode, forbidden.cp1, forbidden.cp2, forbidden.endNode);
+        const before = g.snipsRemaining;
+        check(swipeAcross(g, fp.x, fp.y) === false && g.snipsRemaining === before
+            && g.gameState === STATE.PLAYING && g.wireOffenses === 1 && g.wireDeniedSlash != null,
+            "color: first forbidden cut is denied with a warning (no snip lost)");
+        check(swipeAcross(g, fp.x, fp.y) === false && g.gameState === STATE.LOST,
+            "color: a second forbidden cut detonates");
+    }
+    // L10 is the color tutorial: it must be unwinnable by blind chokepoint
+    // play — the mixed crossroad's cut is denied by the wire rule.
+    {
+        const g10 = new GameLoop({ canvas: null, ...makeStubs() });
+        g10.loadLevel(buildLevel(cfg10, { width: 1280, height: 720 }), 0);
+        let blindCuts = 0;
+        for (const cp of Object.values(g10.level.intersectionMap)) {
+            if (g10.gameState !== STATE.PLAYING) break;
+            if (swipeAcross(g10, cp.x, cp.y)) blindCuts++;
+        }
+        check(g10.wireOffenses >= 1, "color: L10 blind chokepoint play trips the wrong-wire warning", `offenses=${g10.wireOffenses}`);
+    }
+    // A safe-colored cut works normally (L10's legend marks blue/white safe).
+    {
+        const gs = new GameLoop({ canvas: null, ...makeStubs() });
+        gs.loadLevel(buildLevel(cfg10, { width: 1280, height: 720 }), 0);
+        const safe = gs.fuses.find((f) => gs.level.wireRule?.legend[f.color] === "cut");
+        const sp = getBezierXY(0.24, safe.startNode, safe.cp1, safe.cp2, safe.endNode);
+        check(swipeAcross(gs, sp.x, sp.y) === true && gs.wireOffenses === 0,
+            "color: cutting a safe-colored wick is never denied");
+    }
+
+    // Gold stars: a snip whose cut-circle touches a star banks +1 snip. The
+    // generator rides stars on safe fuses the player cuts anyway, so the
+    // star-collecting cut spends 1 and banks 1 — the net budget is unchanged,
+    // which is exactly the zero-slack star-critical trick (one required cut is
+    // free, leaving a spare snip for the 3-star finish).
+    {
+        const cfg = levels.find((l) => l.level_id === 61);
+        const g = new GameLoop({ canvas: null, ...makeStubs() });
+        g.loadLevel(buildLevel(cfg, { width: 1280, height: 720 }), 0);
+        const star = g.pickups[0];
+        check(star != null, "stars: L61 carries a bonus-snip star");
+        if (star) {
+            const before = g.snipsRemaining;
+            const ok = swipeAcross(g, star.x, star.y);
+            check(ok === true && star.collected && g.bonusSnipsAt.length === 1 && g.snipsRemaining === before,
+                "stars: touching a gold star banks +1 snip (refunds its own cut)", `net ${g.snipsRemaining - before}`);
+        }
+    }
+
+    // Water drops: a doused direct wick needs NO cut — its spark douses itself
+    // at the drop and the level still clears.
+    {
+        const cfg = levels.find((l) => l.level_id === 103);
+        const g = new GameLoop({ canvas: null, ...makeStubs() });
+        g.loadLevel(buildLevel(cfg, { width: 1280, height: 720 }), 0);
+        const dousedIds = new Set(g.level.douse.map((d) => d.fuseId));
+        check(dousedIds.size === 2, "water: L103 douses two direct wicks");
+        const byCp = new Map();
+        for (const f of g.fuses) {
+            if (!f.routeThrough) continue;
+            if (!byCp.has(f.routeThrough)) byCp.set(f.routeThrough, []);
+            byCp.get(f.routeThrough).push(f);
+        }
+        for (const [cpId, grp] of byCp) {
+            if (grp.every((f) => dousedIds.has(f.id))) continue; // douse-only crossroad
+            const cp = g.level.intersectionMap[cpId];
+            swipeAcross(g, cp.x, cp.y);
+        }
+        for (const f of g.fuses) {
+            if (f.routeThrough || dousedIds.has(f.id)) continue;
+            swipeAcross(g, f.intersectionPt.x, f.intersectionPt.y);
+        }
+        const dousedSparks = g.level.douse.map((d) => g.sparks[d.fuseIndex]);
+        for (let i = 0; i < 6000 && g.gameState === STATE.PLAYING; i++) {
+            g.frameCount++;
+            g._update();
+        }
+        check(dousedSparks.every((s) => s.doused && !s.active), "water: doused sparks self-extinguish at the drop");
+        check(g.gameState === STATE.WON, "water: L103 clears without cutting the doused wicks");
+    }
+
+    // Kevlar wicks: the first snip frays (still burning), the second severs.
+    {
+        const cfg = levels.find((l) => l.level_id === 69);
+        const g = new GameLoop({ canvas: null, ...makeStubs() });
+        g.loadLevel(buildLevel(cfg, { width: 1280, height: 720 }), 0);
+        const arm = g.fuses.find((f) => f.armor);
+        check(arm != null, "kevlar: L69 carries an armored wick");
+        if (arm) {
+            const p = arm.intersectionPt;
+            check(swipeAcross(g, p.x, p.y) === true && arm.hits === 1 && arm.frayed && !g._fuseFullySevered(arm),
+                "kevlar: the first snip frays the wick (1 hit, still burning)");
+            check(swipeAcross(g, p.x, p.y) === true && arm.hits === 2 && g._fuseFullySevered(arm),
+                "kevlar: the second snip severs it");
+        }
+    }
+
+    // Twin bombs: fuses split between two payloads; an un-cut spark reaching
+    // either bomb detonates.
+    {
+        const cfg = levels.find((l) => l.level_id === 91);
+        const level = buildLevel(cfg, { width: 1280, height: 720 });
+        check(level.payloads.length === 2, "twin: L91 has two payload nodes");
+        const g = new GameLoop({ canvas: null, ...makeStubs() });
+        g.loadLevel(level, 0);
+        for (let i = 0; i < 6000 && g.gameState === STATE.PLAYING; i++) {
+            g.frameCount++;
+            g._update();
+        }
+        check(g.gameState === STATE.LOST && g.detonatedNodeId != null,
+            "twin: an un-cut spark reaches a bomb and the level detonates");
+    }
+}
+
 // Efficiency score: fewer snips used → more points; perfects and multi-cuts add.
 {
     const g = new GameLoop({ canvas: null, ...makeStubs() });
@@ -728,7 +953,9 @@ check(swept === levels.length, `winnability sweep: all ${levels.length} levels w
     const l8 = secs(fastest(8)), l20 = secs(fastest(20)), l40 = secs(fastest(40)), l55 = secs(fastest(55));
     check(l8 < 25, "L8 fastest fuse burns in under 25s (gentle showcase)", `${l8}s`);
     check(l20 < 16, "L20 fastest fuse burns in under 16s", `${l20}s`);
-    check(l40 < 11, "L40 act-2 peak burns in under 11s (fastest band)", `${l40}s`);
+    // Act-2 peak was globally recalibrated for trace-time (cap 0.0017 → 0.0014,
+    // ~12s/wick baseline, ×0.85 color tax). The peak now sits in the 11-16s band.
+    check(l40 >= 11 && l40 < 16, "L40 act-2 peak burns in the 11-16s trace-time band", `${l40}s`);
     check(l55 > 8, "L55 dense maze burns SLOWER than 8s (readable, not a panic)", `${l55}s`);
 
     // Read-time floor: no fuse anywhere burns a full wick in under ~7s, or
@@ -859,12 +1086,12 @@ check(swept === levels.length, `winnability sweep: all ${levels.length} levels w
     check(dayNumber(d28) === Math.floor(Date.UTC(2026, 7, 28) / 86400000),
         "dates: dayNumber counts local calendar days", String(dayNumber(d28)));
 
-    // Deterministic pick: 37 is coprime with 60, so consecutive days cycle
-    // through all 60 levels with no repeats inside a full cycle.
-    const pick = (d) => (d * 37) % 60;
+    // Deterministic pick: 37 is coprime with 120, so consecutive days cycle
+    // through all 120 levels with no repeats inside a full cycle.
+    const pick = (d) => (d * 37) % 120;
     const seen = new Set();
-    for (let d = 0; d < 60; d++) seen.add(pick(d));
-    check(seen.size === 60, "daily: level pick cycles through all 60 levels", `distinct=${seen.size}`);
+    for (let d = 0; d < 120; d++) seen.add(pick(d));
+    check(seen.size === 120, "daily: level pick cycles through all 120 levels", `distinct=${seen.size}`);
     check(pick(0) !== pick(1), "daily: consecutive days pick different levels", `${pick(0)} vs ${pick(1)}`);
     check(pick(12345) === pick(12345), "daily: pick is deterministic for a given day");
 
@@ -1132,7 +1359,7 @@ if (!bootError) {
     elements["btn-menu-levels"].dispatch("click", {});
     check(elements["modal-levels"].style.display === "flex", "Selector: hub LEVEL SELECT opens the map");
     check(elements["modal-menu"].style.display === "none", "Selector: the hub closes when the map opens (no overlap)");
-    check(elements["level-grid"].children.length === 60, "Selector: grid renders all 60 levels", String(elements["level-grid"].children.length));
+    check(elements["level-grid"].children.length === 120, "Selector: grid renders all 120 levels", String(elements["level-grid"].children.length));
     check(elements["level-grid"].children[0].children[0]?.textContent === "01", "Selector: level numbers rendered", elements["level-grid"].children[0].children[0]?.textContent);
     const cellStars = elements["level-grid"].children[0].children[1];
     check(cellStars.children.length === 3 && cellStars.children[0].className !== "dim",

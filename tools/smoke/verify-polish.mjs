@@ -18,7 +18,7 @@ const browser = await chromium.launch();
 const page = await browser.newPage({ viewport: { width: 1280, height: 720 } });
 page.on("pageerror", (e) => console.error("  [pageerror]", e.message));
 await page.goto(BASE);
-await page.waitForFunction(() => window.__CTF__?.levels?.length === 60, null, { timeout: 10000 });
+await page.waitForFunction(() => window.__CTF__?.levels?.length === 120, null, { timeout: 10000 });
 
 // ---- 1. Win with a perfect snip → pills render, PAR is gone -----------------
 console.log("[verify] win modal pills");

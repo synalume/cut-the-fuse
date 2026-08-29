@@ -5,12 +5,12 @@ import { chromium } from "playwright";
 
 const browser = await chromium.launch();
 const context = await browser.newContext({ viewport: { width: 1280, height: 800 } });
-// A maxed-out save: everything cleared + unlocked 60 → PLAY must start at Level 1.
+// A maxed-out save: everything cleared + unlocked 120 → PLAY must start at Level 1.
 await context.addInitScript(() => {
     const stars = {};
-    for (let i = 1; i <= 60; i++) stars[String(i)] = 3;
+    for (let i = 1; i <= 120; i++) stars[String(i)] = 3;
     localStorage.setItem("cut_the_fuse_save_v1", JSON.stringify({
-        stars, unlockedLevel: 60, starBank: 0, skins: {}, selectedSkin: null,
+        stars, unlockedLevel: 120, starBank: 0, skins: {}, selectedSkin: null,
         igniters: {}, selectedIgniter: null, bestTimes: {}, bestScores: {},
         dailyStreak: 0, lastDailyDay: null, dailyCompleted: {},
     }));
@@ -30,7 +30,7 @@ const nonTransparent = () => page.evaluate(() => {
 });
 
 await page.goto("http://localhost:8080");
-await page.waitForFunction(() => window.__CTF__?.levels?.length === 60, null, { timeout: 10000 });
+await page.waitForFunction(() => window.__CTF__?.levels?.length === 120, null, { timeout: 10000 });
 await page.waitForTimeout(500);
 
 const r = [];

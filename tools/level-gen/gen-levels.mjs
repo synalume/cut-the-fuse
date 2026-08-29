@@ -1,9 +1,10 @@
 #!/usr/bin/env node
 /**
- * level-gen — generates the full 60-level ladder into src/data/levels.json.
+ * level-gen — generates the full 120-level ladder into src/data/levels.json.
  *
  * Encodes the difficulty model from the plan:
- *  - 3 acts of 20; within each act, 5-level waves of ramp-ramp-ramp-peak-relief.
+ *  - 3 acts of 20 (1-60) plus two 30-level acts (61-90, 91-120); within each
+ *    act, 5-level waves of ramp-ramp-ramp-peak-relief.
  *  - Act 1 teaches one skill at a time (CHI PLAY learning-curve finding).
  *  - Act 3 pins snips to the theoretical minimum (mastery).
  *  - Wave curve plateaus after ~55 (boss levels recombine, not climb).
@@ -18,7 +19,7 @@
  * Run: node tools/level-gen/gen-levels.mjs
  */
 import { writeFileSync, mkdirSync, readFileSync } from "node:fs";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import path from "node:path";
 import { validateLevel } from "../../src/engine/LevelManager.js";
 import { getBezierXY } from "../../src/engine/MathUtils.js";
@@ -39,21 +40,29 @@ function makeRng(seed) {
 
 // ---- knob computation -------------------------------------------------------
 
+/** Act boundary: 1-60 keep the three 20-level acts; 61-90 is Act 4
+ *  (Budget/Reading/Restraint) and 91-120 is Act 5 (Two Bombs), each 30 levels. */
+function actFor(n) {
+    if (n <= 60) return Math.ceil(n / 20);
+    return n <= 90 ? 4 : 5;
+}
+
 /**
  * Returns the difficulty knobs for a level index (1-based).
- * Teaching phases are explicit for Act 1; Acts 2-3 use wave math.
+ * Teaching phases are explicit for Act 1; Acts 2-3 use wave math; Acts 4-5
+ * use 30-level band math (one new mechanic per band, then compounding).
  * NOTE: snips is NOT set here — buildLevels derives it from the minimum
  * number of cuts the geometry requires (see slackForLevel).
  */
 function knobsForLevel(n) {
-    const act = Math.ceil(n / 20);
-    const pos = (n - 1) % 20; // 0..19 within act
-    const wave = Math.floor(pos / 5); // 0..3 (wave 3 = peak, relief = pos%5===4)
-    const wpos = pos % 5; // 0,1,2 ramp; 3 peak; 4 relief
-    const relief = wpos === 4; // relief puzzles pull back a step
+    const act = actFor(n);
     const k = { spawns: 2, chokepoints: 1, share: true, delay: "burst", speed: 0.001 };
 
     if (act === 1) {
+        const pos = (n - 1) % 20; // 0..19 within act
+        const wave = Math.floor(pos / 5); // 0..3 (wave 3 = peak, relief = pos%5===4)
+        const wpos = pos % 5; // 0,1,2 ramp; 3 peak; 4 relief
+        const relief = wpos === 4; // relief puzzles pull back a step
         // Teaching phases, one skill at a time. Gentle pace — reading the lines
         // comes before racing them.
         if (n === 1) {
@@ -94,60 +103,148 @@ function knobsForLevel(n) {
             });
         }
     } else if (act === 2) {
-        // Planning depth. Speed stays moderate through the act; the cap is
-        // ~0.0017 so the act-2 peak still leaves ~9.8s per wick to read.
-        Object.assign(k, { spawns: 4, chokepoints: 2, share: false, delay: "close", speed: 0.0012 });
+        // Planning depth. Speed is recalibrated DOWN (the color pillar means
+        // players read/trace wires before sniping): act-2 peak ~0.0014
+        // (~11.9s/wick of reading time, down from ~9.8s).
+        Object.assign(k, { spawns: 4, chokepoints: 2, share: false, delay: "close", speed: 0.0011 });
+        const pos = (n - 1) % 20;
+        const wave = Math.floor(pos / 5);
+        const wpos = pos % 5;
+        const relief = wpos === 4;
         k.spawns = 4 + wave + (relief ? 0 : wpos >= 2 ? 1 : 0);
         k.chokepoints = 2 + (wave >= 1 ? 1 : 0) - (relief ? 1 : 0);
         k.delay = wave >= 2 ? "overlap" : "close";
-        k.speed = 0.0012 + wave * 0.00015; // 0.0012–0.00165
+        k.speed = 0.0011 + wave * 0.0001; // 0.0011–0.0014
         // Level 21-24: speed variance focus.
-        if (n <= 24) { k.spawns = 4 + (n % 2); k.chokepoints = 2; k.speed = 0.0012 + (n % 3) * 0.0001; }
+        if (n <= 24) { k.spawns = 4 + (n % 2); k.chokepoints = 2; k.speed = 0.0011 + (n % 3) * 0.0001; }
         // 25-28: multi-chokepoint routing + the jump to two chains.
         if (n >= 25 && n <= 28) { k.spawns = 6; k.chokepoints = 3; k.delay = "close"; }
         // 29-33: overlapping timing pressure.
         if (n >= 29 && n <= 33) { k.spawns = 6; k.chokepoints = 2; k.delay = "overlap"; }
         // 34-37: partial coverage (some fuses direct).
         if (n >= 34 && n <= 37) { k.spawns = 6 + (n % 2); k.chokepoints = 2; k.partial = true; }
-        // 38-40: peak — the fastest band in the whole game, still calm.
-        if (n >= 38) { k.spawns = 6; k.chokepoints = 3; k.speed = 0.0017; k.delay = "overlap"; }
-    } else {
+        // 38-40: peak — was the fastest band in the whole game; recalibrated
+        // from 0.0017 down to the new act-2 cap 0.0014.
+        if (n >= 38) { k.spawns = 6; k.chokepoints = 3; k.speed = 0.0014; k.delay = "overlap"; }
+    } else if (act === 3) {
         // Act 3 — mastery via COMPLEXITY, not speed. The most tangled mazes
         // (many wicks, two forks, up to ten sparks) burn the SLOWEST, and
         // sparks arrive in a long trickle (spread) instead of an overlap, so
         // the player reads the lines and plans cuts instead of reacting.
-        Object.assign(k, { spawns: 6, chokepoints: 2, share: false, delay: "spread", speed: 0.0014 });
+        // Recalibrated: act cap 0.0014 → 0.0013, bosses 0.0011 → 0.0010.
+        Object.assign(k, { spawns: 6, chokepoints: 2, share: false, delay: "spread", speed: 0.0013 });
+        const pos = (n - 1) % 20;
+        const wave = Math.floor(pos / 5);
+        const wpos = pos % 5;
+        const relief = wpos === 4;
         if (n <= 44) {
             // Minimal nets: 6 wicks through 2 crossroads — still the most
             // efficient cuts in the act (each cut clears 3 wicks), but the
             // matchsticks scatter AROUND the bomb instead of the old single
             // shared-chokepoint spider that funneled every wick down one path.
-            Object.assign(k, { spawns: 6, chokepoints: 2, share: false, delay: "spread", speed: 0.0014 });
+            Object.assign(k, { spawns: 6, chokepoints: 2, share: false, delay: "spread", speed: 0.0013 });
         } else if (n <= 50) {
             // Full nets: many spawns funneled through a few chokepoints.
             Object.assign(k, {
                 spawns: 6 + (n % 2), chokepoints: 3, share: false,
-                delay: "spread", speed: 0.0013 + (n % 3) * 0.0001,
+                delay: "spread", speed: 0.0012 + (n % 3) * 0.0001,
             });
         } else if (n <= 55) {
             // Wave peak escalation — but the maze is densest here, so the burn
             // SLOWS: 8 spawns + 2 forks ≈ 10 sparks to track.
             Object.assign(k, {
                 spawns: 7 + (n % 2), chokepoints: 3, share: false,
-                delay: "spread", speed: 0.0012,
+                delay: "spread", speed: 0.0011,
             });
         } else if (n <= 58) {
             // Boss levels: every chokepoint must be cut, zero slack. Calmest
             // burn in the act — the puzzle is the placement, not the race.
             Object.assign(k, {
                 spawns: 8, chokepoints: 4, share: false,
-                delay: "spread", speed: 0.0011,
+                delay: "spread", speed: 0.0010,
             });
         } else {
             // 59-60 finale + relief.
             Object.assign(k, {
                 spawns: 6 - (n % 2), chokepoints: 2, share: false,
-                delay: "stagger", speed: 0.0013,
+                delay: "stagger", speed: 0.0012,
+            });
+        }
+    } else if (act === 4) {
+        // Act 4 (61-90) — Budget, Reading & Restraint. One new mechanic per
+        // band, then compounding. Calm burn: reading time is the challenge,
+        // not reaction speed.
+        Object.assign(k, { spawns: 5, chokepoints: 2, share: false, delay: "spread", speed: 0.0011 });
+        if (n <= 64) {
+            // 61-64 Stars (tutorial at 61): bonus-snip pickups stretch the budget.
+            Object.assign(k, { spawns: 4 + (n % 2), chokepoints: 2, delay: "spread", speed: 0.0011, stars: 1 });
+        } else if (n <= 68) {
+            // 65-68 Water drops (tutorial at 65): doused wicks need no cut.
+            Object.assign(k, { spawns: 4 + (n % 2), chokepoints: 2, delay: "spread", speed: 0.0011, douse: n === 65 ? 1 : 2 });
+        } else if (n <= 72) {
+            // 69-72 Kevlar (tutorial at 69): two-snip wicks.
+            Object.assign(k, { spawns: 5, chokepoints: 2, delay: "close", speed: 0.0012, armor: n === 69 ? 1 : 2 });
+        } else if (n <= 76) {
+            // 73-76 Color compounds: forbidden wires + one other mechanic.
+            Object.assign(k, {
+                spawns: 5, chokepoints: 2, delay: "spread", speed: 0.0011,
+                color: true, douse: n % 2 === 0 ? 1 : 0, armor: n % 2 === 1 ? 1 : 0,
+            });
+        } else if (n <= 84) {
+            // 77-84 Compounding: stars + water + kevlar + color in combos.
+            Object.assign(k, {
+                spawns: 5 + (n % 2), chokepoints: 3, delay: "spread", speed: 0.0011,
+                color: n % 2 === 0, stars: 1 + (n % 3 === 0 ? 1 : 0),
+                douse: n % 3 === 1 ? 1 : 0, armor: n % 3 === 2 ? 1 : 0,
+            });
+        } else if (n <= 88) {
+            // 85-88 Escalation: two forks, armored+colored crossroads, and a
+            // star-critical budget (snips = minCuts, so the 3-star needs a star).
+            Object.assign(k, {
+                spawns: 6 + (n % 2), chokepoints: 3, delay: "spread", speed: 0.0010,
+                color: true, armor: 2, stars: 3, starCritical: true,
+            });
+        } else {
+            // 89-90 Act bosses: zero slack, calm burn.
+            Object.assign(k, {
+                spawns: 7, chokepoints: 3, delay: "spread", speed: 0.0009,
+                color: true, armor: 1, stars: 2, douse: 1, boss: true,
+            });
+        }
+    } else {
+        // Act 5 (91-120) — Two Bombs. Every level splits its fuses between two
+        // payloads; each mechanic returns compounded on the twin layout.
+        Object.assign(k, { spawns: 5, chokepoints: 2, share: false, delay: "close", speed: 0.0012, twin: true });
+        if (n <= 94) {
+            // 91-94 Twin bombs (tutorial at 91): two targets, split attention.
+            Object.assign(k, { spawns: 4 + (n % 2), chokepoints: 2, delay: "close", speed: 0.0012 });
+        } else if (n <= 98) {
+            // 95-98 Twin + stars.
+            Object.assign(k, { spawns: 5, chokepoints: 2, delay: "close", speed: 0.0011, stars: 1 });
+        } else if (n <= 102) {
+            // 99-102 Twin + kevlar.
+            Object.assign(k, { spawns: 5 + (n % 2), chokepoints: 3, delay: "close", speed: 0.0011, armor: 2 });
+        } else if (n <= 106) {
+            // 103-106 Twin + water.
+            Object.assign(k, { spawns: 5 + (n % 2), chokepoints: 2, delay: "spread", speed: 0.0011, douse: 2 });
+        } else if (n <= 110) {
+            // 107-110 Twin + color.
+            Object.assign(k, { spawns: 5, chokepoints: 2, delay: "spread", speed: 0.0010, color: true });
+        } else if (n <= 116) {
+            // 111-116 Escalation: all five mechanics, full nets, 3-4 chokepoints,
+            // per-bomb color rules.
+            Object.assign(k, {
+                spawns: 7 + (n % 2), chokepoints: 3 + (n % 2 === 0 ? 1 : 0),
+                delay: "spread", speed: 0.0010, color: true, armor: 2, stars: 2, douse: 1,
+            });
+        } else if (n <= 118) {
+            // 117-118 Relief: a calm two-bomb breather.
+            Object.assign(k, { spawns: 5, chokepoints: 2, delay: "close", speed: 0.0012, stars: 1 });
+        } else {
+            // 119-120 Final bosses: everything compounded, calmest burn, zero slack.
+            Object.assign(k, {
+                spawns: 8, chokepoints: 4, delay: "spread", speed: 0.0009,
+                color: true, armor: 2, stars: 2, douse: 2, boss: true,
             });
         }
     }
@@ -158,11 +255,12 @@ function knobsForLevel(n) {
     if (n >= 8 && n <= 24) k.chains = 1;
     else if (n >= 25) k.chains = 2;
     // Partial coverage (some fuses route straight, no chokepoint) — taught at
-    // L14, returns with act 3's relief puzzles. Stops every board from
-    // converging through a visible middle.
+    // L14, returns with act 3's relief puzzles and act 4's odd-numbered levels.
+    // Stops every board from converging through a visible middle.
     if (n >= 14 && n <= 24) k.partial = true;
     else if (n >= 34 && n <= 37) k.partial = true;
-    else if (act === 3 && relief) k.partial = true;
+    else if (act === 3 && ((n - 1) % 20) % 5 === 4) k.partial = true;
+    else if (act === 4 && n % 4 === 0) k.partial = true;
     return k;
 }
 
@@ -171,9 +269,15 @@ function knobsForLevel(n) {
  * Snips = minimum cuts required by the geometry + slack.
  * Every level keeps >= 1 spare snip so the 3-star goal ("finish with a snip
  * left") is always achievable; teaching levels get 2.
+ * Star-critical levels (85-88) and act bosses (89-90, 119-120) run ZERO slack —
+ * the only spare snip comes from banking a gold star, so grabbing one is
+ * forced. Star-critical levels always carry pickups.
  */
 function slackForLevel(n) {
-    return n <= 3 ? 2 : 1;
+    if (n <= 3) return 2;
+    if (n >= 85 && n <= 90) return 0;
+    if (n >= 119) return 0;
+    return 1;
 }
 
 /**
@@ -193,6 +297,150 @@ function branchSpeedFactor(n) {
  *  arc, and the maze reads as a tangle of curves at first glance. */
 function branchCurveMag(n) {
     return n >= 25 ? Math.min(0.34, 0.16 + (n - 25) * 0.007) : 0.12;
+}
+
+// ---- color pillar + new mechanics ------------------------------------------
+
+/**
+ * Color-coded wire scheme for a level, or null when the level has no legend.
+ * Lives in acts 1-3 (plus compounding in acts 4-5 via the `color` knob).
+ *
+ * Real-world-accurate palette: forbidden (do not cut) = red (hot/live) and
+ * orange in later acts; safe (cut) = blue (neutral), white (neutral), green
+ * (ground). Black/amber are excluded (burnt ash / the burning fire).
+ *
+ *   L9      — gentle teaser: the legend appears with one forbidden decoy,
+ *             winnable without reading it (the decoy never lights).
+ *   L10     — color tutorial: a forbidden fuse sits in a busy crossroad so a
+ *             blind cut at the "obvious" spot hits the wrong wire (unwinnable
+ *             without reading the legend).
+ *   L11-17  — seasoning: forbidden decoys woven into the snip economy.
+ *   L18-20  — first mixed crossroads (a safe + a forbidden wick share a cut).
+ *   Act 2   — mixed crossroads common (two-fork band 25-28, overlap 29-33).
+ *   Act 3   — dense mazes + bosses colored; orange joins red as forbidden.
+ */
+function colorSchemeFor(n) {
+    const act = actFor(n);
+    if (act > 3 || n <= 8) return null; // pure-tutorial band untouched
+
+    const A = { red: "no", blue: "cut", white: "cut" };                       // 2 safe
+    const B = { red: "no", blue: "cut", white: "cut", green: "cut" };         // 3 safe
+    const C = { red: "no", orange: "no", blue: "cut", white: "cut", green: "cut" }; // 2 forbidden
+
+    if (n === 9) return { legend: A, forbidden: ["red"], safe: ["blue", "white"], mixed: false, forbiddenCount: 1 };
+    if (n === 10) return { legend: A, forbidden: ["red"], safe: ["blue", "white"], mixed: true, forbiddenCount: 1 };
+
+    if (act === 1) {
+        const mixed = n >= 18;
+        return {
+            legend: A,
+            forbidden: ["red"],
+            safe: ["blue", "white"],
+            mixed,
+            forbiddenCount: n === 20 ? 2 : 1,
+        };
+    }
+    if (act === 2) {
+        const legend = n % 2 === 0 ? B : A;
+        const mixed = (n >= 25 && n <= 33) || n % 3 === 0;
+        return {
+            legend,
+            forbidden: ["red"],
+            safe: Object.keys(legend).filter((c) => legend[c] === "cut"),
+            mixed,
+            forbiddenCount: n >= 34 ? 2 : 1,
+        };
+    }
+    // Act 3: dense colored mazes. Orange joins red as a second forbidden color
+    // from the mid-act; bosses and the finale run mixed everywhere.
+    if (n >= 56) {
+        return { legend: C, forbidden: ["red", "orange"], safe: ["blue", "white", "green"], mixed: true, forbiddenCount: 2 };
+    }
+    return {
+        legend: C,
+        forbidden: ["red", "orange"],
+        safe: ["blue", "white", "green"],
+        mixed: n % 3 === 0,
+        forbiddenCount: n % 2 === 0 ? 2 : 1,
+    };
+}
+
+/** A fuse is forbidden when its color maps to "no" in the level's legend. */
+function isForbiddenFuse(fuse, wireRule) {
+    return !!(wireRule && wireRule.legend[fuse.color] === "no");
+}
+
+/**
+ * Minimum snips a level's final geometry requires — the theoretical-clear
+ * budget that `snipsAllowed` is built on.
+ *
+ *   - A chokepoint whose routed fuses are ALL safe costs 1 cut (it severs every
+ *     non-doused safe wick routed through it), +1 per armored fuse routed there
+ *     (first snip frays, second severs).
+ *   - A MIXED chokepoint (a forbidden wick shares the cut) is poisoned: the cut
+ *     there is always denied, so every non-doused safe fuse routed through it
+ *     must be cut upstream on its own leg — 1 each, +1 if armored.
+ *   - Direct (unrouted) safe fuses cost 1 each (+1 if armored).
+ *   - Forbidden decoys and doused fuses cost 0 (they never need cutting).
+ */
+function computeMinCuts(level) {
+    const wr = level.wireRule || null;
+    const doused = new Set((level.douse || []).map((d) => d.fuse));
+    const byCp = new Map();
+    for (const f of level.fuses) {
+        if (!f.routeThrough) continue;
+        if (!byCp.has(f.routeThrough)) byCp.set(f.routeThrough, []);
+        byCp.get(f.routeThrough).push(f);
+    }
+    let minCuts = 0;
+    for (const [, grp] of byCp) {
+        const hasForbidden = grp.some((f) => isForbiddenFuse(f, wr));
+        const cuttable = grp.filter((f) => !isForbiddenFuse(f, wr) && !doused.has(f.id));
+        if (hasForbidden) {
+            for (const f of cuttable) minCuts += 1 + (f.armor ? 1 : 0);
+        } else if (cuttable.length) {
+            minCuts += 1;
+            for (const f of cuttable) minCuts += f.armor ? 1 : 0;
+        }
+    }
+    for (const f of level.fuses) {
+        if (f.routeThrough) continue;
+        if (isForbiddenFuse(f, wr) || doused.has(f.id)) continue;
+        minCuts += 1 + (f.armor ? 1 : 0);
+    }
+    return minCuts;
+}
+
+/** Whether the level's final geometry contains a poisoned (mixed) crossroad:
+ *  a chokepoint carrying both a safe and a forbidden fuse. */
+function levelIsMixed(level) {
+    const wr = level.wireRule;
+    if (!wr) return false;
+    const byCp = new Map();
+    for (const f of level.fuses) {
+        if (!f.routeThrough) continue;
+        if (!byCp.has(f.routeThrough)) byCp.set(f.routeThrough, []);
+        byCp.get(f.routeThrough).push(f);
+    }
+    for (const [, grp] of byCp) {
+        if (grp.some((f) => isForbiddenFuse(f, wr)) && grp.some((f) => !isForbiddenFuse(f, wr))) return true;
+    }
+    return false;
+}
+
+/** Compact tag of the mechanics in a generated level — used to guarantee
+ *  adjacent levels don't read identically. */
+function mechTag(level) {
+    const parts = [];
+    if (level.wireRule) parts.push(levelIsMixed(level) ? "mix" : "col");
+    if (Array.isArray(level.payloads) && level.payloads.length > 1) parts.push("twin");
+    const pickups = level.pickups || [];
+    const douse = level.douse || [];
+    if (pickups.length) parts.push(`s${pickups.length}`);
+    if (douse.length) parts.push(`w${douse.length}`);
+    const armor = level.fuses.filter((f) => f.armor).length;
+    if (armor) parts.push(`k${armor}`);
+    return parts.join("+") || "plain";
 }
 
 // ---- placement --------------------------------------------------------------
@@ -269,9 +517,9 @@ function lookForLevel(n, k, seedOffset = 0, salt = 0) {
 }
 
 /** Compact fingerprint of a look, used to guarantee adjacent levels differ. */
-function lookSignature(look) {
+function lookSignature(look, mech = "plain") {
     const bucket = Math.round(look.fanDeg / 40);
-    return `${look.distPattern}|${look.radiusProfile}|${bucket}|${look.routePattern}|${look.delayPattern}|${look.speedPattern}|${look.curvePattern}`;
+    return `${look.distPattern}|${look.radiusProfile}|${bucket}|${look.routePattern}|${look.delayPattern}|${look.speedPattern}|${look.curvePattern}|${mech}`;
 }
 
 /**
@@ -754,43 +1002,50 @@ function projectionU(start, end, intersection) {
     return ((cp.x - start.x) * wx + (cp.y - start.y) * wy) / L2;
 }
 
-/** Reposition chokepoints so every routed fuse is fold-free and clear of the payload. */
+/** Reposition chokepoints so every routed fuse is fold-free and clear of the payload(s). */
 function deHairpin(level) {
     const iMap = {};
     level.intersections.forEach((c) => (iMap[c.id] = c));
     const sMap = {};
     level.spawns.forEach((s) => (sMap[s.id] = s));
-    const bomb = level.payload;
+    const payloads = level.payloads || [level.payload];
+    const pMap = {};
+    payloads.forEach((p) => (pMap[p.id] = p));
+    const bomb = payloads[0];
+    const endOf = (f) => pMap[f.end] || payloads[0];
 
     const routed = {}; // chokepoint id -> [{ start, end }]
     for (const f of level.fuses) {
         if (!f.routeThrough) continue;
         const start = f.branchOf ? f.branchPoint : sMap[f.start];
         if (!start) continue;
-        (routed[f.routeThrough] ??= []).push({ start, end: bomb });
+        (routed[f.routeThrough] ??= []).push({ start, end: endOf(f) });
     }
-    // Direct fuses' cut points: the midpoint of their spawn->bomb segment.
+    // Direct fuses' cut points: the midpoint of their spawn->payload segment.
     // Branch fuses have no spawn and no chokepoint (always direct) — their cut
     // points are validated after positionBranches pins the fork.
     const directMidpoints = [];
     for (const f of level.fuses) {
         if (f.routeThrough || f.branchOf) continue;
-        directMidpoints.push({ x: (sMap[f.start].x + bomb.x) / 2, y: (sMap[f.start].y + bomb.y) / 2 });
+        const end = endOf(f);
+        directMidpoints.push({ x: (sMap[f.start].x + end.x) / 2, y: (sMap[f.start].y + end.y) / 2 });
     }
 
     // Outer loop: alternate hairpin relaxation and payload clearance until both hold.
     for (let pass = 0; pass < 8; pass++) {
-        // 1) Payload clearance: push chokepoints out of the bomb's footprint.
+        // 1) Payload clearance: push chokepoints out of EVERY payload's footprint.
         let clear = true;
         for (const cid of Object.keys(routed)) {
             const I = iMap[cid];
-            const dx = I.x - bomb.x, dy = I.y - bomb.y;
-            const d = Math.hypot(dx, dy);
-            if (d < PAYLOAD_CLEARANCE && d > 0.001) {
-                const k = PAYLOAD_CLEARANCE / d;
-                I.x = bomb.x + dx * k;
-                I.y = bomb.y + dy * k;
-                clear = false;
+            for (const p of payloads) {
+                const dx = I.x - p.x, dy = I.y - p.y;
+                const d = Math.hypot(dx, dy);
+                if (d < PAYLOAD_CLEARANCE && d > 0.001) {
+                    const k = PAYLOAD_CLEARANCE / d;
+                    I.x = p.x + dx * k;
+                    I.y = p.y + dy * k;
+                    clear = false;
+                }
             }
         }
         // 2) Hairpin relaxation: move each chokepoint along each routed fuse's
@@ -847,7 +1102,7 @@ function deHairpin(level) {
         const I = iMap[f.routeThrough];
         const st = f.branchOf ? f.branchPoint : sMap[f.start];
         if (!st) continue;
-        const u = projectionU(st, bomb, I);
+        const u = projectionU(st, endOf(f), I);
         if (u < FOLD_THRESHOLD || u > 1 - FOLD_THRESHOLD) {
             delete f.routeThrough;
         }
@@ -860,7 +1115,24 @@ function deHairpin(level) {
  *  near a chokepoint makes the level unwinnable. Keep them 40px apart. */
 const CUT_SEPARATION = 40;
 
-function validatePlacement({ payload, spawns, intersections, fuses }) {
+/** A required cut point must stay this far from every forbidden wire's curve.
+ *  Cuts within the blade radius (15) of a forbidden wire are denied, so this is
+ *  the blade radius plus a safety margin. */
+const FORBIDDEN_CUT_CLEARANCE = 22;
+/** Pickups/drops must not sit inside another cut's reach (dedupe 30 + blade 15
+ *  + a little air) — a required cut shouldn't accidentally bank a star. */
+const PICKUP_CLEARANCE = 42;
+
+function validatePlacement(level) {
+    const { spawns, intersections, fuses } = level;
+    const payloads = level.payloads || [level.payload];
+    const pMap = {};
+    payloads.forEach((p) => (pMap[p.id] = p));
+    const endOf = (f) => pMap[f.end] || payloads[0];
+    const wr = level.wireRule || null;
+    const isForb = (f) => isForbiddenFuse(f, wr);
+    const doused = new Set((level.douse || []).map((d) => d.fuse));
+
     const sMap = {};
     spawns.forEach((s) => (sMap[s.id] = s));
     const iMap = {};
@@ -873,35 +1145,122 @@ function validatePlacement({ payload, spawns, intersections, fuses }) {
         if (!f.routeThrough) continue;
         const st = f.branchOf ? f.branchPoint : sMap[f.start];
         if (!st) return { ok: false, reason: `fuse ${f.id} has no start` };
-        const u = projectionU(st, payload, iMap[f.routeThrough]);
+        const u = projectionU(st, endOf(f), iMap[f.routeThrough]);
         if (u < FOLD_THRESHOLD || u > 1 - FOLD_THRESHOLD) return { ok: false, reason: `fold on ${f.start || f.id}` };
     }
-    // Chokepoints must sit clear of the payload's visible art.
+    // Chokepoints must sit clear of EVERY payload's visible art (twin bombs
+    // each own a ring), not drift absurdly far, and not hide under a spawn.
     for (const c of intersections) {
-        if (Math.hypot(c.x - payload.x, c.y - payload.y) < PAYLOAD_CLEARANCE) return { ok: false, reason: "chokepoint under payload" };
-        if (Math.hypot(c.x - payload.x, c.y - payload.y) > MAX_CP_DISTANCE) return { ok: false, reason: "chokepoint too far from payload" };
-    }
-    // Chokepoints must not sit on top of a spawn (the wick would be invisible
-    // and the cut pointless) — especially with concentric "rings" layouts.
-    for (const c of intersections) {
+        const near = Math.min(...payloads.map((p) => Math.hypot(c.x - p.x, c.y - p.y)));
+        if (near < PAYLOAD_CLEARANCE) return { ok: false, reason: "chokepoint under payload" };
+        if (near > MAX_CP_DISTANCE) return { ok: false, reason: "chokepoint too far from payload" };
         for (const s of spawns) {
             if (Math.hypot(c.x - s.x, c.y - s.y) < 60) return { ok: false, reason: "chokepoint too close to a spawn" };
         }
     }
-    // Every cut point (chokepoint or direct-fuse midpoint) must be separately
-    // placeable. Branch fuses contribute their fork->payload midpoint.
-    const pts = intersections.slice();
+
+    // Forbidden-wire clearance: sample every forbidden fuse's curve; any point
+    // on a REQUIRED cut path must stay clear of it, or cutting there would be
+    // denied and the level becomes unwinnable.
+    const forbSamples = fuses.filter(isForb).map((f) => {
+        const st = f.branchOf ? f.branchPoint : sMap[f.start];
+        const end = endOf(f);
+        const cpI = iMap[f.routeThrough] || { x: (st.x + end.x) / 2, y: (st.y + end.y) / 2 };
+        const [cp1, cp2] = forcedFuseCPs(st, end, cpI, f.bulge || 0);
+        const out = [];
+        for (let u = 0; u <= 1; u += 0.02) out.push(getBezierXY(u, st, cp1, cp2, end));
+        return out;
+    });
+    const clearOfForbidden = (x, y) => {
+        for (const samples of forbSamples) {
+            for (const s of samples) {
+                if (Math.hypot(s.x - x, s.y - y) < FORBIDDEN_CUT_CLEARANCE) return false;
+            }
+        }
+        return true;
+    };
+
+    // Required cut points (chokepoints, direct/branch midpoints, and the
+    // upstream legs of safe fuses in poisoned crossroads), with forbidden
+    // clearance and pairwise separation. Mixed-leg cuts of ONE poisoned
+    // crossroad converge near the chokepoint — the player serves them with a
+    // single blade (one cut severs every safe wick sharing the leg), so they
+    // are exempt from the mutual separation check.
+    const pts = [];
+    const mixedGroups = [];
+    const byCp = new Map();
     for (const f of fuses) {
-        if (f.routeThrough) continue;
+        if (!f.routeThrough) continue;
+        if (!byCp.has(f.routeThrough)) byCp.set(f.routeThrough, []);
+        byCp.get(f.routeThrough).push(f);
+    }
+    for (const [cpId, grp] of byCp) {
+        const hasForbidden = grp.some(isForb);
+        const cuttable = grp.filter((f) => !isForb(f) && !doused.has(f.id));
+        if (hasForbidden) {
+            // Poisoned crossroad: each safe fuse routed here must have an
+            // upstream leg the player can cut without touching a forbidden wire.
+            // The cut sits EARLY on the leg (u≈0.24, just past its midpoint) —
+            // near the chokepoint every wick converges into the forbidden curve
+            // and the cut would be denied. A converging pair of safe legs is
+            // severed by ONE blade, so no separation is required between them.
+            const group = [];
+            for (const f of cuttable) {
+                const st = sMap[f.start];
+                if (!st) return { ok: false, reason: `fuse ${f.id} has no start` };
+                const end = endOf(f);
+                const cpI = iMap[cpId];
+                const [cp1, cp2] = forcedFuseCPs(st, end, cpI, f.bulge || 0);
+                for (let u = 0.16; u <= 0.32; u += 0.02) {
+                    const s = getBezierXY(u, st, cp1, cp2, end);
+                    if (!clearOfForbidden(s.x, s.y)) return { ok: false, reason: `mixed leg ${f.id} touches a forbidden wire` };
+                }
+                const leg = getBezierXY(0.24, st, cp1, cp2, end);
+                group.push({ ...leg, mixedLeg: true, fuseId: f.id });
+            }
+            if (group.length) mixedGroups.push(group);
+        } else if (cuttable.length) {
+            const cp = iMap[cpId];
+            if (!cp) return { ok: false, reason: `unknown chokepoint ${cpId}` };
+            if (!clearOfForbidden(cp.x, cp.y)) return { ok: false, reason: `chokepoint ${cpId} touches a forbidden wire` };
+            pts.push({ ...cp, fuseId: cuttable[0].id });
+        }
+    }
+    // Direct + branch (unrouted) safe fuses.
+    for (const f of fuses) {
+        if (f.routeThrough || isForb(f) || doused.has(f.id)) continue;
         const st = f.branchOf ? f.branchPoint : sMap[f.start];
         if (!st) return { ok: false, reason: `fuse ${f.id} has no start` };
-        pts.push({ x: (st.x + payload.x) / 2, y: (st.y + payload.y) / 2 });
+        const mid = { x: (st.x + endOf(f).x) / 2, y: (st.y + endOf(f).y) / 2 };
+        if (!clearOfForbidden(mid.x, mid.y)) return { ok: false, reason: `cut on ${f.id} touches a forbidden wire` };
+        pts.push({ ...mid, fuseId: f.id });
     }
+    // Every required cut point must be separately placeable (dedupe + blade).
+    // Mixed legs are checked against everything except their own crossroad's legs.
+    const allMixed = mixedGroups.flat();
     for (let i = 0; i < pts.length; i++) {
         for (let j = i + 1; j < pts.length; j++) {
             if (Math.hypot(pts[i].x - pts[j].x, pts[i].y - pts[j].y) < CUT_SEPARATION) return { ok: false, reason: "cut points too close" };
         }
     }
+    for (const m of allMixed) {
+        for (const p of pts) {
+            if (Math.hypot(m.x - p.x, m.y - p.y) < CUT_SEPARATION) return { ok: false, reason: "mixed leg too close to a cut point" };
+        }
+    }
+    for (let gi = 0; gi < mixedGroups.length; gi++) {
+        for (let gj = gi + 1; gj < mixedGroups.length; gj++) {
+            for (const a of mixedGroups[gi]) {
+                for (const b of mixedGroups[gj]) {
+                    if (Math.hypot(a.x - b.x, a.y - b.y) < CUT_SEPARATION) return { ok: false, reason: "mixed legs of different crossroads too close" };
+                }
+            }
+        }
+    }
+
+    // A level designed as a mixed crossroad must actually contain one — if the
+    // geometry can't host a poisoned crossroad, re-seed and try again.
+    if (level.mixed && !levelIsMixed(level)) return { ok: false, reason: "mixed crossroad not realized" };
 
     // The fork is the puzzle: a cut placed at a chokepoint — or at the parent's
     // own cut target — snuffs ANY spark within its ~15px radius, so a branch
@@ -912,10 +1271,11 @@ function validatePlacement({ payload, spawns, intersections, fuses }) {
     for (const f of fuses) {
         if (!f.branchOf || !f.branchPoint) continue;
         const st = f.branchPoint;
-        const cpI = f.routeThrough ? iMap[f.routeThrough] : { x: (st.x + payload.x) / 2, y: (st.y + payload.y) / 2 };
-        const [cp1, cp2] = forcedFuseCPs(st, payload, cpI, f.bulge || 0);
+        const end = endOf(f);
+        const cpI = f.routeThrough ? iMap[f.routeThrough] : { x: (st.x + end.x) / 2, y: (st.y + end.y) / 2 };
+        const [cp1, cp2] = forcedFuseCPs(st, end, cpI, f.bulge || 0);
         const samples = [];
-        for (let u = 0; u <= 1; u += 0.04) samples.push(getBezierXY(u, st, cp1, cp2, payload));
+        for (let u = 0; u <= 1; u += 0.04) samples.push(getBezierXY(u, st, cp1, cp2, end));
         for (const s of samples) {
             for (const c of intersections) {
                 if (c.id === f.routeThrough) continue; // the branch's own cross-section
@@ -926,12 +1286,48 @@ function validatePlacement({ payload, spawns, intersections, fuses }) {
         }
         const parent = byId.get(f.branchOf);
         if (parent && !parent.routeThrough) {
-            const parentCut = { x: (sMap[parent.start].x + payload.x) / 2, y: (sMap[parent.start].y + payload.y) / 2 };
+            const ps = sMap[parent.start];
+            const parentCut = { x: (ps.x + endOf(parent).x) / 2, y: (ps.y + endOf(parent).y) / 2 };
             for (const s of samples) {
                 if (Math.hypot(s.x - parentCut.x, s.y - parentCut.y) < BRANCH_CUT_CLEARANCE) {
                     return { ok: false, reason: `branch ${f.id} passes near its parent's cut` };
                 }
             }
+        }
+    }
+
+    // Pickups and douse drops must sit on their fuse clear of the required cut
+    // points (and clear of each other) so a required cut doesn't accidentally
+    // bank a star — "placement clears pickup/douse nodes from chokepoints".
+    const pickupSpots = [];
+    for (const p of level.pickups || []) {
+        const fuse = fuses.find((f) => f.id === p.fuse);
+        if (!fuse) return { ok: false, reason: `pickup ${p.id} on unknown fuse` };
+        const st = fuse.branchOf ? fuse.branchPoint : sMap[fuse.start];
+        const end = endOf(fuse);
+        const cpI = iMap[fuse.routeThrough] || { x: (st.x + end.x) / 2, y: (st.y + end.y) / 2 };
+        const [cp1, cp2] = forcedFuseCPs(st, end, cpI, fuse.bulge || 0);
+        const pos = getBezierXY(p.at, st, cp1, cp2, end);
+        for (const q of [...pts, ...allMixed]) {
+            if (q.fuseId === fuse.id) continue; // a fuse's own cut may sit near its star
+            if (Math.hypot(pos.x - q.x, pos.y - q.y) < PICKUP_CLEARANCE) return { ok: false, reason: "pickup too close to a cut point" };
+        }
+        for (const q of pickupSpots) {
+            if (Math.hypot(pos.x - q.x, pos.y - q.y) < PICKUP_CLEARANCE) return { ok: false, reason: "pickups too close" };
+        }
+        pickupSpots.push(pos);
+    }
+    for (const d of level.douse || []) {
+        const fuse = fuses.find((f) => f.id === d.fuse);
+        if (!fuse) return { ok: false, reason: `douse ${d.id} on unknown fuse` };
+        const st = fuse.branchOf ? fuse.branchPoint : sMap[fuse.start];
+        const end = endOf(fuse);
+        const cpI = iMap[fuse.routeThrough] || { x: (st.x + end.x) / 2, y: (st.y + end.y) / 2 };
+        const [cp1, cp2] = forcedFuseCPs(st, end, cpI, fuse.bulge || 0);
+        const pos = getBezierXY(d.at, st, cp1, cp2, end);
+        for (const q of [...pts, ...allMixed]) {
+            if (q.fuseId === fuse.id) continue; // a doused fuse's own cut is beside the point
+            if (Math.hypot(pos.x - q.x, pos.y - q.y) < PICKUP_CLEARANCE) return { ok: false, reason: "douse too close to a cut point" };
         }
     }
     return { ok: true };
@@ -949,7 +1345,7 @@ const BRANCH_CUT_CLEARANCE = 26;
  *  point can sit fold-free between every spawn and the bomb. */
 function styleForLevel(n, k) {
     if (n <= 1) return "hub"; // the swipe tutorial keeps the familiar sunburst
-    const act = Math.ceil(n / 20);
+    const act = actFor(n);
     // Single-fuse practice (L3), two-fuse intro (L2), and single-shared-chokepoint
     // levels keep the one-sided pools (spawns must sit on one side of the bomb);
     // everything else draws from the full archetype set.
@@ -1011,6 +1407,10 @@ function forcedFuseCPs(start, end, intersection, bulge = 0) {
  *  The branch cross-sections are relaxed by a second de-hairpin pass. */
 function positionBranches(level) {
     const { payload, spawns, intersections, fuses } = level;
+    const payloads = level.payloads || [payload];
+    const pMap = {};
+    payloads.forEach((p) => (pMap[p.id] = p));
+    const endOf = (f) => pMap[f.end] || payloads[0];
     const sMap = {};
     spawns.forEach((s) => (sMap[s.id] = s));
     const iMap = {};
@@ -1023,9 +1423,10 @@ function positionBranches(level) {
         if (!f.branchOf) continue;
         const parent = byId.get(f.branchOf);
         if (!parent) continue;
+        const pEnd = endOf(parent);
         const ps = sMap[parent.start];
-        const pCp = iMap[parent.routeThrough] || { x: (ps.x + payload.x) / 2, y: (ps.y + payload.y) / 2 };
-        const [cp1, cp2] = forcedFuseCPs(ps, payload, pCp, parent.bulge || 0);
+        const pCp = iMap[parent.routeThrough] || { x: (ps.x + pEnd.x) / 2, y: (ps.y + pEnd.y) / 2 };
+        const [cp1, cp2] = forcedFuseCPs(ps, pEnd, pCp, parent.bulge || 0);
 
         // A fork too close to the payload leaves a stubby, half-hidden branch
         // wick. Push the fork earlier along the parent until the branch has a
@@ -1034,12 +1435,12 @@ function positionBranches(level) {
         // can't clear the bomb art, the parent's wick never leaves the bomb's
         // footprint — drop the branch rather than emit a hidden stub.
         let at = f.at;
-        let P = getBezierXY(at, ps, cp1, cp2, payload);
-        let L = Math.hypot(payload.x - P.x, payload.y - P.y);
+        let P = getBezierXY(at, ps, cp1, cp2, pEnd);
+        let L = Math.hypot(pEnd.x - P.x, pEnd.y - P.y);
         for (let guard = 0; guard < 8 && L < FORK_MIN_LENGTH; guard++) {
             at = Math.max(0.14, at - 0.025);
-            P = getBezierXY(at, ps, cp1, cp2, payload);
-            L = Math.hypot(payload.x - P.x, payload.y - P.y);
+            P = getBezierXY(at, ps, cp1, cp2, pEnd);
+            L = Math.hypot(pEnd.x - P.x, pEnd.y - P.y);
         }
         if (L < 160) {
             toRemove.push(f);
@@ -1055,9 +1456,9 @@ function positionBranches(level) {
         // host a chokepoint inside the clearance ring — those stay direct
         // (their midpoint is the cut target) with a bulge so the fork still
         // reads as a Y.
-        const wx = payload.x - P.x, wy = payload.y - P.y;
+        const wx = pEnd.x - P.x, wy = pEnd.y - P.y;
         const perpX = -wy / L, perpY = wx / L;
-        const parentMid = getBezierXY(0.5, ps, cp1, cp2, payload);
+        const parentMid = getBezierXY(0.5, ps, cp1, cp2, pEnd);
         let side = perpX * (parentMid.x - P.x) + perpY * (parentMid.y - P.y) > 0 ? -1 : 1;
         if (L < 185) {
             delete f.routeThrough;
@@ -1070,11 +1471,19 @@ function positionBranches(level) {
             const oc = 0.16 + guard * 0.05; // widen the offset if the first side is crowded
             let cx = P.x + wx * 0.55 + perpX * side * L * oc;
             let cy = P.y + wy * 0.55 + perpY * side * L * oc;
-            const r = Math.hypot(cx, cy);
+            // Single-payload levels keep the pre-twin clamp (radial push from the
+            // origin) so the 1-60 geometry stays byte-identical to the shipped
+            // ladder; twin levels clamp against each bomb's own ring.
+            const r = level.payloads ? Math.hypot(cx - pEnd.x, cy - pEnd.y) : Math.hypot(cx, cy);
             if (r < MIN_R && r > 0.001) {
                 const k = MIN_R / r;
-                cx *= k;
-                cy *= k;
+                if (level.payloads) {
+                    cx = pEnd.x + (cx - pEnd.x) * k;
+                    cy = pEnd.y + (cy - pEnd.y) * k;
+                } else {
+                    cx *= k;
+                    cy *= k;
+                }
             }
             const crowded = intersections.some((q) => Math.hypot(q.x - cx, q.y - cy) < 52);
             if (crowded) {
@@ -1110,6 +1519,10 @@ function positionBranches(level) {
  *  validatePlacement would reject. */
 function settleBranches(level) {
     const { payload, spawns, intersections, fuses } = level;
+    const payloads = level.payloads || [payload];
+    const pMap = {};
+    payloads.forEach((p) => (pMap[p.id] = p));
+    const endOf = (f) => pMap[f.end] || payloads[0];
     const sMap = {};
     spawns.forEach((s) => (sMap[s.id] = s));
     const iMap = {};
@@ -1122,7 +1535,8 @@ function settleBranches(level) {
         if (!f.branchOf || !f.routeThrough) continue;
         const cp = iMap[f.routeThrough];
         if (!cp) continue;
-        const r = Math.hypot(cp.x - payload.x, cp.y - payload.y);
+        const pEnd = endOf(f);
+        const r = Math.hypot(cp.x - pEnd.x, cp.y - pEnd.y);
         const near = intersections.some((q) => q.id !== f.routeThrough && Math.hypot(q.x - cp.x, q.y - cp.y) < 48);
         if (r < PAYLOAD_CLEARANCE + 6 || near) drop.add(f.routeThrough);
     }
@@ -1136,13 +1550,14 @@ function settleBranches(level) {
         if (parent) {
             const ps = sMap[parent.start];
             if (ps) {
-                const pCp = iMap[parent.routeThrough] || { x: (ps.x + payload.x) / 2, y: (ps.y + payload.y) / 2 };
-                const [cp1, cp2] = forcedFuseCPs(ps, payload, pCp, parent.bulge || 0);
-                const P = f.branchPoint || getBezierXY(f.at, ps, cp1, cp2, payload);
-                const wx = payload.x - P.x, wy = payload.y - P.y;
+                const pEnd = endOf(parent);
+                const pCp = iMap[parent.routeThrough] || { x: (ps.x + pEnd.x) / 2, y: (ps.y + pEnd.y) / 2 };
+                const [cp1, cp2] = forcedFuseCPs(ps, pEnd, pCp, parent.bulge || 0);
+                const P = f.branchPoint || getBezierXY(f.at, ps, cp1, cp2, pEnd);
+                const wx = pEnd.x - P.x, wy = pEnd.y - P.y;
                 const L = Math.hypot(wx, wy) || 1;
                 const perpX = -wy / L, perpY = wx / L;
-                const parentMid = getBezierXY(0.5, ps, cp1, cp2, payload);
+                const parentMid = getBezierXY(0.5, ps, cp1, cp2, pEnd);
                 side = perpX * (parentMid.x - P.x) + perpY * (parentMid.y - P.y) > 0 ? -1 : 1;
             }
         }
@@ -1151,20 +1566,356 @@ function settleBranches(level) {
     level.intersections = intersections.filter((c) => !drop.has(c.id));
 }
 
-function placeLevel(n, k, seedOffset = 0, salt = 0) {
+/** Twin-bomb layout: two payloads opposite each other on a random axis; the
+ *  spawns scatter full-circle around the center and each routes to the nearer
+ *  bomb, with per-bomb sector chokepoints (each cross-section sits on its own
+ *  bomb's ring, so wicks enter each banana from different sides). */
+function twinLayout(n, k, rng, look) {
+    const axis = rng() * Math.PI * 2;
+    const spread = 150 + rng() * 40;
+    const d = { x: Math.round(Math.cos(axis) * spread), y: Math.round(Math.sin(axis) * spread) };
+    const payload1 = { id: "bomb1", x: d.x, y: d.y };
+    const payload2 = { id: "bomb2", x: -d.x, y: -d.y };
+    const payloads = [payload1, payload2];
+
+    const count = Math.max(2, k.spawns);
+    const angles = spawnAnglesFull(count, look, rng);
+    const spawns = angles.map((deg, i) => {
+        const a = (deg * Math.PI) / 180;
+        const radius = 350 + rng() * 140;
+        return { id: `s${i + 1}`, x: Math.round(Math.cos(a) * radius), y: Math.round(Math.sin(a) * radius) };
+    });
+
+    // Each spawn feeds the nearer bomb.
+    const assign = spawns.map((s) => {
+        const d1 = Math.hypot(s.x - payload1.x, s.y - payload1.y);
+        const d2 = Math.hypot(s.x - payload2.x, s.y - payload2.y);
+        return d1 <= d2 ? "bomb1" : "bomb2";
+    });
+
+    // Per-bomb sector chokepoints (ids prefixed so the two bombs never collide).
+    const intersections = [];
+    const perBombCps = { bomb1: [], bomb2: [] };
+    const totalCps = k.chokepoints;
+    for (const [bi, p] of payloads.entries()) {
+        const members = spawns.filter((_, i) => assign[i] === p.id);
+        if (!members.length) continue;
+        const want = bi === 0 ? Math.ceil(totalCps / 2) : Math.floor(totalCps / 2);
+        const m = Math.max(1, Math.min(members.length, want));
+        const cps = chokepointsForSectors(members, p, m, look, rng).map((c) => ({ ...c, id: `${p.id}_${c.id}` }));
+        perBombCps[p.id] = cps;
+        intersections.push(...cps);
+    }
+    return { payload: payload1, payloads, spawns, intersections, assign, perBombCps };
+}
+
+/**
+ * Paint the level's mechanics onto its base fuses (runs inside placeLevel,
+ * after routing but before branch fuses are added):
+ *   - color-coded wires (wireRule + per-fuse color; forbidden fuses are decoys
+ *     that never light) + the color tax (readFactor) on burn speed
+ *   - mixed crossroads: a forbidden decoy shares a busy chokepoint with safe
+ *     wicks, so the "efficient" cut there is denied and the player must trace
+ *   - kevlar armor (two-snip wicks), water-drop douse, gold-star pickups
+ * Branch fuses later inherit their parent's color/end.
+ */
+function applyMechanics(level, k, rng, shift = 0) {
+    const n = level.n;
+    // `k._scheme` lets the pinned 1-60 path retry color layouts against the
+    // frozen geometry (e.g. relax a mixed crossroad that can't host a decoy).
+    const scheme = k._scheme || colorSchemeFor(n);
+    let wire = null;
+    if (scheme) {
+        wire = { legend: scheme.legend, forbidden: scheme.forbidden, safe: scheme.safe, mixed: scheme.mixed, forbiddenCount: scheme.forbiddenCount };
+    } else if (k.color) {
+        // Act 4-5 color compounding.
+        const legend = { red: "no", blue: "cut", white: "cut", green: "cut" };
+        wire = {
+            legend,
+            forbidden: ["red"],
+            safe: ["blue", "white", "green"],
+            mixed: n % 2 === 0,
+            forbiddenCount: 1 + (n % 2),
+        };
+    }
+
+    if (wire) {
+        level.wireRule = { legend: wire.legend };
+        level.mixed = wire.mixed;
+        // Color tax: players read/trace colors before sniping, so color levels
+        // burn slower (×0.85), mixed crossroads slower still (×0.75).
+        const factor = wire.mixed ? 0.75 : 0.85;
+        for (const f of level.fuses) {
+            if (f.branchOf) continue; // branch speeds inherit from scaled parents
+            f.speed = Math.round(f.speed * factor * 100000) / 100000;
+        }
+
+        // Select which base fuses are forbidden.
+        const baseFuses = level.fuses.filter((f) => !f.branchOf);
+        const sMap = new Map(level.spawns.map((s) => [s.id, s]));
+        const iMap = new Map(level.intersections.map((c) => [c.id, c]));
+        const byCp = new Map();
+        for (const f of baseFuses) {
+            if (!f.routeThrough) continue;
+            if (!byCp.has(f.routeThrough)) byCp.set(f.routeThrough, []);
+            byCp.get(f.routeThrough).push(f);
+        }
+        const groups = [...byCp.values()].sort((a, b) => a.length - b.length);
+        const direct = baseFuses.filter((f) => !f.routeThrough);
+
+        // A forbidden decoy never lights, so it can never be a fork parent — a
+        // fork only fires when its parent's spark crosses it. Exclude the
+        // earliest-burning fuses (the ones the chain code picks as parents)
+        // from decoy candidacy; otherwise the fork re-attaches to a different
+        // wick and the layout drifts from the pinned 1-60 geometry.
+        const nChains = Math.min(k.chains || 0, Math.max(0, Math.floor(k.spawns / 2)));
+        const forkParents = new Set();
+        if (nChains > 0) {
+            const byDelay = baseFuses
+                .map((f, i) => ({ f, i }))
+                .sort((a, b) => a.f.delayFrames - b.f.delayFrames || a.i - b.i)
+                .slice(0, nChains);
+            for (const { f } of byDelay) forkParents.add(f);
+        }
+
+        // A forbidden decoy must sit CLEAR of the wicks it shares a crossroad
+        // with: the other members' upstream legs (their cut targets once the
+        // crossroad is poisoned) are only cuttable if the forbidden curve stays
+        // far from them. Prefer the member whose spawn is most angularly
+        // isolated from the group's other spawns around the shared chokepoint —
+        // the fan extreme — so the safe wicks fan away from the forbidden one.
+        // `shift` (pinned path) rotates the preference order so the overlay can
+        // walk candidate victims until the frozen geometry validates.
+        const rankByIsolation = (group) => {
+            const cp = iMap.get(group[0].routeThrough);
+            const ref = cp || level.payload || (level.payloads && level.payloads[0]);
+            const angleOfSpawn = (f) => {
+                const s = sMap.get(f.start);
+                return s && ref ? angleOf(s, ref) : 0;
+            };
+            const scored = group.map((cand) => {
+                const a = angleOfSpawn(cand);
+                let minSep = Infinity;
+                for (const other of group) {
+                    if (other === cand) continue;
+                    let d = Math.abs(a - angleOfSpawn(other));
+                    d = Math.min(d, 360 - d);
+                    if (d < minSep) minSep = d;
+                }
+                return { cand, minSep: minSep === Infinity ? -1 : minSep };
+            });
+            return scored.sort((a, b) => b.minSep - a.minSep).map((s) => s.cand);
+        };
+        const pickVictim = (group) => {
+            const candidates = group.filter((f) => !forkParents.has(f));
+            if (!candidates.length) return group[0];
+            return rankByIsolation(candidates)[shift % candidates.length];
+        };
+        const rotate = (arr) => (arr.length ? arr.slice(shift % arr.length).concat(arr.slice(0, shift % arr.length)) : arr);
+
+        const forbiddenSet = new Set();
+        let remaining = wire.forbiddenCount;
+        if (wire.mixed) {
+            // Poison the BUSIEST crossroad first: forbid one of its members so a
+            // safe + forbidden wick share the cut (the tracing lesson). The
+            // victim is the most isolated member, so the survivors' upstream
+            // legs stay clear of the forbidden curve. The remaining forbidden
+            // fuses go to OTHER crossroads (forbidden-only traps) — never back
+            // into the poisoned one, or it stops being mixed.
+            const byCpRanked = rotate([...byCp.values()].sort((a, b) => b.length - a.length));
+            let busiest = null;
+            for (const g of byCpRanked) {
+                if (g.length >= 2 && g.some((f) => !forkParents.has(f))) { busiest = g; break; }
+            }
+            let poisonedCp = null;
+            if (busiest) {
+                const victim = pickVictim(busiest);
+                forbiddenSet.add(victim);
+                poisonedCp = victim.routeThrough;
+                remaining--;
+            }
+            for (const g of rotate(groups)) {
+                if (remaining <= 0) break;
+                if (g[0] && g[0].routeThrough === poisonedCp) continue; // keep the mixed crossroad mixed
+                for (const f of g) {
+                    if (remaining <= 0) break;
+                    if (forbiddenSet.has(f) || forkParents.has(f)) continue;
+                    forbiddenSet.add(f);
+                    remaining--;
+                }
+            }
+            for (const f of rotate(direct)) {
+                if (remaining <= 0) break;
+                if (forkParents.has(f)) continue;
+                forbiddenSet.add(f);
+                remaining--;
+            }
+        } else {
+            // Seasoning: prefer DIRECT fuses as decoys (they never poison a
+            // crossroad — "don't waste a snip on a wire you're not supposed to
+            // touch"). Then whole smallest crossroads (forbidden-only traps). A
+            // forbidden fuse only poisons a crossroad when the count forces it,
+            // and then it's the most isolated member.
+            for (const f of rotate(direct)) {
+                if (remaining <= 0) break;
+                if (forkParents.has(f)) continue;
+                forbiddenSet.add(f);
+                remaining--;
+            }
+            for (const g of rotate(groups)) {
+                if (remaining <= 0) break;
+                if (g.length <= remaining) {
+                    // Whole group → forbidden-only trap.
+                    for (const f of g) {
+                        if (remaining <= 0) break;
+                        if (forkParents.has(f)) continue;
+                        forbiddenSet.add(f);
+                        remaining--;
+                    }
+                } else if (g.length > 1) {
+                    // Partial → poison the crossroad with the isolated member.
+                    if (g.some((f) => !forkParents.has(f))) {
+                        forbiddenSet.add(pickVictim(g));
+                        remaining--;
+                    }
+                } else {
+                    if (!forkParents.has(g[0])) {
+                        forbiddenSet.add(g[0]);
+                        remaining--;
+                    }
+                }
+            }
+        }
+        // Safety: if somehow still short, forbid whatever is left (the level
+        // stays winnable — forbidden decoys never light and never need a cut).
+        for (const f of baseFuses) {
+            if (remaining <= 0) break;
+            if (forbiddenSet.has(f)) continue;
+            forbiddenSet.add(f);
+            remaining--;
+        }
+
+        let fi = 0;
+        for (const f of baseFuses) {
+            if (forbiddenSet.has(f)) {
+                f.color = wire.forbidden[fi % wire.forbidden.length];
+                f.neverLights = true;
+                fi++;
+            } else {
+                f.color = wire.safe[fi % wire.safe.length];
+            }
+        }
+    }
+
+    // Kevlar armor: safe fuses need a second snip (first frays, second severs).
+    const armorCount = k.armor || 0;
+    if (armorCount > 0) {
+        const candidates = level.fuses.filter((f) => !f.branchOf && !isForbiddenFuse(f, level.wireRule));
+        for (let i = candidates.length - 1; i > 0; i--) {
+            const j = Math.floor(rng() * (i + 1));
+            [candidates[i], candidates[j]] = [candidates[j], candidates[i]];
+        }
+        for (let i = 0; i < Math.min(armorCount, candidates.length); i++) candidates[i].armor = true;
+    }
+
+    // Water drops: a doused fuse's spark self-extinguishes before the bomb —
+    // that wick costs 0 in the snip budget. Drops sit after the chokepoint so
+    // the wick reads as "burning to the drop", not "dead before the crossing".
+    const douseCount = k.douse || 0;
+    if (douseCount > 0) {
+        const candidates = level.fuses.filter(
+            (f) => !f.branchOf && !f.armor && !isForbiddenFuse(f, level.wireRule)
+        );
+        for (let i = candidates.length - 1; i > 0; i--) {
+            const j = Math.floor(rng() * (i + 1));
+            [candidates[i], candidates[j]] = [candidates[j], candidates[i]];
+        }
+        level.douse = [];
+        for (let i = 0; i < Math.min(douseCount, candidates.length); i++) {
+            level.douse.push({
+                id: `w${i}`,
+                fuse: candidates[i].id,
+                at: Math.round((0.56 + rng() * 0.2) * 1000) / 1000,
+            });
+        }
+    }
+
+    // Gold pickups (bonus snips): stars ride on safe fuses the player cuts
+    // anyway. Star-critical levels put them on DIRECT fuses so the star is
+    // collectible within the zero-slack budget (the fuse's own cut can double
+    // as the star grab).
+    const starCount = k.stars || 0;
+    if (starCount > 0) {
+        const notDoused = (f) => !(level.douse || []).some((d) => d.fuse === f.id);
+        const eligible = (f) => !f.branchOf && !f.armor && !isForbiddenFuse(f, level.wireRule) && notDoused(f);
+        const directFuses = level.fuses.filter((f) => eligible(f) && !f.routeThrough);
+        const routedFuses = level.fuses.filter((f) => eligible(f) && f.routeThrough);
+        for (const arr of [directFuses, routedFuses]) {
+            for (let i = arr.length - 1; i > 0; i--) {
+                const j = Math.floor(rng() * (i + 1));
+                [arr[i], arr[j]] = [arr[j], arr[i]];
+            }
+        }
+        level.pickups = [];
+        let placed = 0;
+        const placeStar = (fuse) => {
+            level.pickups.push({
+                id: `star${placed}`,
+                fuse: fuse.id,
+                at: Math.round((0.16 + rng() * 0.26) * 1000) / 1000,
+            });
+            placed++;
+        };
+        while (placed < starCount && directFuses.length) placeStar(directFuses.pop());
+        while (placed < starCount && routedFuses.length) placeStar(routedFuses.pop());
+        if (placed < starCount) {
+            const any = level.fuses.filter((f) => !f.branchOf && !isForbiddenFuse(f, level.wireRule) && notDoused(f));
+            for (let i = any.length - 1; i > 0; i--) {
+                const j = Math.floor(rng() * (i + 1));
+                [any[i], any[j]] = [any[j], any[i]];
+            }
+            while (placed < starCount && any.length) placeStar(any.pop());
+        }
+    }
+    return { wireRule: level.wireRule, douse: level.douse, pickups: level.pickups, mixed: level.mixed };
+}
+
+function placeLevel(n, k, seedOffset = 0, salt = 0, opts = {}) {
     const rng = makeRng(1000 + n * 137 + seedOffset * 7919);
     const look = lookForLevel(n, k, seedOffset, salt);
     const style = styleForLevel(n, k);
-    const { payload, spawns, intersections } = PLACEMENTS[style](n, k, rng, look);
+    const layout = k.twin ? twinLayout(n, k, rng, look) : PLACEMENTS[style](n, k, rng, look);
+    const { payload, spawns, intersections } = layout;
+    const payloads = layout.payloads || null;
+    const assign = layout.assign || null;
+    const perBombCps = layout.perBombCps || null;
+    const bombById = payloads ? { bomb1: payloads[0], bomb2: payloads[1] } : {};
+
+    // Per-spawn local index within its bomb's side (twin routing).
+    const localIdx = new Map();
+    const sideSpawns = {};
+    if (assign) {
+        const counts = { bomb1: 0, bomb2: 0 };
+        for (let i = 0; i < spawns.length; i++) {
+            const side = assign[i];
+            localIdx.set(i, counts[side]++);
+        }
+        for (const side of ["bomb1", "bomb2"]) {
+            sideSpawns[side] = spawns.filter((_, i) => assign[i] === side);
+        }
+    }
 
     // Fuses: route spawns through chokepoints (shared vs sector vs partial).
     const fuses = spawns.map((s, i) => {
-        const routeThrough = routeFor(i, s, k, look, intersections, spawns, payload, rng);
+        const endId = assign ? assign[i] : PAYLOAD_ID;
+        const routeThrough = assign
+            ? routeFor(localIdx.get(i), s, k, look, perBombCps[endId], sideSpawns[endId], bombById[endId], rng)
+            : routeFor(i, s, k, look, intersections, spawns, payload, rng);
         const f = {
             id: `f${i}`,
             start: s.id,
             ...(routeThrough ? { routeThrough } : {}),
-            end: PAYLOAD_ID,
+            end: endId,
             speed: speedFor(k, i, look, rng),
             delayFrames: delayFor(k, i, k.spawns, look, rng),
         };
@@ -1173,9 +1924,9 @@ function placeLevel(n, k, seedOffset = 0, salt = 0) {
         // bulge offsets the two control points symmetrically, so it keeps the
         // chokepoint exactly at t=0.5 while bending the final leg to a gentle
         // curve. The magnitudes stay small (max ±0.1): the wick must still read
-        // as one continuous line to the SINGLE payload endpoint, so the tail
-        // near the bomb stays tight — big bows made the last legs swirl and
-        // drift off past the banana.
+        // as one continuous line to the payload endpoint, so the tail near the
+        // bomb stays tight — big bows made the last legs swirl and drift off
+        // past the banana.
         const curve = look.curvePattern || "flat";
         // L3's speed lesson doubles as the player's first curved wick — pin a
         // pronounced bow so the fast fuse never reads as L1's straight one.
@@ -1187,12 +1938,12 @@ function placeLevel(n, k, seedOffset = 0, salt = 0) {
 
     // Tail separation for shared chokepoints: wicks routed through the SAME
     // crossroad share a control point, so their final legs (chokepoint →
-    // payload center) are IDENTICAL overlapping curves — the "bunch" that
-    // vanishes under the banana as one thick line and reads as disconnected.
-    // Give each wick in a group a DISTINCT bulge, ramped across ±mag, so the
-    // tails fan apart through their run and only converge right at the bomb.
-    // Magnitude is capped by the chokepoint->bomb chord so the mid-leg bow
-    // stays within ~35px — visible separation, never an off-screen swirl.
+    // payload) are IDENTICAL overlapping curves — the "bunch" that vanishes
+    // under the banana as one thick line and reads as disconnected. Give each
+    // wick in a group a DISTINCT bulge, ramped across ±mag, so the tails fan
+    // apart through their run and only converge right at the bomb. Magnitude
+    // is capped by the chokepoint->bomb chord so the mid-leg bow stays within
+    // ~35px — visible separation, never an off-screen swirl.
     {
         const grouped = new Map();
         for (const f of fuses) {
@@ -1202,20 +1953,21 @@ function placeLevel(n, k, seedOffset = 0, salt = 0) {
         }
         for (const [cpId, grp] of grouped) {
             if (grp.length < 2) continue;
+            const ref = payloads ? payloads.find((p) => p.id === grp[0].end) : payload;
             grp.sort((a, b) => {
                 const s1 = spawns.find((s) => s.id === a.start);
                 const s2 = spawns.find((s) => s.id === b.start);
-                const a1 = Math.atan2((s1 ? s1.y : payload.y) - payload.y, (s1 ? s1.x : payload.x) - payload.x);
-                const a2 = Math.atan2((s2 ? s2.y : payload.y) - payload.y, (s2 ? s2.x : payload.x) - payload.x);
+                const a1 = Math.atan2((s1 ? s1.y : ref.y) - ref.y, (s1 ? s1.x : ref.x) - ref.x);
+                const a2 = Math.atan2((s2 ? s2.y : ref.y) - ref.y, (s2 ? s2.x : ref.x) - ref.x);
                 return a1 - a2;
             });
-            const n = grp.length;
+            const nGrp = grp.length;
             const cp = intersections.find((c) => c.id === cpId);
-            const L = cp ? Math.hypot(cp.x - payload.x, cp.y - payload.y) : 300;
+            const L = cp ? Math.hypot(cp.x - ref.x, cp.y - ref.y) : 300;
             const maxBulge = Math.min(0.3, 35 / (0.289 * Math.max(60, L)));
-            const mag = Math.min(maxBulge, 0.05 + n * 0.045);
+            const mag = Math.min(maxBulge, 0.05 + nGrp * 0.045);
             grp.forEach((f, i) => {
-                const v = n === 1 ? 0 : -mag + (2 * mag * i) / (n - 1);
+                const v = nGrp === 1 ? 0 : -mag + (2 * mag * i) / (nGrp - 1);
                 f.bulge = Math.round(Math.max(-0.3, Math.min(0.3, v)) * 1000) / 1000;
             });
         }
@@ -1242,6 +1994,12 @@ function placeLevel(n, k, seedOffset = 0, salt = 0) {
         }
     }
 
+    // Color pillar + mechanics (wire colors, armor, douse, pickups, color tax).
+    // Runs before chains so branch fuses can inherit parent color/end below.
+    // `opts.mechanics === false` (pinned 1-60 path) defers the color overlay so
+    // the frozen geometry can be matched first and colors retried against it.
+    const mechLevel = opts.mechanics === false ? {} : applyMechanics({ n, payload, payloads, spawns, intersections, fuses }, k, rng);
+
     // Fork ignition: attach branch fuses to the earliest-burning wicks. A
     // branch wick starts AT a fork point on its parent's wick and stays DARK
     // until the parent's spark crosses the fork (`at`), then a new spark races
@@ -1259,6 +2017,7 @@ function placeLevel(n, k, seedOffset = 0, salt = 0) {
     if (nChains > 0) {
         const ordered = fuses
             .map((f, i) => ({ f, i }))
+            .filter(({ f }) => !f.neverLights) // decoys never burn — no forks
             .sort((a, b) => a.f.delayFrames - b.f.delayFrames || a.i - b.i);
         for (let c = 0; c < nChains; c++) {
             const parent = ordered[c];
@@ -1267,7 +2026,8 @@ function placeLevel(n, k, seedOffset = 0, salt = 0) {
                 id: `f${fuses.length}`,
                 branchOf: parent.f.id,
                 at,
-                end: PAYLOAD_ID,
+                end: parent.f.end,
+                color: parent.f.color,
                 speed: Math.round(Math.max(0.0007, Math.min(0.0045, parent.f.speed * (branchSpeedFactor(n) + rng() * 0.12))) * 10000) / 10000,
                 delayFrames: 99999, // no timer — lit when the parent's burn reaches `at`
             });
@@ -1282,7 +2042,7 @@ function placeLevel(n, k, seedOffset = 0, salt = 0) {
         console.log(`[delaydebug] L${n} delayPattern=${look.delayPattern} k.delay=${k.delay} spawns=${k.spawns} chainDelaySpan=${delaySpan(k, k.spawns, rng)}`);
         for (const f of fuses) console.log(`[delaydebug]   ${f.id} delay=${f.delayFrames}${f.branchOf ? " branchOf=" + f.branchOf : ""}`);
     }
-    return { n, payload, spawns, intersections, fuses, k, style, look };
+    return { n, payload, payloads, spawns, intersections, fuses, k, style, look, ...mechLevel };
 }
 
 /** PAR time: the clear time if every fuse is cut at its ideal point (its
@@ -1292,11 +2052,14 @@ function placeLevel(n, k, seedOffset = 0, salt = 0) {
  *  means cutting sparks close-in (fast play), which spends extra snips — the
  *  speed-vs-economy trade-off that keeps both strategies meaningful.
  *  Branch sparks have no timer: they light when their parent crosses the fork,
- *  then burn to their own cut. */
-function parSeconds(fuses) {
+ *  then burn to their own cut. Forbidden decoys never burn; doused sparks die
+ *  at the drop. */
+function parSeconds(fuses, douse = []) {
     let par = 0;
     const byId = new Map(fuses.map((f) => [f.id, f]));
+    const douseAt = new Map(douse.map((d) => [d.fuse, d.at]));
     for (const f of fuses) {
+        if (f.neverLights) continue;
         let ign = f.delayFrames >= 99999 ? 0 : f.delayFrames;
         if (f.branchOf) {
             const parent = byId.get(f.branchOf);
@@ -1305,7 +2068,8 @@ function parSeconds(fuses) {
                 ign = pDelay + (f.at / parent.speed);
             }
         }
-        par = Math.max(par, ign + 0.5 / f.speed);
+        const clearAt = douseAt.has(f.id) ? douseAt.get(f.id) : 0.5;
+        par = Math.max(par, ign + clearAt / f.speed);
     }
     return Math.max(2, Math.round((par / 60) * 10) / 10);
 }
@@ -1316,79 +2080,223 @@ const PAR_FLOOR = { 1: 30, 2: 24, 3: 20 };
 
 // ---- assemble ---------------------------------------------------------------
 
+/** Frozen geometry for levels 1-60 (pre-color-pillar): the plan pins 1-60 to
+ *  "color fields + speeds only, no geometry redesign", so these levels reuse
+ *  their shipped spawns/intersections/fuse routes verbatim and the color
+ *  overlay is retried against the frozen layout instead of re-seeding it. */
+const PINNED_1_60 = JSON.parse(readFileSync(path.join(ROOT, "tools", "level-gen", "base-1-60.json"), "utf8"));
+
+/** Everything a player sees except burn speed/colors. Speeds are recalibrated
+ *  per-plan and colors are the new pillar, so neither participates in the
+ *  geometry fingerprint; delay rhythm is part of the layout feel and stays
+ *  frozen with the geometry. */
+function geometrySignature(lvl) {
+    return JSON.stringify({
+        payload: lvl.payload,
+        spawns: lvl.spawns,
+        intersections: lvl.intersections,
+        fuses: lvl.fuses.map((f) => ({
+            id: f.id,
+            start: f.start,
+            end: f.end,
+            routeThrough: f.routeThrough,
+            branchOf: f.branchOf,
+            at: f.at,
+            branchPoint: f.branchPoint,
+            bulge: f.bulge,
+            delayFrames: f.delayFrames,
+        })),
+    });
+}
+
+/** Copy a placed level so color variants can be tried without disturbing the
+ *  shared geometry. Fuses are shallow-copied — applyMechanics mutates fuse
+ *  objects, not the arrays themselves. */
+function clonePlacement(p) {
+    return {
+        n: p.n,
+        payload: p.payload,
+        payloads: p.payloads,
+        spawns: p.spawns,
+        intersections: p.intersections.map((c) => ({ ...c })),
+        fuses: p.fuses.map((f) => ({ ...f })),
+        look: p.look,
+        style: p.style,
+    };
+}
+
+/** Color-layout ladder tried against the frozen geometry: the full planned
+ *  scheme first, then relaxations (drop the mixed crossroad, trim decoys one
+ *  at a time). The legend stays on screen even with zero decoys, so a tight
+ *  layout reads as colored without ever forcing a geometry change. */
+function schemeLadder(n) {
+    const base = colorSchemeFor(n);
+    if (!base) return [null];
+    const ladder = [];
+    const mixedOptions = base.mixed ? [true, false] : [false];
+    for (const mixed of mixedOptions) {
+        for (let fc = base.forbiddenCount; fc >= (mixed ? 1 : 0); fc--) {
+            ladder.push({ ...base, forbiddenCount: fc, mixed });
+        }
+    }
+    return ladder;
+}
+
+/** Branch fuses inherit their parent's color/end once the overlay runs (the
+ *  chains code does this inline in the free-form path). */
+function inheritBranchColors(level) {
+    const byId = new Map(level.fuses.map((f) => [f.id, f]));
+    for (const f of level.fuses) {
+        if (!f.branchOf) continue;
+        const parent = byId.get(f.branchOf);
+        if (!parent) continue;
+        f.end = parent.end;
+        if (parent.color) f.color = parent.color;
+    }
+}
+
+/** Place a level on its pinned 1-60 geometry. Finds the (salt, seed) whose
+ *  post-processing reproduces the frozen layout byte-for-byte, then tries the
+ *  color-scheme ladder against that geometry so the level validates without
+ *  ever re-seeding the layout. */
+function pinnedPlacement(n, k) {
+    const baseSig = geometrySignature(PINNED_1_60[n]);
+    const schemes = schemeLadder(n);
+    for (let salt = 0; salt < 8; salt++) {
+        for (let seed = 0; seed < 12; seed++) {
+            const p = placeLevel(n, k, seed, salt, { mechanics: false });
+            deHairpin(p);
+            positionBranches(p);
+            deHairpin(p);
+            settleBranches(p);
+            if (geometrySignature(p) !== baseSig) continue;
+            // Geometry matches the frozen layout — overlay colors on a copy and
+            // accept the first scheme+shift that still validates.
+            for (const scheme of schemes) {
+                const kk = scheme ? { ...k, _scheme: scheme } : k;
+                for (let shift = 0; shift < 6; shift++) {
+                    const q = clonePlacement(p);
+                    const rng = makeRng(4000 + n * 613 + seed * 101 + salt * 7 + shift * 97);
+                    applyMechanics(q, kk, rng, shift);
+                    inheritBranchColors(q);
+                    const v = validatePlacement(q);
+                    if (v.ok) {
+                        q.schemeUsed = scheme;
+                        q.shiftUsed = shift;
+                        return q;
+                    }
+                }
+            }
+        }
+    }
+    return null;
+}
+
 function buildLevels() {
     const levels = [];
     let prevSig = "";
-    for (let n = 1; n <= 60; n++) {
+    for (let n = 1; n <= 120; n++) {
         const k = knobsForLevel(n);
-
-        // Placement retry: the geometry constraints (no folds, clearance, cut-point
-        // separation) are structural, and the look must differ from the previous
-        // level — so try several geometry seeds AND look salts before giving up.
         let placed = null;
         let validation = { ok: false, reason: "none attempted" };
-        const reasonCounts = {};
-        for (let salt = 0; salt < 8 && !placed; salt++) {
-            for (let seed = 0; seed < 12; seed++) {
-                const p = placeLevel(n, k, seed, salt);
-                // Remove folds/overlaps so no wick doubles back on itself and no
-                // chokepoint hides under the payload. Runs before snips are computed
-                // (a fuse may be un-routed by the safety net, changing min cuts).
-                deHairpin({ payload: p.payload, spawns: p.spawns, intersections: p.intersections, fuses: p.fuses });
-                // Pin the fork points + branch cross-sections (uses the relaxed
-                // geometry, so the fork lands on the wick the player sees).
-                positionBranches(p);
-                // Relax the fresh branch cross-sections against the final fork
-                // geometry (fold-free + payload clearance + cut separation).
-                deHairpin({ payload: p.payload, spawns: p.spawns, intersections: p.intersections, fuses: p.fuses });
-                // Downgrade routed branches whose cross-sections couldn't hold
-                // a clean spot after relaxation (dense levels). Runs before
-                // validation so the retry loop sees the real geometry.
-                settleBranches(p);
-                const v = validatePlacement(p);
-                validation = v;
-                if (!v.ok) {
-                    reasonCounts[v.reason] = (reasonCounts[v.reason] || 0) + 1;
-                    continue;
-                }
-                if (lookSignature(p.look) === prevSig) continue; // visually identical to last level → new look
-                placed = p;
-                validation = v;
-                break;
-            }
-        }
-        if (!placed) {
-            console.error(`  ! L${n}: no clean distinct placement found (last: ${validation.reason})`);
-            if (process.env.GEN_DEBUG) {
-                const top = Object.entries(reasonCounts).sort((a, b) => b[1] - a[1]).slice(0, 4);
-                console.error(`      reasons: ${top.map(([r, c]) => `${r}×${c}`).join(", ")}`);
-            }
-            placed = placeLevel(n, k, 0, 0);
-            deHairpin({ payload: placed.payload, spawns: placed.spawns, intersections: placed.intersections, fuses: placed.fuses });
-            positionBranches(placed);
-            deHairpin({ payload: placed.payload, spawns: placed.spawns, intersections: placed.intersections, fuses: placed.fuses });
-            settleBranches(placed);
-        }
-        const { payload, spawns, intersections, fuses, style, look } = placed;
-        prevSig = lookSignature(look);
 
-        // Snips = minimum cuts the geometry requires + slack.
-        // Every fuse routed through a chokepoint needs one cut at that chokepoint;
-        // every direct fuse needs its own cut.
-        const chokepointsUsed = new Set(fuses.filter((f) => f.routeThrough).map((f) => f.routeThrough)).size;
-        const directCount = fuses.filter((f) => !f.routeThrough).length;
-        const minCuts = chokepointsUsed + directCount;
+        // Levels 1-60 are pinned to their shipped geometry (color fields +
+        // recalibrated speeds only, no redesign). The free-form retry loop is
+        // only for the new 61-120 acts.
+        if (n <= 60) {
+            placed = pinnedPlacement(n, k);
+            if (placed) {
+                validation = { ok: true };
+                const s = geometrySignature(placed);
+                const b = geometrySignature(PINNED_1_60[n]);
+                if (process.env.GEN_PIN_LOG) console.log(`[pin] L${n} geometry matches pinned: ${s === b}`);
+            } else {
+                console.error(`  ! L${n}: pinned geometry could not host the color pillar (falling back to free-form)`);
+            }
+        }
+        if (n > 60 || !placed) {
+            // Placement retry: the geometry constraints (no folds, clearance, cut-point
+            // separation) are structural, and the look must differ from the previous
+            // level — so try several geometry seeds AND look salts before giving up.
+            const reasonCounts = {};
+            for (let salt = 0; salt < 8 && !placed; salt++) {
+                for (let seed = 0; seed < 12; seed++) {
+                    const p = placeLevel(n, k, seed, salt);
+                    // Remove folds/overlaps so no wick doubles back on itself and no
+                    // chokepoint hides under the payload. Runs before snips are computed
+                    // (a fuse may be un-routed by the safety net, changing min cuts).
+                    deHairpin(p);
+                    // Pin the fork points + branch cross-sections (uses the relaxed
+                    // geometry, so the fork lands on the wick the player sees).
+                    positionBranches(p);
+                    // Relax the fresh branch cross-sections against the final fork
+                    // geometry (fold-free + payload clearance + cut separation).
+                    deHairpin(p);
+                    // Downgrade routed branches whose cross-sections couldn't hold
+                    // a clean spot after relaxation (dense levels). Runs before
+                    // validation so the retry loop sees the real geometry.
+                    settleBranches(p);
+                    const v = validatePlacement(p);
+                    validation = v;
+                    if (!v.ok) {
+                        if (process.env.GEN_ACCEPT_LOG && n === +process.env.GEN_ACCEPT_LOG) {
+                            console.log(`[accept] L${n} salt=${salt} seed=${seed} REJECTED: ${v.reason}`);
+                        }
+                        reasonCounts[v.reason] = (reasonCounts[v.reason] || 0) + 1;
+                        continue;
+                    }
+                    if (lookSignature(p.look, n > 60 ? mechTag(p) : "legacy") === prevSig) {
+                        if (process.env.GEN_ACCEPT_LOG && n === +process.env.GEN_ACCEPT_LOG) {
+                            console.log(`[accept] L${n} salt=${salt} seed=${seed} SKIP: look equals previous`);
+                        }
+                        continue; // visually identical to last level → new look
+                    }
+                    placed = p;
+                    validation = v;
+                    if (process.env.GEN_ACCEPT_LOG && n === +process.env.GEN_ACCEPT_LOG) {
+                        console.log(`[accept] L${n} ACCEPTED salt=${salt} seed=${seed} (tried ${reasonCounts.total || 0} rejects)`);
+                    }
+                    break;
+                }
+            }
+            if (!placed) {
+                console.error(`  ! L${n}: no clean distinct placement found (last: ${validation.reason})`);
+                if (process.env.GEN_DEBUG) {
+                    const top = Object.entries(reasonCounts).sort((a, b) => b[1] - a[1]).slice(0, 4);
+                    console.error(`      reasons: ${top.map(([r, c]) => `${r}×${c}`).join(", ")}`);
+                }
+                placed = placeLevel(n, k, 0, 0);
+                deHairpin(placed);
+                positionBranches(placed);
+                deHairpin(placed);
+                settleBranches(placed);
+            }
+        }
+        const { payload, payloads, spawns, intersections, fuses, style, look } = placed;
+        const wireRule = placed.wireRule || null;
+        const douse = placed.douse || [];
+        const pickups = placed.pickups || [];
+        prevSig = lookSignature(look, n > 60 ? mechTag(placed) : "legacy");
+
+        // Snips = minimum cuts the geometry requires + slack. The minimum is
+        // computed from the FINAL geometry (poisoned crossroads, kevlar second
+        // hits, doused/forbidden freebies) so 3-star is always reachable.
+        const minCuts = computeMinCuts(placed);
         const snips = minCuts + slackForLevel(n);
 
         const level = {
             level_id: n,
-            layout: style, // layout archetype (hub/offset/train/split/weave)
+            layout: payloads ? "twin" : style, // layout archetype (hub/offset/train/split/weave/twin)
             snipsAllowed: snips,
-            par: Math.max(parSeconds(fuses), PAR_FLOOR[n] || 0),
+            par: Math.max(parSeconds(fuses, douse), PAR_FLOOR[n] || 0),
             payload,
+            ...(payloads ? { payloads } : {}),
             spawns,
             intersections,
             fuses,
+            ...(wireRule ? { wireRule } : {}),
+            ...(douse.length ? { douse } : {}),
+            ...(pickups.length ? { pickups } : {}),
         };
         // One-skill-at-a-time tutorial (CHI PLAY learning curve).
         if (n === 1) {
@@ -1421,15 +2329,15 @@ function buildLevels() {
                 focus: "intersection",
                 highlight: "cut1",
             };
-        } else if (n === 25) {
-            level.tutorial = {
-                text: "TWO wicks fork now. Cut a parent EARLY to stop both — or be ready to snip every new wick it lights.",
-                focus: "spawn",
-                highlight: "s1",
-            };
         } else if (n === 8) {
             level.tutorial = {
                 text: "See that fork in the wick? When the fire reaches it, a NEW wick lights from that point! Snip the first fuse EARLY to stop it — or be ready to cut the new wick.",
+                focus: "spawn",
+                highlight: "s1",
+            };
+        } else if (n === 10) {
+            level.tutorial = {
+                text: "Color-coded wires! The legend shows which color is SAFE to cut. Cutting the wrong color gives one warning — then boom.",
                 focus: "spawn",
                 highlight: "s1",
             };
@@ -1439,39 +2347,40 @@ function buildLevels() {
                 focus: "spawn",
                 highlight: "s1",
             };
+        } else if (n === 25) {
+            level.tutorial = {
+                text: "TWO wicks fork now. Cut a parent EARLY to stop both — or be ready to snip every new wick it lights.",
+                focus: "spawn",
+                highlight: "s1",
+            };
+        } else if (n === 61) {
+            level.tutorial = {
+                text: "Gold stars give BONUS snips! Cut close to a star to bank +1 — grab them to stretch your budget.",
+                focus: "spawn",
+                highlight: "s1",
+            };
+        } else if (n === 65) {
+            level.tutorial = {
+                text: "Water drops douse the fuse! A spark that reaches a drop snuffs itself — those wicks need NO cuts.",
+                focus: "spawn",
+                highlight: "s1",
+            };
+        } else if (n === 69) {
+            level.tutorial = {
+                text: "Kevlar wicks take TWO snips! The first frays them — the fire keeps burning. Cut the same spot again to sever it.",
+                focus: "spawn",
+                highlight: "s1",
+            };
+        } else if (n === 91) {
+            level.tutorial = {
+                text: "TWO BOMBS! Sparks split between both targets — lose if fire reaches EITHER one. Watch both sides.",
+                focus: "spawn",
+                highlight: "s1",
+            };
         }
         levels.push(level);
     }
     return levels;
-}
-
-const levels = buildLevels();
-
-// Validate everything and report.
-let warnings = 0;
-for (const lvl of levels) {
-    const w = validateLevel(lvl);
-    for (const msg of w) {
-        warnings++;
-        console.error(`  ! ${msg}`);
-    }
-}
-
-mkdirSync(path.dirname(OUT), { recursive: true });
-writeFileSync(OUT, JSON.stringify(levels, null, 2) + "\n");
-
-// Summary table per act.
-const summary = { 1: {}, 2: {}, 3: {} };
-for (const lvl of levels) {
-    const act = Math.ceil(lvl.level_id / 20);
-    summary[act][lvl.level_id] = {
-        spawns: lvl.spawns.length,
-        chokepoints: lvl.intersections.length,
-        snips: lvl.snipsAllowed,
-        speeds: [...new Set(lvl.fuses.map((f) => f.speed))].length,
-        layout: lvl.layout || "hub",
-        look: lookTag(lvl),
-    };
 }
 
 function lookTag(lvl) {
@@ -1481,11 +2390,49 @@ function lookTag(lvl) {
     return `${routes}r/${delays}d`;
 }
 
-console.log(`\nWrote ${levels.length} levels → ${path.relative(ROOT, OUT)} (${warnings} validation warnings)`);
-for (const act of [1, 2, 3]) {
-    const rows = Object.entries(summary[act])
-        .map(([id, v]) => `L${id.padStart(2, "0")}:${v.spawns}s/${v.chokepoints}c/s${v.snips}/${v.layout}/${v.look}`)
-        .join("  ");
-    console.log(`Act ${act}: ${rows}`);
+function main() {
+    const levels = buildLevels();
+
+    // Validate everything and report.
+    let warnings = 0;
+    for (const lvl of levels) {
+        const w = validateLevel(lvl);
+        for (const msg of w) {
+            warnings++;
+            console.error(`  ! ${msg}`);
+        }
+    }
+
+    mkdirSync(path.dirname(OUT), { recursive: true });
+    writeFileSync(OUT, JSON.stringify(levels, null, 2) + "\n");
+
+    // Summary table per act.
+    const ACT_NAMES = { 1: "Act 1", 2: "Act 2", 3: "Act 3", 4: "Act 4", 5: "Act 5" };
+    const summary = { 1: {}, 2: {}, 3: {}, 4: {}, 5: {} };
+    for (const lvl of levels) {
+        const act = actFor(lvl.level_id);
+        summary[act][lvl.level_id] = {
+            spawns: lvl.spawns.length,
+            chokepoints: lvl.intersections.length,
+            snips: lvl.snipsAllowed,
+            speeds: [...new Set(lvl.fuses.map((f) => f.speed))].length,
+            layout: lvl.layout || "hub",
+            look: lookTag(lvl),
+            mech: mechTag(lvl),
+        };
+    }
+
+    console.log(`\nWrote ${levels.length} levels → ${path.relative(ROOT, OUT)} (${warnings} validation warnings)`);
+    for (const act of [1, 2, 3, 4, 5]) {
+        const rows = Object.entries(summary[act])
+            .map(([id, v]) => `L${id.padStart(2, "0")}:${v.spawns}s/${v.chokepoints}c/s${v.snips}/${v.layout}/${v.look}${v.mech ? `/${v.mech}` : ""}`)
+            .join("  ");
+        console.log(`${ACT_NAMES[act]}: ${rows}`);
+    }
+    if (warnings > 0) process.exit(1);
 }
-if (warnings > 0) process.exit(1);
+
+const IS_MAIN = process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href;
+if (IS_MAIN) main();
+
+export { buildLevels, knobsForLevel, placeLevel, applyMechanics, validatePlacement, computeMinCuts, lookForLevel, colorSchemeFor, slackForLevel, deHairpin, positionBranches, settleBranches, pinnedPlacement, schemeLadder, geometrySignature, clonePlacement, inheritBranchColors, main };
