@@ -13,23 +13,25 @@ import { PAYLOAD_SKINS, IGNITER_TYPES } from "../../src/data/skins.js";
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
 const STYLE_LOCK =
-  "2.5D game prop illustration for a retro note-paper bomb puzzle, soft matte cartoony look, warm muted desaturated palette, clean soft shading, subtle darker rim on bottom-right, light from top-left. No neon, no photo-realism, no outlines-heavy cel shading. Single isolated object centered, no baked ground shadow, no background (transparent), no text, no watermark.";
+  "1930s rubber hose animation style, Cuphead vintage cartoon aesthetic, 2D vector mobile game asset. " +
+  "Thick black ink outlines, flat muted vintage colors, clean pure white background. " +
+  "No shading, no 3D, no realism, no complex details, no neon, no gradients, no text, no watermark";
 
 const TEMPLATES = {
-  Payload: `[SUBJECT], ${STYLE_LOCK}. Show ONLY the bomb object, centered, filling most of the frame. Keep the exact same character design across all three states of this character.`,
+  Payload: `[SUBJECT], ${STYLE_LOCK}. Show ONLY the bomb object, centered, filling most of the frame. The character is sweating nervously with wide, frightened pie-cut eyes. Keep the exact same character design across all three states of this character.`,
   Igniter: `[SUBJECT], ${STYLE_LOCK}. Show ONLY the igniter object, centered, filling most of the frame. Keep the exact same character design across all three states of this igniter.`,
 };
 
 const PAYLOAD_STATES = {
-  playing: { role: "playing", prompt: "PANIC state: fuse lit with a live spark, wide worried eyes, sweat drops, cheeks puffed" },
-  win: { role: "win", prompt: "WIN state: fuse extinguished, relaxed happy eyes, soft smile, relieved" },
-  lose: { role: "lose", prompt: "FAIL state: mid-explosion, cracked sooty shell, dizzy spiral eyes, smoke" },
+  playing: { role: "playing", prompt: "PANIC state: fuse lit with a live spark, sweating nervously, wide frightened pie-cut eyes, sweat drops flying, cheeks puffed" },
+  win: { role: "win", prompt: "WIN state: fuse extinguished, relieved happy pie-cut eyes, soft smile, a breath of relief" },
+  lose: { role: "lose", prompt: "FAIL state: mid-explosion, cracked sooty shell, dizzy spiral pie-cut eyes, smoke" },
 };
 
 const IGNITER_STATES = {
-  idle: { role: "idle", prompt: "IDLE state: dormant igniter lying still, blank calm eyes" },
-  ignition: { role: "ignition", prompt: "IGNITION state: igniter burning bright, sparking, energetic eyes" },
-  dud: { role: "dud", prompt: "DUD state: snuffed out, small smoke wisp, droopy defeated eyes" },
+  idle: { role: "idle", prompt: "IDLE state: dormant igniter lying still, blank calm pie-cut eyes" },
+  ignition: { role: "ignition", prompt: "IGNITION state: igniter burning bright, sparking, wide energetic pie-cut eyes" },
+  dud: { role: "dud", prompt: "DUD state: snuffed out, small smoke wisp, droopy defeated pie-cut eyes" },
 };
 
 const unlockLabel = (item) => {
