@@ -34,7 +34,7 @@ export const PAYLOAD_SKINS = [
         blurb: "Bath time just got dangerous.",
         theme: "cute yellow rubber duck with an orange bill and a bundle of red TNT dynamite strapped to it with rope",
         assets: { playing: "skin_duck_playing.png", win: "skin_duck_win.png", lose: "skin_duck_lose.png" },
-        unlock: { level: 8 },
+        unlock: { level: 25 },
     },
     {
         id: "clock",
@@ -42,7 +42,7 @@ export const PAYLOAD_SKINS = [
         blurb: "Time's up... for you.",
         theme: "cute round retro alarm clock with two bells on top and a bundle of red TNT dynamite strapped to it with rope",
         assets: { playing: "skin_clock_playing.png", win: "skin_clock_win.png", lose: "skin_clock_lose.png" },
-        unlock: { level: 12, ad: true },
+        unlock: { level: 46, ad: true },
     },
     {
         id: "bulb",
@@ -50,7 +50,7 @@ export const PAYLOAD_SKINS = [
         blurb: "A brilliant idea. Too brilliant.",
         theme: "cute glowing lightbulb with a warm yellow glow and a bundle of red TNT dynamite strapped to it with rope",
         assets: { playing: "skin_bulb_playing.png", win: "skin_bulb_win.png", lose: "skin_bulb_lose.png" },
-        unlock: { level: 16 },
+        unlock: { level: 57 },
     },
     {
         id: "sock",
@@ -58,7 +58,7 @@ export const PAYLOAD_SKINS = [
         blurb: "Not sure what's inside. Don't ask.",
         theme: "cute striped tube sock with a bundle of red TNT dynamite strapped to it with rope",
         assets: { playing: "skin_sock_playing.png", win: "skin_sock_win.png", lose: "skin_sock_lose.png" },
-        unlock: { level: 20, ad: true },
+        unlock: { level: 67, ad: true },
     },
     {
         id: "piggy",
@@ -66,7 +66,7 @@ export const PAYLOAD_SKINS = [
         blurb: "Saving up for a big bang.",
         theme: "cute pink piggy bank with a coin slot on top and a bundle of red TNT dynamite strapped to it with rope",
         assets: { playing: "skin_piggy_playing.png", win: "skin_piggy_win.png", lose: "skin_piggy_lose.png" },
-        unlock: { level: 24 },
+        unlock: { level: 78 },
     },
     {
         id: "boot",
@@ -74,7 +74,7 @@ export const PAYLOAD_SKINS = [
         blurb: "Heel have to run.",
         theme: "cute worn leather boot with a bundle of red TNT dynamite strapped to it with rope",
         assets: { playing: "skin_boot_playing.png", win: "skin_boot_win.png", lose: "skin_boot_lose.png" },
-        unlock: { level: 28 },
+        unlock: { level: 89 },
     },
     {
         id: "chili",
@@ -82,7 +82,7 @@ export const PAYLOAD_SKINS = [
         blurb: "Spicy. And a little sensitive.",
         theme: "cute fiery red chili pepper with a green stem and a bundle of red TNT dynamite strapped to it with rope",
         assets: { playing: "skin_chili_playing.png", win: "skin_chili_win.png", lose: "skin_chili_lose.png" },
-        unlock: { level: 32 },
+        unlock: { level: 99 },
     },
     {
         id: "tv",
@@ -90,7 +90,7 @@ export const PAYLOAD_SKINS = [
         blurb: "Now showing: disaster.",
         theme: "cute retro tube television with rabbit-ear antennas and a bundle of red TNT dynamite strapped to it with rope",
         assets: { playing: "skin_tv_playing.png", win: "skin_tv_win.png", lose: "skin_tv_lose.png" },
-        unlock: { level: 36, ad: true },
+        unlock: { level: 110, ad: true },
     },
 ];
 
@@ -114,7 +114,7 @@ export const IGNITER_TYPES = [
         // Scale its preview slightly down (armory-only; in-game the ignition
         // frame's flame must stay glued to the fuse).
         artScale: 0.82,
-        unlock: { level: 4, ad: true },
+        unlock: { level: 14, ad: true },
     },
     {
         id: "cigar",
@@ -122,7 +122,7 @@ export const IGNITER_TYPES = [
         blurb: "The big smoke",
         theme: "chubby fat brown cigar with a gold paper band and a rounded ember tip",
         assets: { idle: "skin_cigar_idle.png", ignition: "skin_cigar_ignition.png", dud: "skin_cigar_dud.png" },
-        unlock: { level: 10, ad: true },
+        unlock: { level: 36, ad: true },
     },
 ];
 

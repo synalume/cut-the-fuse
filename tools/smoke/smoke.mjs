@@ -1303,20 +1303,20 @@ if (!bootError) {
     check(elements["skin-grid"].children.length === 3, "Armory: renders all 3 igniter types", String(elements["skin-grid"].children.length));
     const ig = elements["skin-grid"].children;
     check(ig[0].className.includes("selected"), "Armory: matchstick (starter) selected", ig[0].className);
-    check(ig[1].className.includes("locked"), "Armory: lighter locked until level 4", ig[1].className);
+    check(ig[1].className.includes("locked"), "Armory: lighter locked until level 14", ig[1].className);
     const lighterFooter = ig[1].children[ig[1].children.length - 1];
     const lighterAdBtn = lighterFooter.children[1];
     // Live URL build has no rewarded-ad SDK wired — the armory is
     // progression-only, so locked ad skins show NO Watch Ad button.
     check(!lighterAdBtn || !lighterAdBtn.className.includes("watch-ad"), "Armory: live build hides Watch Ad (progression-only)", lighterAdBtn ? lighterAdBtn.className : "");
-    check(lighterFooter.children[0] && lighterFooter.children[0].textContent.includes("Reach Level 4"), "Armory: unlock copy reads Reach Level 4 on live", lighterFooter.children[0]?.textContent);
+    check(lighterFooter.children[0] && lighterFooter.children[0].textContent.includes("Reach Level 14"), "Armory: unlock copy reads Reach Level 14 on live", lighterFooter.children[0]?.textContent);
 
-    // Live build: progression unlock — simulate reaching level 4 (the lighter's
+    // Live build: progression unlock — simulate reaching level 14 (the lighter's
     // threshold) via the save instance, then confirm it unlocks without any ad.
-    win.__CTF__.save.setUnlockedLevel(4);
+    win.__CTF__.save.setUnlockedLevel(14);
     elements["tab-igniters"].dispatch("click", {});
     await new Promise((r) => setTimeout(r, 30));
-    check(elements["skin-grid"].children[1].className.includes("locked") === false, "Armory: lighter unlocks at level 4 (progression)", elements["skin-grid"].children[1].className);
+    check(elements["skin-grid"].children[1].className.includes("locked") === false, "Armory: lighter unlocks at level 14 (progression)", elements["skin-grid"].children[1].className);
     check(elements["skin-grid"].children[1].children[3].children[0]?.textContent === "Select", "Armory: unlocked lighter shows Select tag", elements["skin-grid"].children[1].children[3].children[0]?.textContent);
     elements["skin-grid"].children[1].dispatch("click", {});
     check(JSON.parse(localStorage.getItem("cut_the_fuse_save_v1")).selectedIgniter === "lighter", "Armory: igniter selection persisted to save");
