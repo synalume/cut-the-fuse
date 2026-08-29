@@ -738,7 +738,15 @@ export class Renderer {
         const wr = game.level?.wireRule;
         if (!wr || !wr.legend) return;
         const ctx = this.ctx;
-        const colors = Object.keys(wr.legend);
+
+        // Only show colors that actually appear on this level's wires — the
+        // legend maps the screen, not the act. A scheme may list rose as a
+        // second forbidden color while a level places only red (or vice versa);
+        // a chip for a color that never shows up would read as a hidden wire.
+        const present = new Set();
+        for (const f of game.fuses || []) if (f.color) present.add(f.color);
+        const colors = Object.keys(wr.legend).filter((c) => present.has(c));
+        if (colors.length === 0) return;
 
         // Compact chip row: colored boxes with a ✓ (safe) / ✗ (forbidden)
         // mark. No card, no title, no labels — just the chips, centered under
