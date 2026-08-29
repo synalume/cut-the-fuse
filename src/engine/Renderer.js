@@ -61,6 +61,11 @@ export class Renderer {
         this._pending = new Set();
         this._onAssetsReady = null;
         this._assetOk = new Map(); // src -> boolean (exists), cached per session
+        // Home-screen ambient spark state (drawn while the hub is up).
+        this._menuSparkLastT = null;
+        this._menuParticles = [];
+        this._menuPath = null; // organic closed loop (built lazily so it's random per visit)
+        this.menuCard = null; // hub DOM element the spark weaves behind (wired by main.js)
     }
 
     // ---- Responsive sizing ------------------------------------------------------
@@ -179,90 +184,237 @@ export class Renderer {
         ctx.restore();
     }
 
-    /** Home-screen ambient: a burning spark loops around and behind the menu
-     *  card while the hub is up (no level loaded yet). The hub pauses the game,
-     *  so frameCount is frozen — the whole effect runs on wall-clock time. */
+    /** Home-screen ambient: a burning spark wanders a random organic loop and
+     *  weaves BEHIND the menu card while the hub is up (no level loaded yet).
+     *  The hub pauses the game, so frameCount is frozen — the whole effect runs
+     *  on wall-clock time.
+     *
+     *  The burn matches the in-game wick exactly: an amber "live wire" sits
+     *  AHEAD of the spark (hot at the burn front, cooling toward the far side)
+     *  and a flat dark ash trail follows BEHIND it, so the spark chases the
+     *  orange the way it chases the banana in play. The path is a random closed
+     *  harmonic loop (not a figure-8) built once per visit, and it's drawn only
+     *  on the game canvas — the opaque menu card hides whatever passes behind
+     *  it, so the fire appears to weave in and out of the card. */
     _drawMenuSpark() {
         const ctx = this.ctx;
         const t = performance.now() / 16.667; // wall-clock "frames"
-        const cx = this.width / 2;
-        const cy = this.height / 2;
-        // A tall wobbling loop: rx keeps the orbit behind the card's sides while
-        // ry pushes the top/bottom arcs out past the card, so the spark is
-        // visible sweeping over/under it and dives behind between.
-        const rx = Math.min(this.width * 0.30, Math.max(150, this.width * 0.24));
-        const ry = Math.min(this.height * 0.46, Math.max(240, this.height * 0.40));
 
+        if (!this._menuPath) this._buildMenuPath();
+        const P = this._menuPath;
+
+        // Closed loop built from a few random harmonics. All frequencies are
+        // integers so the wire stays seamless across the u=0 seam, and the
+        // coefficients are normalized so the loop stays within the base radii.
+        const raw = (u) => {
+            const th = u * Math.PI * 2;
+            const nx = (Math.cos(th + P.p1) + P.c2 * Math.cos(2 * th + P.p2) + P.c3 * Math.cos(3 * th + P.p3)) * P.sx;
+            const ny = (Math.sin(th + P.q1) + P.s2 * Math.sin(2 * th + P.q2) + P.s3 * Math.sin(3 * th + P.q3)) * P.sy;
+            return { x: P.cx + nx * P.rx, y: P.cy + ny * P.ry };
+        };
+        const seed = 7;
         const at = (u) => {
-            const a = u * Math.PI * 2;
-            const wob = 1 + 0.05 * Math.sin(a * 3 + 1.7) + 0.032 * Math.sin(a * 5 + 0.4) + 0.018 * Math.sin(a * 7 + 2.9);
-            return { x: cx + Math.cos(a) * rx * wob, y: cy + Math.sin(a) * ry * wob };
+            const p = raw(u);
+            const tg = this._tangentAt(raw, u);
+            const amp = 0.35 * Math.sin(u * 27 * Math.PI * 2 + seed) + 0.15 * Math.sin(u * 9 * Math.PI * 2 + seed * 2);
+            return { x: p.x - tg.y * amp, y: p.y + tg.x * amp };
         };
 
-        const loopFrames = 520; // one full orbit ≈ 8.7s
+        const loopFrames = 900; // one full orbit ≈ 15s
         const headU = (t / loopFrames) % 1;
         const head = at(headU);
+        const drift = 0.15 * Math.sin(t * 0.05 + headU * 2);
+        const dt = this._menuSparkLastT == null ? 1 : Math.max(0.2, Math.min(3, t - this._menuSparkLastT));
+        this._menuSparkLastT = t;
+
+        const S = { at, raw, headU, head, t, drift, seed };
+
+        this._drawMenuBurn(ctx, S);
+        this._drawMenuParticles(t, dt, head);
+    }
+
+    /** Build the random organic loop once per visit. Radii reach past the card
+     *  edges so the fire is visible sweeping out into the paper, and the
+     *  harmonics dip it back through the card's middle so it hides behind. */
+    _buildMenuPath() {
+        const rect = this._menuCardRect();
+        const cx = rect.x + rect.w / 2;
+        const cy = rect.y + rect.h / 2;
+        const rx = Math.min(rect.w * 0.75, Math.max(rect.w * 0.55, this.width * 0.34));
+        const ry = Math.min(rect.h * 0.75, Math.max(rect.h * 0.55, this.height * 0.38));
+        const rand2 = () => (0.2 + Math.random() * 0.35) * (Math.random() > 0.5 ? 1 : -1);
+        const rand3 = () => (0.08 + Math.random() * 0.22) * (Math.random() > 0.5 ? 1 : -1);
+        const c2 = rand2(), c3 = rand3(), s2 = rand2(), s3 = rand3();
+        const sx = 1 / (1 + Math.abs(c2) + Math.abs(c3));
+        const sy = 1 / (1 + Math.abs(s2) + Math.abs(s3));
+        this._menuPath = {
+            cx, cy, rx, ry, c2, c3, s2, s3, sx, sy,
+            p1: Math.random() * Math.PI * 2,
+            p2: Math.random() * Math.PI * 2,
+            p3: Math.random() * Math.PI * 2,
+            q1: Math.random() * Math.PI * 2,
+            q2: Math.random() * Math.PI * 2,
+            q3: Math.random() * Math.PI * 2,
+        };
+    }
+
+    /** Bounding box of the card the spark weaves around (logical CSS px). Falls
+     *  back to a centered box when no card is wired up (headless/stub context). */
+    _menuCardRect() {
+        if (this.menuCard && typeof this.menuCard.getBoundingClientRect === "function") {
+            const r = this.menuCard.getBoundingClientRect();
+            if (r.width > 0 && r.height > 0) return { x: r.x, y: r.y, w: r.width, h: r.height };
+        }
+        const w = Math.min(440, this.width * 0.6);
+        const h = Math.min(520, this.height * 0.7);
+        return { x: (this.width - w) / 2, y: (this.height - h) / 2, w, h };
+    }
+
+    /** Unit tangent to the raw path at u (numerical, handles the periodic wrap). */
+    _tangentAt(raw, u) {
+        const a = raw(u);
+        const b = raw(u + 0.003);
+        const dx = b.x - a.x, dy = b.y - a.y;
+        const len = Math.hypot(dx, dy) || 1;
+        return { x: dx / len, y: dy / len };
+    }
+
+    /** The in-game live-wire amber ramp, sampled per-point by distance ahead of
+     *  the spark: hot at the burn front, cooling toward the far side. */
+    _menuAmberColor(d, drift) {
+        const stops = [
+            [0.0, 245, 158, 11], // #f59e0b
+            [0.35 + drift, 251, 191, 36], // #fbbf24
+            [0.65 + drift, 217, 119, 6], // #d97706
+            [1.0, 180, 83, 9], // #b45309
+        ];
+        let i = 1;
+        while (i < stops.length - 1 && d > stops[i][0]) i++;
+        const [t0, r0, g0, b0] = stops[i - 1];
+        const [t1, r1, g1, b1] = stops[i];
+        const f = t1 === t0 ? 0 : Math.min(1, Math.max(0, (d - t0) / (t1 - t0)));
+        const mix = (a, b) => Math.round(a + (b - a) * f);
+        return `rgb(${mix(r0, r1)}, ${mix(g0, g1)}, ${mix(b0, b1)})`;
+    }
+
+    /** Intersect two circular arcs [a0,a1] and [b0,b1] (either may wrap around
+     *  u=1). Returns a list of non-wrapping [start,end] ranges, or null. */
+    _arcIntersect(a0, a1, b0, b1) {
+        const norm = (x) => ((x % 1) + 1) % 1;
+        const ranges = (s, e) => {
+            s = norm(s);
+            e = norm(e);
+            return s <= e ? [[s, e]] : [[s, 1], [0, e]];
+        };
+        const out = [];
+        for (const [s1, e1] of ranges(a0, a1)) {
+            for (const [s2, e2] of ranges(b0, b1)) {
+                const s = Math.max(s1, s2);
+                const e = Math.min(e1, e2);
+                if (e - s > 1e-4) out.push([s, e]);
+            }
+        }
+        return out.length ? out : null;
+    }
+
+    /** Draw the menu wick using the exact in-game visuals: amber live wire
+     *  ahead of the spark, dark ash trail behind, ember glow at the burn front,
+     *  retro spark head. */
+    _drawMenuBurn(ctx, S) {
+        const { at, raw, headU, head, t, drift, seed } = S;
+        const n = 160;
 
         ctx.save();
         ctx.lineCap = "round";
         ctx.lineJoin = "round";
 
-        // The full loop as the unburnt fuse, drawn under the hot trail.
-        ctx.strokeStyle = "rgba(120, 53, 15, 0.65)";
-        ctx.lineWidth = 3;
+        // Soft glow pass over the whole loop (matches the wire's shadow).
+        ctx.shadowColor = "rgba(249, 115, 22, 0.5)";
+        ctx.shadowBlur = 6;
+        ctx.strokeStyle = "rgba(245, 158, 11, 0.5)";
+        ctx.lineWidth = 4.5;
         ctx.beginPath();
-        for (let i = 0; i <= 120; i++) {
-            const p = at(i / 120);
-            if (i === 0) ctx.moveTo(p.x, p.y);
-            else ctx.lineTo(p.x, p.y);
-        }
-        ctx.stroke();
-
-        // Live burn: the arc just behind the head glows and cools off.
-        const trail = 0.15;
-        const tail = at(headU - trail);
-        ctx.shadowColor = "rgba(249, 115, 22, 0.45)";
-        ctx.shadowBlur = 10;
-        const grad = this._linearGradient(head.x, head.y, tail.x, tail.y);
-        grad.addColorStop(0, "#fbbf24");
-        grad.addColorStop(0.45, "#f59e0b");
-        grad.addColorStop(1, "#b45309");
-        ctx.strokeStyle = grad;
-        ctx.lineWidth = 5;
-        ctx.beginPath();
-        const steps = 26;
-        for (let i = 0; i <= steps; i++) {
-            const p = at(headU - trail + (trail * i) / steps);
+        for (let i = 0; i <= n; i++) {
+            const p = at(i / n);
             if (i === 0) ctx.moveTo(p.x, p.y);
             else ctx.lineTo(p.x, p.y);
         }
         ctx.stroke();
         ctx.shadowBlur = 0;
 
-        // Ember glow at the burn front.
-        const ember = this._radialGradient(head.x, head.y, 0, head.x, head.y, 26);
-        ember.addColorStop(0, "rgba(254, 240, 138, 0.95)");
-        ember.addColorStop(0.4, "rgba(249, 115, 22, 0.55)");
+        // Crisp amber wire, colored per-point by distance ahead of the spark.
+        ctx.lineWidth = 4.5;
+        for (let i = 0; i < n; i++) {
+            const sa = i / n;
+            const sb = sa + 1 / n;
+            const d = (((sa % 1) + 1) % 1 - headU + 1) % 1;
+            ctx.strokeStyle = this._menuAmberColor(d, drift);
+            ctx.beginPath();
+            const pa = at(sa);
+            const pb = at(sb);
+            ctx.moveTo(pa.x, pa.y);
+            ctx.lineTo(pb.x, pb.y);
+            ctx.stroke();
+        }
+
+        // Dark ash trail: the short arc just burned behind the spark.
+        const ashLen = 0.10;
+        const ashArc = this._arcIntersect(headU - ashLen, headU, 0, 1);
+        if (ashArc) {
+            ctx.strokeStyle = "rgba(41, 37, 36, 0.85)";
+            ctx.lineWidth = 3;
+            for (const [as0, as1] of ashArc) {
+                const an = Math.max(6, Math.ceil((as1 - as0) * 160));
+                ctx.beginPath();
+                for (let i = 0; i <= an; i++) {
+                    const u = as0 + ((as1 - as0) * i) / an;
+                    const p0 = raw(u);
+                    const tg = this._tangentAt(raw, u);
+                    const amp = Math.sin(u * 41 * Math.PI * 2 + seed * 1.7) * 1.1 + Math.sin(u * 13 * Math.PI * 2 + seed) * 0.5;
+                    const p = { x: p0.x - tg.y * amp, y: p0.y + tg.x * amp };
+                    if (i === 0) ctx.moveTo(p.x, p.y);
+                    else ctx.lineTo(p.x, p.y);
+                }
+                ctx.stroke();
+            }
+        }
+
+        // Ember glow + spark head at the burn front (game look).
+        const ember = this._radialGradient(head.x, head.y, 0, head.x, head.y, 16);
+        ember.addColorStop(0, "rgba(254, 240, 138, 0.9)");
+        ember.addColorStop(0.35, "rgba(249, 115, 22, 0.55)");
         ember.addColorStop(1, "rgba(249, 115, 22, 0)");
         ctx.fillStyle = ember;
         ctx.beginPath();
-        ctx.arc(head.x, head.y, 26, 0, Math.PI * 2);
+        ctx.arc(head.x, head.y, 16, 0, Math.PI * 2);
         ctx.fill();
 
-        // Ember dots twinkling along the trail.
-        for (let k = 1; k <= 3; k++) {
-            const e = at(headU - trail * k * 0.28);
-            const alpha = 0.35 + 0.3 * Math.sin(t * 0.12 + k * 2.1);
-            if (alpha <= 0) continue;
-            ctx.fillStyle = `rgba(251, 146, 60, ${alpha.toFixed(3)})`;
-            ctx.beginPath();
-            ctx.arc(e.x, e.y, 2.5 + (k % 2) * 1.5, 0, Math.PI * 2);
-            ctx.fill();
-        }
-
-        // The spark head rides on top.
         this._drawRetroSpark(head.x, head.y, t);
         ctx.restore();
+    }
+
+    /** Game-style dark ash flecks trailing the menu spark. */
+    _drawMenuParticles(t, dt, head) {
+        const list = this._menuParticles;
+        // Spawn like the game's burn: ~60% chance per frame of a dark fleck.
+        if (Math.random() > 0.4) {
+            list.push({
+                x: head.x, y: head.y,
+                vx: (Math.random() - 0.5) * 2.8,
+                vy: (Math.random() - 0.5) * 2.8,
+                life: 1.0,
+                size: Math.random() * 4 + 2,
+                color: "#292524",
+            });
+        }
+        for (let i = list.length - 1; i >= 0; i--) {
+            const p = list[i];
+            p.x += p.vx * dt;
+            p.y += p.vy * dt;
+            p.life -= 0.04 * dt;
+            if (p.life <= 0) list.splice(i, 1);
+        }
+        for (const p of list) this._drawParticleStar(p);
     }
 
     _drawHint(game) {

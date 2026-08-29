@@ -682,6 +682,7 @@ async function boot() {
     // Home screen first — the player picks PLAY to load their level. Loading
     // happens lazily so a returning player sees their star bank before diving in.
     updateUi();
+    renderer.menuCard = $("modal-menu");
     openMenu();
 
     // Load baked audio cues from assets/audio/ (silently skips un-baked cues).
