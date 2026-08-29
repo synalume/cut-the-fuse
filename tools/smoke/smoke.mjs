@@ -1297,7 +1297,7 @@ if (!bootError) {
     check(cards[0].className.includes("selected"), "Armory: banana (starter) owned + selected", cards[0].className);
     check(cards[1].className.includes("locked"), "Armory: melon locked until level 4", cards[1].className);
 
-    // Switch to IGNITERS: 3 types, matchstick selected, lighter shows an ad unlock.
+    // Switch to IGNITERS: 3 types, matchstick selected, lighter shows a star-buy.
     elements["tab-igniters"].dispatch("click", {});
     check(elements["tab-igniters"].className.includes("active"), "Armory: IGNITERS tab active", elements["tab-igniters"].className);
     check(elements["skin-grid"].children.length === 3, "Armory: renders all 3 igniter types", String(elements["skin-grid"].children.length));
@@ -1305,24 +1305,36 @@ if (!bootError) {
     check(ig[0].className.includes("selected"), "Armory: matchstick (starter) selected", ig[0].className);
     check(ig[1].className.includes("locked"), "Armory: lighter locked until level 14", ig[1].className);
     const lighterFooter = ig[1].children[ig[1].children.length - 1];
-    const lighterAdBtn = lighterFooter.children[1];
-    // Live URL build has no rewarded-ad SDK wired — the armory is
-    // progression-only, so locked ad skins show NO Watch Ad button.
-    check(!lighterAdBtn || !lighterAdBtn.className.includes("watch-ad"), "Armory: live build hides Watch Ad (progression-only)", lighterAdBtn ? lighterAdBtn.className : "");
     check(lighterFooter.children[0] && lighterFooter.children[0].textContent.includes("Reach Level 14"), "Armory: unlock copy reads Reach Level 14 on live", lighterFooter.children[0]?.textContent);
+    const lighterBuy = lighterFooter.children[1];
+    check(lighterBuy && lighterBuy.className.includes("buy-stars") && lighterBuy.textContent === "BUY 30★",
+        "Armory: locked lighter offers the star-buy at the premium price", lighterBuy?.textContent || "");
+    check(lighterBuy.className.includes("unaffordable"), "Armory: buy button greyed out when the bank can't cover it", lighterBuy.className);
+    // Live URL build has no rewarded-ad SDK — locked ad skins show NO Watch Ad.
+    check(!lighterFooter.children[2] || !lighterFooter.children[2].className.includes("watch-ad"),
+        "Armory: live build hides Watch Ad (progression-only)", lighterFooter.children[2] ? lighterFooter.children[2].className : "");
 
-    // Live build: progression unlock — simulate reaching level 14 (the lighter's
-    // threshold) via the save instance, then confirm it unlocks without any ad.
-    win.__CTF__.save.setUnlockedLevel(14);
-    elements["tab-igniters"].dispatch("click", {});
+    // Star-buy: spending with an empty bank is refused and nothing changes.
+    lighterBuy.dispatch("click", {});
     await new Promise((r) => setTimeout(r, 30));
-    check(elements["skin-grid"].children[1].className.includes("locked") === false, "Armory: lighter unlocks at level 14 (progression)", elements["skin-grid"].children[1].className);
-    check(elements["skin-grid"].children[1].children[3].children[0]?.textContent === "Select", "Armory: unlocked lighter shows Select tag", elements["skin-grid"].children[1].children[3].children[0]?.textContent);
-    elements["skin-grid"].children[1].dispatch("click", {});
-    check(JSON.parse(localStorage.getItem("cut_the_fuse_save_v1")).selectedIgniter === "lighter", "Armory: igniter selection persisted to save");
+    check(elements["skin-grid"].children[1].className.includes("locked"), "Armory: star-buy refused when the bank is short", elements["skin-grid"].children[1].className);
 
-    // Selecting another payload skin persists to the save and is applied to the loadout.
-    // Melon is owned once the player reaches level 4 — the footer shows Select.
+    // ...then a funded purchase unlocks + selects + persists + debits the bank.
+    win.__CTF__.save.depositStars(40); // bank 3 + 40 = 43
+    elements["tab-igniters"].dispatch("click", {}); // re-render refreshes affordability
+    const buyLive = elements["skin-grid"].children[1].children[3].children[1];
+    check(buyLive && !buyLive.className.includes("unaffordable"), "Armory: funded buy button goes live", buyLive?.className || "");
+    buyLive.dispatch("click", {});
+    await new Promise((r) => setTimeout(r, 30));
+    check(!elements["skin-grid"].children[1].className.includes("locked"), "Armory: star-buy unlocks the lighter", elements["skin-grid"].children[1].className);
+    check(elements["skin-grid"].children[1].children[3].children[0]?.textContent === "Selected", "Armory: bought lighter is selected", elements["skin-grid"].children[1].children[3].children[0]?.textContent);
+    const boughtSave = JSON.parse(localStorage.getItem("cut_the_fuse_save_v1"));
+    check(boughtSave.selectedIgniter === "lighter", "Armory: igniter selection persisted to save", boughtSave.selectedIgniter);
+    check(boughtSave.starBank === 13, "Armory: star bank debited the premium price", String(boughtSave.starBank));
+
+    // Progression unlocks still work alongside star-buy: reaching level 4
+    // makes melon owned through the level threshold, not the star bank.
+    win.__CTF__.save.setUnlockedLevel(4);
     elements["tab-payloads"].dispatch("click", {});
     const melonFooter = elements["skin-grid"].children[1].children[3];
     check(elements["skin-grid"].children[1].className.includes("locked") === false, "Armory: melon unlocked by level 4 (progression)", elements["skin-grid"].children[1].className);

@@ -103,6 +103,7 @@ canvas { display: block; position: absolute; z-index: 10; }
 #snips-counter.shake { animation: snip-shake 0.45s ease; }
 #snips-counter.bonus { animation: snip-bonus 0.7s ease; }
 #star-display.new-unlock { animation: snip-pulse 0.9s ease-in-out 3; }
+#star-display.shake { animation: snip-shake 0.45s ease; }
 @keyframes snip-pulse {
     0%, 100% { opacity: 1; }
     50% { opacity: 0.55; }
@@ -347,6 +348,17 @@ canvas { display: block; position: absolute; z-index: 10; }
 }
 .skin-card .watch-ad:hover { transform: translateY(-1px); }
 .skin-card .watch-ad:active { transform: translateY(2px); box-shadow: 1px 1px 0 rgba(43, 31, 20, 0.85); }
+.skin-card .buy-stars {
+    display: inline-block; margin-top: 6px; padding: 4px 10px;
+    background: #fef08a; border: 3px solid #b45309; border-radius: 8px;
+    box-shadow: 3px 3px 0 rgba(43, 31, 20, 0.85);
+    font-family: 'Luckiest Guy', 'Baloo 2', 'Courier New', Courier, monospace;
+    font-size: 0.75rem; color: #b45309; cursor: pointer; text-transform: uppercase;
+    transition: transform 0.08s ease, filter 0.12s ease;
+}
+.skin-card .buy-stars:hover:not(.unaffordable) { transform: translateY(-1px); }
+.skin-card .buy-stars:active:not(.unaffordable) { transform: translateY(2px); box-shadow: 1px 1px 0 rgba(43, 31, 20, 0.85); }
+.skin-card .buy-stars.unaffordable { background: #e7e5e4; border-color: #78716c; color: #78716c; cursor: not-allowed; box-shadow: none; }
 .skin-card .selected-tag { font-size: 0.8rem; color: #b45309; font-weight: bold; text-transform: uppercase; }
 
 #skin-tabs {

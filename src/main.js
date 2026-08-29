@@ -7,7 +7,7 @@ import { SaveManager } from "./engine/SaveManager.js";
 import { Analytics } from "./engine/Analytics.js";
 import { Platform } from "./engine/Platform.js";
 import { buildLevel, resolveAssets } from "./engine/LevelManager.js";
-import { PAYLOAD_SKINS, IGNITER_TYPES, isSkinOwned } from "./data/skins.js";
+import { PAYLOAD_SKINS, IGNITER_TYPES, isSkinOwned, skinStarPrice } from "./data/skins.js";
 import { todayStr, dayNumber } from "./engine/dates.js";
 
 // Level-select gating. During playtest every level is pickable; flip to true
@@ -624,18 +624,30 @@ function renderArmory() {
         } else {
             const unlock = document.createElement("div");
             unlock.className = "unlock";
-            // On the live URL build there are no rewarded ads — the armory is
-            // progression-only, so the copy reads "Reach Level N" (not "Or reach").
-            unlock.textContent = item.unlock?.ad && platform.canShowRewarded
-                ? `Or reach Level ${item.unlock.level}`
-                : `Reach Level ${item.unlock.level}`;
+            unlock.textContent = `Reach Level ${item.unlock.level}`;
             footer.appendChild(unlock);
+
+            // Star-buy: a universal premium path (works with or without an ad
+            // SDK — it's just the save's star bank). On ad-enabled portals it
+            // sits next to the Watch Ad skip; on the live URL / Playables it's
+            // the only skip, so the copy never claims an option we lack.
+            const price = skinStarPrice(item);
+            const buyBtn = document.createElement("button");
+            buyBtn.className = "buy-stars";
+            buyBtn.textContent = `BUY ${price}★`;
+            buyBtn.classList.toggle("unaffordable", save.getStarBank() < price);
+            buyBtn.addEventListener("click", (e) => {
+                e?.stopPropagation?.();
+                buyLockedItem(item, price);
+            });
+            footer.appendChild(buyBtn);
+
             if (item.unlock?.ad && platform.canShowRewarded) {
                 const adBtn = document.createElement("button");
                 adBtn.className = "watch-ad";
                 adBtn.textContent = "Watch Ad";
                 adBtn.addEventListener("click", async (e) => {
-                    e.stopPropagation();
+                    e?.stopPropagation?.();
                     adBtn.disabled = true;
                     adBtn.textContent = "Loading...";
                     const ok = await platform.showRewarded(`unlock_${armoryTab}_${item.id}`);
@@ -684,6 +696,25 @@ function unlockProgressRewards() {
         }
     }
     return count;
+}
+
+/** Star-buy a locked skin/igniter. Shakes the star counter when the balance
+ *  is short; otherwise spends the stars, unlocks, selects, and applies the
+ *  loadout immediately if the level hasn't started. */
+function buyLockedItem(item, price) {
+    if (!save.spendStars(price)) {
+        starDisplay.classList.remove("shake");
+        void starDisplay.offsetWidth; // restart the CSS animation
+        starDisplay.classList.add("shake");
+        audio.play("dud");
+        return;
+    }
+    if (armoryTab === "payload") save.unlockSkin(item.id);
+    else save.unlockIgniter(item.id);
+    selectItem(armoryTab, item.id);
+    updateUi();
+    renderArmory();
+    applyLoadout();
 }
 
 // ---- boot -----------------------------------------------------------------------------

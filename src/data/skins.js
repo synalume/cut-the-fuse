@@ -141,3 +141,15 @@ export function isSkinOwned(item, reachedLevel, unlocked) {
     if (unlocked) return true;
     return reachedLevel >= item.unlock.level;
 }
+
+/** Star-buy price for a locked skin/igniter. It's a PREMIUM tax: paying stars
+ *  skips the level grind, so the price is set above what a player naturally
+ *  banks by that level (30★ early → 60★ for the finale). Scaling with the
+ *  unlock level also means a fresh save can't afford the late rewards — the
+ *  price itself is the soft floor. Works on every platform: it's just the
+ *  save's star bank, no SDK involved. */
+export function skinStarPrice(item) {
+    const level = item.unlock?.level || 0;
+    if (level <= 0) return 0; // starters are free, never purchasable
+    return Math.min(60, Math.max(30, Math.round(18 + level * 0.38)));
+}
