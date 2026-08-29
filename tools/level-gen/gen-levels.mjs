@@ -308,7 +308,7 @@ function branchCurveMag(n) {
  * Lives in acts 1-3 (plus compounding in acts 4-5 via the `color` knob).
  *
  * Real-world-accurate palette: forbidden (do not cut) = red (hot/live) and
- * teal in later acts; safe (cut) = blue (neutral), purple (neutral), green
+ * rose in later acts; safe (cut) = blue (neutral), purple (neutral), green
  * (ground). Black/amber are excluded (burnt ash / the burning fire).
  *
  *   L9      — gentle teaser: the legend appears with one forbidden decoy,
@@ -319,7 +319,7 @@ function branchCurveMag(n) {
  *   L11-17  — seasoning: forbidden decoys woven into the snip economy.
  *   L18-20  — first mixed crossroads (a safe + a forbidden wick share a cut).
  *   Act 2   — mixed crossroads common (two-fork band 25-28, overlap 29-33).
- *   Act 3   — dense mazes + bosses colored; teal joins red as forbidden.
+ *   Act 3   — dense mazes + bosses colored; rose joins red as forbidden.
  */
 function colorSchemeFor(n) {
     const act = actFor(n);
@@ -327,7 +327,7 @@ function colorSchemeFor(n) {
 
     const A = { red: "no", blue: "cut", purple: "cut" };                       // 2 safe
     const B = { red: "no", blue: "cut", purple: "cut", green: "cut" };         // 3 safe
-    const C = { red: "no", teal: "no", blue: "cut", purple: "cut", green: "cut" }; // 2 forbidden
+    const C = { red: "no", rose: "no", blue: "cut", purple: "cut", green: "cut" }; // 2 forbidden
 
     if (n === 9) return { legend: A, forbidden: ["red"], safe: ["blue", "purple"], mixed: false, forbiddenCount: 1 };
     if (n === 10) return { legend: A, forbidden: ["red"], safe: ["blue", "purple"], mixed: true, forbiddenCount: 1 };
@@ -353,14 +353,14 @@ function colorSchemeFor(n) {
             forbiddenCount: n >= 34 ? 2 : 1,
         };
     }
-    // Act 3: dense colored mazes. Teal joins red as a second forbidden color
+    // Act 3: dense colored mazes. Rose joins red as a second forbidden color
     // from the mid-act; bosses and the finale run mixed everywhere.
     if (n >= 56) {
-        return { legend: C, forbidden: ["red", "teal"], safe: ["blue", "purple", "green"], mixed: true, forbiddenCount: 2 };
+        return { legend: C, forbidden: ["red", "rose"], safe: ["blue", "purple", "green"], mixed: true, forbiddenCount: 2 };
     }
     return {
         legend: C,
-        forbidden: ["red", "teal"],
+        forbidden: ["red", "rose"],
         safe: ["blue", "purple", "green"],
         mixed: n % 3 === 0,
         forbiddenCount: n % 2 === 0 ? 2 : 1,
