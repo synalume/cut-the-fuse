@@ -30,7 +30,7 @@ export const COMIC_WORDS = {
 const WIRE_STOPS = {
     amber: ["#f59e0b", "#fbbf24", "#d97706", "#b45309"],
     red: ["#ef4444", "#f87171", "#dc2626", "#991b1b"],
-    orange: ["#f97316", "#fb923c", "#ea580c", "#c2410c"],
+    fuchsia: ["#e879f9", "#d946ef", "#c026d3", "#a21caf"],
     blue: ["#3b82f6", "#60a5fa", "#2563eb", "#1e40af"],
     purple: ["#c084fc", "#a855f7", "#9333ea", "#7e22ce"],
     green: ["#22c55e", "#4ade80", "#16a34a", "#15803d"],
@@ -38,14 +38,14 @@ const WIRE_STOPS = {
 /** Fill colors for the legend chips (solid, slightly darker than the live stops). */
 const WIRE_CHIP = {
     red: "#dc2626",
-    orange: "#ea580c",
+    fuchsia: "#c026d3",
     blue: "#2563eb",
     purple: "#9333ea",
     green: "#16a34a",
 };
 const WIRE_CHIP_BORDER = {
     red: "#7f1d1d",
-    orange: "#7c2d12",
+    fuchsia: "#701a75",
     blue: "#1e3a8a",
     purple: "#581c87",
     green: "#14532d",

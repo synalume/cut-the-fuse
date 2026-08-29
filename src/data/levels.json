@@ -5089,7 +5089,7 @@
         "speed": 0.00102,
         "delayFrames": 389,
         "bulge": 0.185,
-        "color": "orange",
+        "color": "fuchsia",
         "neverLights": true
       },
       {
@@ -5146,7 +5146,7 @@
     "wireRule": {
       "legend": {
         "red": "no",
-        "orange": "no",
+        "fuchsia": "no",
         "blue": "cut",
         "purple": "cut",
         "green": "cut"
@@ -5275,7 +5275,7 @@
         "speed": 0.0009,
         "delayFrames": 857,
         "bulge": 0.185,
-        "color": "orange",
+        "color": "fuchsia",
         "neverLights": true
       },
       {
@@ -5312,7 +5312,7 @@
     "wireRule": {
       "legend": {
         "red": "no",
-        "orange": "no",
+        "fuchsia": "no",
         "blue": "cut",
         "purple": "cut",
         "green": "cut"
@@ -5442,7 +5442,7 @@
         "speed": 0.00077,
         "delayFrames": 804,
         "bulge": 0.185,
-        "color": "orange",
+        "color": "fuchsia",
         "neverLights": true
       },
       {
@@ -5479,7 +5479,7 @@
     "wireRule": {
       "legend": {
         "red": "no",
-        "orange": "no",
+        "fuchsia": "no",
         "blue": "cut",
         "purple": "cut",
         "green": "cut"
@@ -5590,7 +5590,7 @@
         "speed": 0.00094,
         "delayFrames": 517,
         "bulge": -0.185,
-        "color": "orange",
+        "color": "fuchsia",
         "neverLights": true
       },
       {
@@ -5647,7 +5647,7 @@
     "wireRule": {
       "legend": {
         "red": "no",
-        "orange": "no",
+        "fuchsia": "no",
         "blue": "cut",
         "purple": "cut",
         "green": "cut"
@@ -5766,7 +5766,7 @@
         "speed": 0.00075,
         "delayFrames": 334,
         "bulge": 0.14,
-        "color": "orange",
+        "color": "fuchsia",
         "neverLights": true
       },
       {
@@ -5832,7 +5832,7 @@
     "wireRule": {
       "legend": {
         "red": "no",
-        "orange": "no",
+        "fuchsia": "no",
         "blue": "cut",
         "purple": "cut",
         "green": "cut"
@@ -5948,7 +5948,7 @@
         "speed": 0.00094,
         "delayFrames": 429,
         "bulge": -0.14,
-        "color": "orange",
+        "color": "fuchsia",
         "neverLights": true
       },
       {
@@ -6005,7 +6005,7 @@
     "wireRule": {
       "legend": {
         "red": "no",
-        "orange": "no",
+        "fuchsia": "no",
         "blue": "cut",
         "purple": "cut",
         "green": "cut"
@@ -6125,7 +6125,7 @@
         "speed": 0.0011,
         "delayFrames": 671,
         "bulge": -0.14,
-        "color": "orange",
+        "color": "fuchsia",
         "neverLights": true
       },
       {
@@ -6192,7 +6192,7 @@
     "wireRule": {
       "legend": {
         "red": "no",
-        "orange": "no",
+        "fuchsia": "no",
         "blue": "cut",
         "purple": "cut",
         "green": "cut"
@@ -6297,7 +6297,7 @@
         "speed": 0.00083,
         "delayFrames": 516,
         "bulge": 0.14,
-        "color": "orange",
+        "color": "fuchsia",
         "neverLights": true
       },
       {
@@ -6353,7 +6353,7 @@
     "wireRule": {
       "legend": {
         "red": "no",
-        "orange": "no",
+        "fuchsia": "no",
         "blue": "cut",
         "purple": "cut",
         "green": "cut"
@@ -6540,7 +6540,7 @@
     "wireRule": {
       "legend": {
         "red": "no",
-        "orange": "no",
+        "fuchsia": "no",
         "blue": "cut",
         "purple": "cut",
         "green": "cut"
@@ -6674,7 +6674,7 @@
         "speed": 0.00068,
         "delayFrames": 875,
         "bulge": 0.012,
-        "color": "orange",
+        "color": "fuchsia",
         "neverLights": true
       },
       {
@@ -6711,7 +6711,7 @@
     "wireRule": {
       "legend": {
         "red": "no",
-        "orange": "no",
+        "fuchsia": "no",
         "blue": "cut",
         "purple": "cut",
         "green": "cut"
@@ -6876,7 +6876,7 @@
         "speed": 0.0006,
         "delayFrames": 967,
         "bulge": 0.185,
-        "color": "orange",
+        "color": "fuchsia",
         "neverLights": true
       },
       {
@@ -6913,7 +6913,7 @@
     "wireRule": {
       "legend": {
         "red": "no",
-        "orange": "no",
+        "fuchsia": "no",
         "blue": "cut",
         "purple": "cut",
         "green": "cut"
@@ -7033,7 +7033,7 @@
         "speed": 0.00068,
         "delayFrames": 567,
         "bulge": -0.14,
-        "color": "orange",
+        "color": "fuchsia",
         "neverLights": true
       },
       {
@@ -7101,7 +7101,7 @@
     "wireRule": {
       "legend": {
         "red": "no",
-        "orange": "no",
+        "fuchsia": "no",
         "blue": "cut",
         "purple": "cut",
         "green": "cut"
@@ -7246,7 +7246,7 @@
         "speed": 0.00085,
         "delayFrames": 847,
         "bulge": 0,
-        "color": "orange",
+        "color": "fuchsia",
         "neverLights": true
       },
       {
@@ -7303,7 +7303,7 @@
     "wireRule": {
       "legend": {
         "red": "no",
-        "orange": "no",
+        "fuchsia": "no",
         "blue": "cut",
         "purple": "cut",
         "green": "cut"
@@ -7444,7 +7444,7 @@
         "speed": 0.00053,
         "delayFrames": 740,
         "bulge": 0.14,
-        "color": "orange",
+        "color": "fuchsia",
         "neverLights": true
       },
       {
@@ -7491,7 +7491,7 @@
     "wireRule": {
       "legend": {
         "red": "no",
-        "orange": "no",
+        "fuchsia": "no",
         "blue": "cut",
         "purple": "cut",
         "green": "cut"
@@ -7629,7 +7629,7 @@
         "speed": 0.00085,
         "delayFrames": 631,
         "bulge": 0.015,
-        "color": "orange",
+        "color": "fuchsia",
         "neverLights": true
       },
       {
@@ -7685,7 +7685,7 @@
     "wireRule": {
       "legend": {
         "red": "no",
-        "orange": "no",
+        "fuchsia": "no",
         "blue": "cut",
         "purple": "cut",
         "green": "cut"
@@ -7815,7 +7815,7 @@
         "speed": 0.0006,
         "delayFrames": 1001,
         "bulge": 0.14,
-        "color": "orange",
+        "color": "fuchsia",
         "neverLights": true
       },
       {
@@ -7892,7 +7892,7 @@
     "wireRule": {
       "legend": {
         "red": "no",
-        "orange": "no",
+        "fuchsia": "no",
         "blue": "cut",
         "purple": "cut",
         "green": "cut"
@@ -8042,7 +8042,7 @@
         "speed": 0.00045,
         "delayFrames": 1195,
         "bulge": -0.14,
-        "color": "orange",
+        "color": "fuchsia",
         "neverLights": true
       },
       {
@@ -8099,7 +8099,7 @@
     "wireRule": {
       "legend": {
         "red": "no",
-        "orange": "no",
+        "fuchsia": "no",
         "blue": "cut",
         "purple": "cut",
         "green": "cut"
@@ -8300,7 +8300,7 @@
     "wireRule": {
       "legend": {
         "red": "no",
-        "orange": "no",
+        "fuchsia": "no",
         "blue": "cut",
         "purple": "cut",
         "green": "cut"
@@ -8440,7 +8440,7 @@
     "wireRule": {
       "legend": {
         "red": "no",
-        "orange": "no",
+        "fuchsia": "no",
         "blue": "cut",
         "purple": "cut",
         "green": "cut"
@@ -8550,7 +8550,7 @@
         "speed": 0.00083,
         "delayFrames": 316,
         "bulge": 0.14,
-        "color": "orange",
+        "color": "fuchsia",
         "neverLights": true
       },
       {
@@ -8606,7 +8606,7 @@
     "wireRule": {
       "legend": {
         "red": "no",
-        "orange": "no",
+        "fuchsia": "no",
         "blue": "cut",
         "purple": "cut",
         "green": "cut"
