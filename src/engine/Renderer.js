@@ -44,14 +44,6 @@ export class Renderer {
         // render art crisply instead of the browser upscaling a 1x canvas.
         // All game math uses logical CSS-pixel width/height below.
         this.dpr = Math.max(1, window.devicePixelRatio || 1);
-        this.width = window.innerWidth;
-        this.height = window.innerHeight;
-        canvas.width = Math.round(this.width * this.dpr);
-        canvas.height = Math.round(this.height * this.dpr);
-        canvas.style.width = this.width + "px";
-        canvas.style.height = this.height + "px";
-        this.ctx.imageSmoothingEnabled = true;
-        this.ctx.imageSmoothingQuality = "high";
         this.images = {};
         // Sliding-hand demo pointer (level-1 onboarding) — same asset the UFO
         // puzzle animates along its hint path. Content bbox is computed lazily.
@@ -66,18 +58,40 @@ export class Renderer {
         this._menuParticles = [];
         this._menuPath = null; // organic closed loop (built lazily so it's random per visit)
         this.menuCard = null; // hub DOM element the spark weaves behind (wired by main.js)
+        this.root = null; // #game-container the CSS shell sizes to match the canvas
+        this.resize();
     }
 
     // ---- Responsive sizing ------------------------------------------------------
 
+    /** Logical viewport size. Uses the VISUAL viewport so iOS Safari landscape's
+     *  bottom toolbar (which is included in innerHeight) never clips bottom-
+     *  anchored UI; falls back to innerWidth/innerHeight everywhere else. */
+    _viewportSize() {
+        const vv = window.visualViewport;
+        if (vv && vv.width && vv.height) return { width: vv.width, height: vv.height };
+        return { width: window.innerWidth, height: window.innerHeight };
+    }
+
     resize() {
-        this.width = window.innerWidth;
-        this.height = window.innerHeight;
+        const { width, height } = this._viewportSize();
+        this.width = width;
+        this.height = height;
         this.dpr = Math.max(1, window.devicePixelRatio || 1);
-        this.canvas.width = Math.round(this.width * this.dpr);
-        this.canvas.height = Math.round(this.height * this.dpr);
-        this.canvas.style.width = this.width + "px";
-        this.canvas.style.height = this.height + "px";
+        this.canvas.width = Math.round(width * this.dpr);
+        this.canvas.height = Math.round(height * this.dpr);
+        this.canvas.style.width = width + "px";
+        this.canvas.style.height = height + "px";
+        // Keep the CSS app shell sized to the same visible viewport (fixes iOS
+        // PWA/Safari where innerHeight can under-report or include browser
+        // chrome, clipping the bottom row of UI). Root-level vars so every
+        // modal can size itself against the real visible area.
+        const root = typeof document !== "undefined" ? document.documentElement : null;
+        if (root && root.style && typeof root.style.setProperty === "function") {
+            root.style.setProperty("--app-w", width + "px");
+            root.style.setProperty("--app-h", height + "px");
+        }
+        if (this.root) this.root.style.height = height + "px";
     }
 
     computeFitCamera(level) {

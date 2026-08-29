@@ -18,6 +18,12 @@
 
 body, html {
     margin: 0; padding: 0; width: 100%; height: 100%;
+    /* iOS PWA/landscape safe sizing: JS publishes --app-h = the VISIBLE
+       viewport height (visualViewport), which excludes Safari's bottom toolbar
+       and the PWA home-indicator/status-bar chrome. 100vh→100dvh are the
+       no-JS fallbacks. */
+    height: 100vh;
+    height: var(--app-h, 100dvh);
     background-color: #F2E8D0; /* Aged off-white paper fallback */
     background-image: url('assets/ui/ui-bg-paper.png');
     background-repeat: repeat;
@@ -47,7 +53,14 @@ canvas { display: block; position: absolute; z-index: 10; }
 #ui-layer {
     position: absolute; top: 0; left: 0; width: 100%; height: 100%;
     pointer-events: none; z-index: 20;
-    padding: 20px; box-sizing: border-box;
+    /* Respect the device chrome (notch/status bar/home indicator) so the
+       header and controls never sit under it on iOS PWA landscape. */
+    padding:
+        calc(20px + env(safe-area-inset-top, 0px))
+        calc(20px + env(safe-area-inset-right, 0px))
+        calc(20px + env(safe-area-inset-bottom, 0px))
+        calc(20px + env(safe-area-inset-left, 0px));
+    box-sizing: border-box;
 }
 .header {
     display: flex; justify-content: space-between; align-items: center;
@@ -97,7 +110,10 @@ canvas { display: block; position: absolute; z-index: 10; }
 }
 
 .controls {
-    position: absolute; bottom: 20px; right: 20px;
+    position: absolute;
+    /* Clear the home indicator / notch before the corner offset applies. */
+    bottom: calc(20px + env(safe-area-inset-bottom, 0px));
+    right: calc(20px + env(safe-area-inset-right, 0px));
     display: flex; gap: 10px; pointer-events: auto;
 }
 .controls button {
@@ -130,7 +146,9 @@ canvas { display: block; position: absolute; z-index: 10; }
 
 /* Modals at bottom, high z-index to prevent canvas blocking clicks */
 .message-box {
-    position: absolute; bottom: 40px; top: auto; left: 50%;
+    position: absolute;
+    bottom: calc(40px + env(safe-area-inset-bottom, 0px));
+    top: auto; left: 50%;
     transform: translateX(-50%);
     background-image: url('assets/ui/ui-card-modal.png');
     background-repeat: no-repeat;
@@ -221,7 +239,7 @@ canvas { display: block; position: absolute; z-index: 10; }
     position: absolute; inset: 0; z-index: 90;
     display: none; justify-content: center; align-items: flex-start;
     pointer-events: none;
-    padding-top: 15vh;
+    padding-top: calc(var(--app-h, 100dvh) * 0.15);
 }
 #tutorial-box {
     background-image: url('assets/ui/ui-card-modal.png');
@@ -264,7 +282,7 @@ canvas { display: block; position: absolute; z-index: 10; }
     gap: 14px;
     justify-content: center;
     margin: 12px 0;
-    max-height: 60vh;
+    max-height: calc(var(--app-h, 100dvh) * 0.60);
     overflow-y: auto;
     padding: 2px;
 }
@@ -324,7 +342,7 @@ canvas { display: block; position: absolute; z-index: 10; }
     top: 50%; left: 50%; bottom: auto;
     transform: translate(-50%, -50%);
     width: min(94vw, 760px);
-    max-height: 86vh;
+    max-height: calc(var(--app-h, 100dvh) * 0.86);
     padding: 20px 24px;
     display: none; flex-direction: column; align-items: center;
 }
@@ -334,7 +352,7 @@ canvas { display: block; position: absolute; z-index: 10; }
     grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
     gap: 10px;
     width: 100%;
-    max-height: 56vh;
+    max-height: calc(var(--app-h, 100dvh) * 0.56);
     overflow-y: auto;
     padding: 4px;
     margin: 12px 0;
@@ -401,7 +419,7 @@ canvas { display: block; position: absolute; z-index: 10; }
     border-radius: 20px;
     box-shadow: 10px 10px 0px rgba(0, 0, 0, 0.3);
     width: min(92vw, 440px);
-    max-height: 92vh;
+    max-height: calc(var(--app-h, 100dvh) * 0.92);
     padding: 30px 30px 24px;
     display: none; flex-direction: column; align-items: center;
     overflow-y: auto;
@@ -464,7 +482,11 @@ canvas { display: block; position: absolute; z-index: 10; }
     #win-stats .stat { font-size: 0.72rem; padding: 5px 9px 2px; }
     .message-box.skins { width: min(92vw, 520px); }
     .header { font-size: 1.15rem; }
-    .controls { bottom: 14px; right: 14px; gap: 8px; }
+    .controls {
+        bottom: calc(14px + env(safe-area-inset-bottom, 0px));
+        right: calc(14px + env(safe-area-inset-right, 0px));
+        gap: 8px;
+    }
     .controls button { width: 48px; height: 48px; }
     .controls button img { width: 26px; height: 26px; }
     .win-stars img { width: 38px; height: 38px; }
@@ -472,7 +494,7 @@ canvas { display: block; position: absolute; z-index: 10; }
     #level-grid {
         grid-template-columns: repeat(auto-fill, minmax(84px, 1fr));
         gap: 8px;
-        max-height: 52vh;
+        max-height: calc(var(--app-h, 100dvh) * 0.52);
     }
     .level-cell .num { font-size: 1.2rem; }
     .level-cell .stars img { width: 13px; height: 13px; }
@@ -493,15 +515,15 @@ canvas { display: block; position: absolute; z-index: 10; }
         font-size: 1rem;
     }
     #modal-dda {
-        max-height: 92vh;
+        max-height: calc(var(--app-h, 100dvh) * 0.92);
         overflow-y: auto;
         padding: 16px 22px;
     }
     #modal-dda h1 { font-size: 1.5rem; margin: 0 0 6px; }
     #modal-dda p { font-size: 0.95rem; margin: 0 0 8px; }
-    .message-box.level-select { max-height: 94vh; }
-    #level-grid { max-height: 62vh; }
-    .message-box.main-menu { max-height: 94vh; padding: 16px 22px 12px; }
+    .message-box.level-select { max-height: calc(var(--app-h, 100dvh) * 0.94); }
+    #level-grid { max-height: calc(var(--app-h, 100dvh) * 0.62); }
+    .message-box.main-menu { max-height: calc(var(--app-h, 100dvh) * 0.94); padding: 16px 22px 12px; }
     .message-box.main-menu > button { height: 62px; margin: 4px 0; }
     .message-box.main-menu h1 { font-size: 1.9rem; }
     .win-stars { gap: 8px; margin: 2px 0 10px; }
@@ -510,12 +532,12 @@ canvas { display: block; position: absolute; z-index: 10; }
     #modal-lose, #modal-win { padding: 10px 16px; }
     /* Center the armory vertically so its tabs stay on screen. */
     .message-box.skins {
-        max-height: 94vh;
+        max-height: calc(var(--app-h, 100dvh) * 0.94);
         overflow-y: auto;
         top: 50%; bottom: auto;
         transform: translate(-50%, -50%);
     }
-    .message-box.skins #skin-grid { max-height: 36vh; }
+    .message-box.skins #skin-grid { max-height: calc(var(--app-h, 100dvh) * 0.36); }
 }
 
 /* Hide the corner control buttons while any modal / tutorial is open, so they

@@ -20,6 +20,7 @@ const $ = (id) => document.getElementById(id);
 
 const canvas = $("game-canvas");
 const renderer = new Renderer(canvas);
+renderer.root = $("game-container");
 const audio = new AudioManager();
 const save = new SaveManager();
 const analytics = new Analytics();
@@ -700,6 +701,14 @@ async function boot() {
     game.start();
     window.addEventListener("resize", () => {
         renderer.resize();
+    });
+    // iOS Safari landscape toolbar + PWA chrome resize the VISUAL viewport
+    // without always firing window resize — re-fit the game to the visible area.
+    if (window.visualViewport) {
+        window.visualViewport.addEventListener("resize", () => renderer.resize());
+    }
+    window.addEventListener("orientationchange", () => {
+        setTimeout(() => renderer.resize(), 80); // wait for the rotation to settle
     });
 
     // Host pause (Playgama / Playables) freezes the loop even when visible.
