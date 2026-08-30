@@ -40,6 +40,7 @@ for f in favicon.ico favicon-16.png favicon-32.png favicon-48.png \
 done
 
 cp "$ROOT/index.html" "$STAGE/index.html"
+cp "$ROOT/style.css" "$STAGE/style.css"
 cp -R "$ROOT/src/." "$STAGE/src/"
 cp -R "$ROOT/assets/." "$STAGE/assets/"
 

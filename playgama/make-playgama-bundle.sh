@@ -33,6 +33,7 @@ done
 
 cp "$CONFIG" "$STAGE/playgama-bridge-config.json"
 cp "$ROOT/index.html" "$STAGE/index.html"
+cp "$ROOT/style.css" "$STAGE/style.css"
 cp -R "$ROOT/src/." "$STAGE/src/"
 cp -R "$ROOT/assets/." "$STAGE/assets/"
 
