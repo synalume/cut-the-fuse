@@ -45,11 +45,18 @@ export class Platform {
         }
         if (IN_PLAYGAMA) {
             window.addEventListener("message", (e) => this._onBridgeMessage(e));
+            // Host pause/mute must bind even if bridge.initialize() is slow —
+            // the QA tool's qa_tool platform can emit signals while init is
+            // pending. Idempotent, so the post-init pass just fills the gap
+            // when the modules weren't ready yet at boot.
+            this._bindPlaygamaHostEvents();
             if (typeof bridge !== "undefined" && bridge.initialize) {
                 try {
                     this._bridgeReady = bridge.initialize()
                         .then(() => {
-                            this._subscribePlaygamaEvents();
+                            this.language = bridge.platform?.language || this.language;
+                            this._bindPlaygamaHostEvents();
+                            this._bindPlaygamaAdEvents();
                             this._applyPlaygamaAudioState();
                         })
                         .catch(() => { /* Bridge still usable via mocks */ });
@@ -61,6 +68,7 @@ export class Platform {
         if (!IN_PLAYABLES) {
             document.addEventListener("visibilitychange", () => {
                 if (document.hidden) this.tabHidden();
+                else if (IN_PLAYGAMA) this._applyPlaygamaAudioState();
             });
         }
     }
@@ -72,37 +80,62 @@ export class Platform {
         return this._bridgeReady || Promise.resolve();
     }
 
-    /** Bridge v2: await init, then wire pause + audio-state events (both are
-     *  moderation requirements — the game must never play sound in the
-     *  background) and record the platform language for localization. */
-    _subscribePlaygamaEvents() {
-        if (typeof bridge === "undefined" || !bridge.platform) return;
-        try { this.language = bridge.platform.language || this.language; } catch { /* noop */ }
+    /** Bridge v2: bind pause + audio-state host signals. Both are moderation
+     *  requirements — the game must never play sound while muted by the host.
+     *  Binds platform.on when available, falling back to bridge.on (the QA
+     *  tool's qa_tool platform can expose events without full init). Idempotent. */
+    _bindPlaygamaHostEvents() {
+        if (this._playgamaHostBound) return;
+        if (typeof bridge === "undefined") return;
+        const pauseEvt = bridge.EVENT_NAME?.PAUSE_STATE_CHANGED || "pause_state_changed";
+        const audioEvt = bridge.EVENT_NAME?.AUDIO_STATE_CHANGED || "audio_state_changed";
+        const onPause = (isPaused) => this.setPaused(!!isPaused, (p) => this._emit("pause", p));
+        const onAudio = (enabled) => {
+            if (typeof enabled !== "boolean") return;
+            this.audio?.setHostMuted?.(!enabled);
+        };
         try {
-            const on = bridge.platform.on?.bind(bridge.platform) || (() => {});
-            const pauseEvt = bridge.EVENT_NAME?.PAUSE_STATE_CHANGED || "pause_state_changed";
-            on(pauseEvt, (isPaused) => this.setPaused(!!isPaused, (p) => this._emit("pause", p)));
-            const audioEvt = bridge.EVENT_NAME?.AUDIO_STATE_CHANGED || "audio_state_changed";
-            on(audioEvt, (isEnabled) => this.audio?.setHostMuted?.(!isEnabled));
-            // Interstitial lifecycle: stop the game while the ad is open, then
-            // resume and continue the level-transition flow exactly when it
-            // closes (the showInterstitial promise settles the same moment).
+            if (bridge.platform && typeof bridge.platform.on === "function") {
+                bridge.platform.on(pauseEvt, onPause);
+                bridge.platform.on(audioEvt, onAudio);
+                this._playgamaHostBound = true;
+                return;
+            }
+        } catch { /* noop */ }
+        try {
+            if (typeof bridge.on === "function") {
+                bridge.on(pauseEvt, onPause);
+                bridge.on(audioEvt, onAudio);
+                this._playgamaHostBound = true;
+            }
+        } catch { /* noop */ }
+    }
+
+    /** Bridge v2: interstitial lifecycle. bridge.advertisement only exists once
+     *  init resolves, so this always runs after _bridgeReady settles. */
+    _bindPlaygamaAdEvents() {
+        if (this._playgamaAdBound) return;
+        if (typeof bridge === "undefined" || !bridge.advertisement) return;
+        try {
+            const on = bridge.advertisement.on?.bind(bridge.advertisement);
+            if (typeof on !== "function") return;
             const intEvt = bridge.EVENT_NAME?.INTERSTITIAL_STATE_CHANGED || "interstitial_state_changed";
             on(intEvt, (state) => {
                 if (state === "opened") { this.gameplayStop(); this.adOpen = true; }
                 else if (state === "closed" || state === "failed") this._settleAd();
             });
+            this._playgamaAdBound = true;
         } catch { /* noop */ }
     }
 
-    /** Bridge v2: apply the CURRENT host audio state on start (the event only
-     *  fires on later changes, so the initial value must be applied manually). */
+    /** Bridge v2: apply the CURRENT host audio state (the event only fires on
+     *  later changes, so the initial value must be applied manually). Re-read
+     *  after init and whenever the iframe regains focus. */
     _applyPlaygamaAudioState() {
         if (typeof bridge === "undefined" || !bridge.platform) return;
         try {
-            if (typeof bridge.platform.isAudioEnabled === "boolean") {
-                this.audio?.setHostMuted?.(!bridge.platform.isAudioEnabled);
-            }
+            const en = bridge.platform.isAudioEnabled;
+            if (typeof en === "boolean") this.audio?.setHostMuted?.(!en);
         } catch { /* noop */ }
     }
 
@@ -279,8 +312,15 @@ export class Platform {
         if (paused === this.pausedByHost) return;
         this.pausedByHost = paused;
         onPause(paused);
-        if (paused) this.gameplayStop();
-        else this.gameplayStart();
+        if (paused) {
+            this.gameplayStop();
+            // A host pause must silence the game too — freeze the audio graph
+            // (big-fluff pattern), not just the simulation loop.
+            this.audio?.suspend?.();
+        } else {
+            this.audio?.resume?.();
+            this.gameplayStart();
+        }
     }
 
     tabHidden() {

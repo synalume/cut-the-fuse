@@ -136,7 +136,7 @@ function updateUi() {
     starDisplay.textContent = bank;
     if (menuStars) menuStars.textContent = bank;
     btnHint.classList.toggle("active", game.hintActive);
-    btnMute.classList.toggle("muted", audio.muted);
+    btnMute.classList.toggle("muted", audio.muted || audio.hostMuted);
 }
 
 // Modals that pause a live game (the hub, level select, armory). Opening one
@@ -777,8 +777,21 @@ async function boot() {
     // visibilitychange listener (with the platform's save flush) is the norm.
     if (platform.isPlayables) {
         if (typeof ytgame !== "undefined") {
-            try { if (ytgame.onPause) ytgame.onPause(() => game.setPaused(true)); } catch { /* noop */ }
-            try { if (ytgame.onResume) ytgame.onResume(() => game.setPaused(false)); } catch { /* noop */ }
+            // Pause/resume freeze the game AND suspend the audio graph (big-
+            // fluff pattern). onPause also covers backgrounding/leaving, where
+            // the platform evicts shortly after.
+            try { if (ytgame.onPause) ytgame.onPause(() => { game.setPaused(true); audio.suspend(); }); } catch { /* noop */ }
+            try { if (ytgame.onResume) ytgame.onResume(() => { audio.resume(); game.setPaused(false); }); } catch { /* noop */ }
+            // The viewer's YouTube setting is a veto our own control cannot
+            // lift — mirror it onto the host mute flag.
+            try {
+                if (ytgame.system && typeof ytgame.system.isAudioEnabled === "function") {
+                    audio.setHostMuted(!ytgame.system.isAudioEnabled());
+                }
+                if (ytgame.system && typeof ytgame.system.onAudioEnabledChange === "function") {
+                    ytgame.system.onAudioEnabledChange((enabled) => audio.setHostMuted(!enabled));
+                }
+            } catch { /* noop */ }
         }
     } else {
         document.addEventListener("visibilitychange", () => {

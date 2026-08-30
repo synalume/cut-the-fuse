@@ -24,8 +24,10 @@ const CUES = {
 export class AudioManager {
     constructor() {
         this.ctx = null;
-        this.muted = false;
-        this.hostMuted = false;
+        this.muted = false;      // the in-game mute toggle
+        this.hostMuted = false;  // platform veto (Playgama / Playables)
+        this.hostPaused = false; // platform pause suspends the whole context
+        this.master = null;      // single gain all output feeds — mute ducks it
         this._buffers = {};
         this._loops = {};
         this._lastPlay = {}; // cueId -> timestamp for rate limiting
@@ -35,8 +37,19 @@ export class AudioManager {
         if (!this.ctx) {
             const AC = window.AudioContext || window.webkitAudioContext;
             if (AC) this.ctx = new AC();
+            if (this.ctx) {
+                this.master = this.ctx.createGain();
+                this.master.gain.value = 1.0;
+                this.master.connect(this.ctx.destination);
+            }
         }
-        if (this.ctx && this.ctx.state === "suspended") this.ctx.resume();
+        // iOS starts suspended and often stays that way until a real start()
+        // runs inside a user gesture — resume lazily here, but never while the
+        // host holds the context paused (that would defeat a platform pause).
+        if (this.ctx && this.ctx.state === "suspended" && !this.hostPaused) {
+            try { this.ctx.resume(); } catch { /* noop */ }
+        }
+        this.applyMute();
         return this.ctx;
     }
 
@@ -71,19 +84,65 @@ export class AudioManager {
 
     // ---- public API ------------------------------------------------------------
 
+    /** Effective mute = in-game toggle OR platform veto. Both feed one master
+     *  gain, so muting cuts EVERYTHING already playing — not just future plays.
+     *  (The platform's setting is a veto the in-game control cannot lift.) */
+    applyMute() {
+        const muted = this.muted || this.hostMuted;
+        if (muted) this._stopAllLoops();
+        if (!this.ctx || !this.master) return; // applied when ensureCtx builds master
+        const target = muted ? 0 : 1.0;
+        const t = this.ctx.currentTime;
+        const param = this.master.gain;
+        param.cancelScheduledValues(t);
+        // A suspended (or not-yet-running) context can't ramp reliably — pin.
+        if (this.ctx.state !== "running") {
+            param.value = target;
+            return;
+        }
+        const cur = Number.isFinite(param.value) ? param.value : target;
+        if (target === 0) {
+            // Mute must be instant — a QA sampler can measure output right away.
+            param.value = 0;
+        } else {
+            param.setValueAtTime(cur, t);
+            param.linearRampToValueAtTime(1.0, t + 0.12);
+        }
+    }
+
     setMuted(m) {
         this.muted = !!m;
-        if (this.muted || this.hostMuted) this._stopAllLoops();
+        this.applyMute();
     }
 
     setHostMuted(m) {
         this.hostMuted = !!m;
-        if (this.muted || this.hostMuted) this._stopAllLoops();
+        this.applyMute();
     }
 
     toggleMute() {
         this.setMuted(!this.muted);
         return this.muted;
+    }
+
+    /** Host pause: freeze the whole audio graph. Big-fluff pattern — a pause
+     *  signal must silence sound, not just the game loop. */
+    suspend() {
+        this.hostPaused = true;
+        if (this.ctx && this.ctx.state === "running") {
+            try { this.ctx.suspend(); } catch { /* noop */ }
+        }
+    }
+
+    resume() {
+        this.hostPaused = false;
+        if (!this.ctx) return;
+        if (this.ctx.state !== "suspended") {
+            this.applyMute();
+            return;
+        }
+        const p = this.ctx.resume();
+        if (p && typeof p.then === "function") p.then(() => this.applyMute()).catch(() => {});
     }
 
     /** Play a one-shot cue (ignite / snip / dud / blast / win).
@@ -162,7 +221,7 @@ export class AudioManager {
             src.playbackRate.value = rateOverride ?? (0.86 + Math.random() * 0.22);
         }
 
-        src.connect(gain).connect(ctx.destination);
+        src.connect(gain).connect(this.master || ctx.destination);
         src.start();
 
         if (loop) {
@@ -185,7 +244,7 @@ export class AudioManager {
         gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.1);
 
         osc.connect(gain);
-        gain.connect(ctx.destination);
+        gain.connect(this.master || ctx.destination);
 
         osc.start();
         osc.stop(ctx.currentTime + 0.1);
@@ -209,7 +268,7 @@ export class AudioManager {
             gain.gain.linearRampToValueAtTime(0.2, t0 + i * 0.08 + 0.02);
             gain.gain.exponentialRampToValueAtTime(0.001, t0 + i * 0.08 + 0.32);
             osc.connect(gain);
-            gain.connect(ctx.destination);
+            gain.connect(this.master || ctx.destination);
             osc.start(t0 + i * 0.08);
             osc.stop(t0 + i * 0.08 + 0.34);
         }
@@ -222,7 +281,7 @@ export class AudioManager {
         gain.gain.linearRampToValueAtTime(0.08, t0 + 0.34);
         gain.gain.exponentialRampToValueAtTime(0.001, t0 + 0.5);
         osc.connect(gain);
-        gain.connect(ctx.destination);
+        gain.connect(this.master || ctx.destination);
         osc.start(t0 + 0.32);
         osc.stop(t0 + 0.52);
     }
@@ -254,7 +313,7 @@ export class AudioManager {
         gain.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
         src.connect(filter);
         filter.connect(gain);
-        gain.connect(ctx.destination);
+        gain.connect(this.master || ctx.destination);
         src.start(t0);
         src.stop(t0 + dur);
     }

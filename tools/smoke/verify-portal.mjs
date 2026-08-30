@@ -133,6 +133,30 @@ const pgInit = () => {
     ok("save hydrated via bridge.storage.get", mock.storageReads >= 1);
 
     if (!(await startLevel(page))) throw new Error("playgama: spark never ignited");
+
+    // QA tool checks: a host mute signal must duck ALL audio (master gain → 0),
+    // and a host pause signal must freeze the game + suspend the audio graph.
+    await page.evaluate(() => { window.__mock.subs["audio_state_changed"](false); });
+    await page.waitForFunction(() => window.__CTF__?.game?.audio?.hostMuted === true, null, { timeout: 3000 });
+    const muted = await page.evaluate(() => ({
+        hostMuted: window.__CTF__.game.audio.hostMuted,
+        master: window.__CTF__.game.audio.master ? window.__CTF__.game.audio.master.gain.value : null,
+    }));
+    ok("host mute signal ducks audio (master gain 0)", muted.hostMuted && muted.master === 0, `master=${muted.master}`);
+
+    await page.evaluate(() => { window.__mock.subs["pause_state_changed"](true); });
+    await page.waitForFunction(() => window.__CTF__?.game?.gameState === "paused", null, { timeout: 3000 });
+    const paused = await page.evaluate(() => ({
+        state: window.__CTF__.game.gameState,
+        ctxState: window.__CTF__.game.audio.ctx ? window.__CTF__.game.audio.ctx.state : null,
+    }));
+    ok("host pause signal freezes the game", paused.state === "paused", `state=${paused.state}`);
+    ok("host pause signal suspends audio", paused.ctxState === "suspended" || !paused.ctxState, `ctx=${paused.ctxState}`);
+
+    await page.evaluate(() => { window.__mock.subs["pause_state_changed"](false); });
+    await page.waitForFunction(() => window.__CTF__?.game?.gameState === "playing", null, { timeout: 3000 });
+    ok("host resume signal unfreezes the game", true);
+
     await winCurrentLevel(page);
     await page.waitForFunction(() => window.__mock?.adCalls?.includes("interstitial"), null, { timeout: 8000 });
     const after = await page.evaluate(() => window.__mock);
@@ -146,7 +170,7 @@ const pgInit = () => {
 console.log("\n[verify] YouTube Playables compliance (mock SDK)");
 const pbInit = () => {
     window.__CUT_THE_FUSE_PLAYABLES__ = true;
-    window.__mock = { order: [], saves: [], loads: 0, onPause: null, onResume: null };
+    window.__mock = { order: [], saves: [], loads: 0, onPause: null, onResume: null, audioEnabled: true };
     window.ytgame = {
         IN_PLAYABLES_ENV: true,
         firstFrameReady: () => window.__mock.order.push("firstFrameReady"),
@@ -155,6 +179,10 @@ const pbInit = () => {
         saveData: async (s) => { window.__mock.saves.push(s); },
         onPause: (cb) => { window.__mock.onPause = cb; },
         onResume: (cb) => { window.__mock.onResume = cb; },
+        system: {
+            isAudioEnabled: () => window.__mock.audioEnabled,
+            onAudioEnabledChange: (cb) => { window.__mock.onAudioEnabledChange = cb; },
+        },
     };
 };
 
@@ -183,6 +211,14 @@ const pbInit = () => {
     ok("loadData awaited at boot", mock.loads >= 1);
 
     if (!(await startLevel(page))) throw new Error("playables: spark never ignited");
+
+    // YouTube's mute is a host veto: flipping it must duck ALL audio instantly.
+    await page.evaluate(() => { window.__mock.audioEnabled = false; window.__mock.onAudioEnabledChange(false); });
+    await page.waitForFunction(() => window.__CTF__?.game?.audio?.hostMuted === true, null, { timeout: 3000 });
+    const muted = await page.evaluate(() => window.__CTF__.game.audio.master ? window.__CTF__.game.audio.master.gain.value : null);
+    ok("host audio veto ducks audio (master gain 0)", muted === 0, `master=${muted}`);
+    await page.evaluate(() => { window.__mock.audioEnabled = true; window.__mock.onAudioEnabledChange(true); });
+
     await winCurrentLevel(page);
     await page.waitForFunction(() => window.__mock?.saves?.length >= 1, null, { timeout: 5000 });
     const after = await page.evaluate(() => window.__mock);
