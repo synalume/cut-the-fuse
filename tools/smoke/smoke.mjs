@@ -36,7 +36,7 @@ globalThis.cancelAnimationFrame = () => {};
 // ---------------------------------------------------------------------------
 import { buildLevel, validateLevel, computeFitCamera, resolveAssets } from "../../src/engine/LevelManager.js";
 import { GameLoop, STATE } from "../../src/engine/GameLoop.js";
-import { getBezierXY } from "../../src/engine/MathUtils.js";
+import { getBezierXY, fusePoint } from "../../src/engine/MathUtils.js";
 import { SaveManager } from "../../src/engine/SaveManager.js";
 
 function makeStubs() {
@@ -77,7 +77,7 @@ function sweepLevel(config) {
     const wr = level.wireRule || null;
     const isForb = (f) => !!(wr && f.color && wr.legend[f.color] === "no");
     const dousedIds = new Set((level.douse || []).map((d) => d.fuseId));
-    const legPt = (f, u) => getBezierXY(u, f.startNode, f.cp1, f.cp2, f.endNode);
+    const legPt = (f, u) => fusePoint(f, u);
 
     const byCp = new Map();
     for (const f of level.fuses) {
@@ -164,7 +164,7 @@ check(swept === levels.length, `winnability sweep: all ${levels.length} levels w
         [{ x: cp.x - 26, y: cp.y }, { x: cp.x + 26, y: cp.y }]
     );
 
-    check(swipe() === true && g.cuts.length === 1 && g.snipsRemaining === 1,
+    check(swipe() === true && g.cuts.length === 2 && g.snipsRemaining === 1,
         "L4: first snip at shared chokepoint lands (1 snip left)");
     check(g.cutFlashes.length === 1 && g.cutFlashes[0].life === 1,
         "L4: snip spawns a cut flash (vivid slash burst)");
@@ -172,7 +172,7 @@ check(swept === levels.length, `winnability sweep: all ${levels.length} levels w
         "L4: one snip severs both wicks at the shared chokepoint (+2)");
     check(g.fuses.every((f) => g._fuseFullySevered(f)),
         "L4: both fuses are fully severed by the single snip");
-    check(swipe() === false && g.cuts.length === 1 && g.snipsRemaining === 1,
+    check(swipe() === false && g.cuts.length === 2 && g.snipsRemaining === 1,
         "L4: a 2nd snip at the same spot is rejected (both wicks already cut)");
 }
 

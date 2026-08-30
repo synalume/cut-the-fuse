@@ -9,6 +9,7 @@ import { writeFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 import { PAYLOAD_SKINS, IGNITER_TYPES } from "../../src/data/skins.js";
+import { PAYLOAD_THEMES, IGNITER_THEMES } from "./prompts.mjs";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -56,6 +57,7 @@ const unlockLabel = (item) => {
 const ITEMS = [];
 
 for (const skin of PAYLOAD_SKINS) {
+  const theme = PAYLOAD_THEMES[skin.id] ?? "";
   for (const [state, s] of Object.entries(PAYLOAD_STATES)) {
     ITEMS.push({
       id: `skin_${skin.id}_${state}`,
@@ -65,13 +67,14 @@ for (const skin of PAYLOAD_SKINS) {
       group: skin.name,
       groupNote: unlockLabel(skin),
       template: "Payload",
-      subject: `${skin.name}: ${skin.theme}. ${s.prompt}.`,
+      subject: `${skin.name}: ${theme}. ${s.prompt}.`,
     });
   }
 }
 
 for (const ign of IGNITER_TYPES) {
   const states = IGNITER_STATES[ign.id] ?? {};
+  const theme = IGNITER_THEMES[ign.id] ?? "";
   for (const [state, s] of Object.entries(states)) {
     ITEMS.push({
       id: `skin_${ign.id}_${state}`,
@@ -81,14 +84,15 @@ for (const ign of IGNITER_TYPES) {
       group: ign.name,
       groupNote: unlockLabel(ign),
       template: "Igniter",
-      subject: `${ign.name}: ${ign.theme}. ${s.prompt}.`,
+      subject: `${ign.name}: ${theme}. ${s.prompt}.`,
     });
   }
 }
 
 const out = `// GENERATED FILE — do not edit by hand.
 // Regenerate with:  npm run art:queue:gen
-// Source of truth:  src/data/skins.js  (character registry the game loads).
+// Sources of truth:  src/data/skins.js  (registry the game loads) +
+//                    tools/art-queue/prompts.mjs  (art-direction text).
 // Classic script on purpose: loaded via <script src> so this page also works
 // when opened straight from the filesystem (file://), where Chrome blocks ES
 // module imports. Status flips to "done" when the file exists in assets/.

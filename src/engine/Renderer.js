@@ -1,6 +1,6 @@
 // Renderer.js — all canvas drawing + dynamic asset loading.
 // Preserves the prototype's draw order, styling, and state swapping.
-import { getBezierXY, getBezierTangent } from "./MathUtils.js";
+import { fusePoint, fuseTangent } from "./MathUtils.js";
 import { computeFitCamera } from "./LevelManager.js";
 
 // Relative prefix so the game works from any subdirectory host (itch, Poki, Playables zips).
@@ -544,8 +544,6 @@ export class Renderer {
 
         for (let fIdx = 0; fIdx < game.fuses.length; fIdx++) {
             const fuse = game.fuses[fIdx];
-            const p0 = fuse.startNode;
-            const p3 = fuse.endNode;
             const burnt = fuse.burntProgress || 0;
             // Deterministic per-fuse seed so jitter/wobble is stable across frames.
             const seed = fuse.id
@@ -555,8 +553,8 @@ export class Renderer {
             // ---- Burned section: flat, settled ash ---------------------------
             if (burnt > 0) {
                 const ashAt = (u) => {
-                    const pt = getBezierXY(u, p0, fuse.cp1, fuse.cp2, p3);
-                    const t = getBezierTangent(u, p0, fuse.cp1, fuse.cp2, p3);
+                    const pt = fusePoint(fuse, u);
+                    const t = fuseTangent(fuse, u);
                     const amp = Math.sin(u * 41 + seed * 1.7) * 1.1 + Math.sin(u * 13 + seed) * 0.5;
                     return { x: pt.x - t.y * amp, y: pt.y + t.x * amp };
                 };
@@ -575,8 +573,8 @@ export class Renderer {
             // ---- Live section: a "live wire" with a subtle gradient pulse ----
             if (burnt < 1) {
                 const wob = (u) => {
-                    const pt = getBezierXY(u, p0, fuse.cp1, fuse.cp2, p3);
-                    const t = getBezierTangent(u, p0, fuse.cp1, fuse.cp2, p3);
+                    const pt = fusePoint(fuse, u);
+                    const t = fuseTangent(fuse, u);
                     // Static organic jitter only — no time-based vibration.
                     const amp = 0.35 * Math.sin(u * 27 + seed) + 0.15 * Math.sin(u * 9 + seed * 2);
                     return { x: pt.x - t.y * amp, y: pt.y + t.x * amp };
@@ -603,7 +601,9 @@ export class Renderer {
                     continue;
                 }
 
-                // Amber body with a steady soft glow (no breathing pulse).
+                // Amber body with a steady soft glow (no breathing pulse). Each
+                // wire keeps its own color — blaze-out only speeds the burn up,
+                // it never recolors the wire.
                 ctx.beginPath();
                 ctx.shadowColor = "rgba(249, 115, 22, 0.5)";
                 ctx.shadowBlur = 6;
@@ -642,7 +642,7 @@ export class Renderer {
         for (const d of game.level?.douse || []) {
             const fuse = d.fuseIndex != null ? game.fuses[d.fuseIndex] : null;
             if (!fuse) continue;
-            const pos = getBezierXY(d.at, fuse.startNode, fuse.cp1, fuse.cp2, fuse.endNode);
+            const pos = fusePoint(fuse, d.at);
             const spark = game.sparks[d.fuseIndex];
             const gone = spark && (!spark.active || spark.progress >= d.at);
 
@@ -1409,8 +1409,14 @@ export class Renderer {
         for (const spark of game.sparks) {
             if (!spark.active || !spark.ignited) continue;
             const fuse = game.fuses[spark.fuseIndex];
-            const pos = getBezierXY(spark.progress, fuse.startNode, fuse.cp1, fuse.cp2, fuse.endNode);
-            this._drawRetroSpark(pos.x, pos.y, game.frameCount);
+            const pos = fusePoint(fuse, spark.progress);
+            // During the blaze-out the spark head rides the wick hotter and a
+            // touch bigger — the "cleanup sweep" reads as faster fire.
+            if (game.blaze?.active) {
+                this._drawRetroSpark(pos.x, pos.y, game.frameCount, 1.35);
+            } else {
+                this._drawRetroSpark(pos.x, pos.y, game.frameCount);
+            }
         }
 
         // Particles: little 4-point sparkle stars, not squares.
@@ -1447,12 +1453,12 @@ export class Renderer {
         ctx.restore();
     }
 
-    _drawRetroSpark(x, y, frameCount) {
+    _drawRetroSpark(x, y, frameCount, scaleMul = 1) {
         const ctx = this.ctx;
         ctx.save();
         ctx.translate(x, y);
         ctx.rotate(frameCount * 0.2);
-        const scale = 1 + Math.sin(frameCount * 0.5) * 0.2;
+        const scale = (1 + Math.sin(frameCount * 0.5) * 0.2) * scaleMul;
         ctx.scale(scale, scale);
 
         ctx.beginPath();
@@ -1466,7 +1472,7 @@ export class Renderer {
             else ctx.lineTo(pX, pY);
         }
         ctx.closePath();
-        const colors = ["#fef08a", "#ef4444", "#f97316"];
+        const colors = ["#ffffff", "#fef08a", "#f97316"];
         ctx.fillStyle = colors[Math.floor(frameCount / 3) % colors.length];
         ctx.fill();
         ctx.lineWidth = 2;
@@ -1790,8 +1796,6 @@ export class Renderer {
         if (game.snipsUsed > 0) return; // player got it — stop the demo
 
         const fuse = game.fuses[0];
-        const p0 = fuse.startNode;
-        const p3 = fuse.endNode;
         const ctx = this.ctx;
         // Wall-clock "frames" so the demo hand keeps sliding while the tutorial
         // freezes the simulation (game.frameCount is held on teach levels).
@@ -1799,8 +1803,8 @@ export class Renderer {
 
         // Red cut line (visible): a pulsing slash across the wick where the snip goes.
         const cutU = 0.42;
-        const C = getBezierXY(cutU, p0, fuse.cp1, fuse.cp2, p3);
-        const tanT = getBezierTangent(cutU, p0, fuse.cp1, fuse.cp2, p3);
+        const C = fusePoint(fuse, cutU);
+        const tanT = fuseTangent(fuse, cutU);
         const perp = { x: -tanT.y, y: tanT.x };
         ctx.save();
         ctx.globalAlpha = 0.8 + Math.sin(t * 0.06) * 0.15;

@@ -1,6 +1,7 @@
 // GENERATED FILE — do not edit by hand.
 // Regenerate with:  npm run art:queue:gen
-// Source of truth:  src/data/skins.js  (character registry the game loads).
+// Sources of truth:  src/data/skins.js  (registry the game loads) +
+//                    tools/art-queue/prompts.mjs  (art-direction text).
 // Classic script on purpose: loaded via <script src> so this page also works
 // when opened straight from the filesystem (file://), where Chrome blocks ES
 // module imports. Status flips to "done" when the file exists in assets/.
@@ -79,7 +80,7 @@ const ITEMS = [
     "role": "playing",
     "cat": "bomb",
     "group": "Duck and Cover",
-    "groupNote": "Unlocks at level 8",
+    "groupNote": "Unlocks at level 25",
     "template": "Payload",
     "subject": "Duck and Cover: cute yellow rubber duck with an orange bill and a bundle of red TNT dynamite strapped to it with rope. PANIC state: fuse lit with a live spark, sweating nervously, wide frightened pie-cut eyes, sweat drops flying, cheeks puffed."
   },
@@ -89,7 +90,7 @@ const ITEMS = [
     "role": "win",
     "cat": "bomb",
     "group": "Duck and Cover",
-    "groupNote": "Unlocks at level 8",
+    "groupNote": "Unlocks at level 25",
     "template": "Payload",
     "subject": "Duck and Cover: cute yellow rubber duck with an orange bill and a bundle of red TNT dynamite strapped to it with rope. WIN state: fuse extinguished, relieved happy pie-cut eyes, soft smile, a breath of relief."
   },
@@ -99,7 +100,7 @@ const ITEMS = [
     "role": "lose",
     "cat": "bomb",
     "group": "Duck and Cover",
-    "groupNote": "Unlocks at level 8",
+    "groupNote": "Unlocks at level 25",
     "template": "Payload",
     "subject": "Duck and Cover: cute yellow rubber duck with an orange bill and a bundle of red TNT dynamite strapped to it with rope. FAIL state: mid-explosion, cracked sooty shell, dizzy spiral pie-cut eyes, smoke."
   },
@@ -109,7 +110,7 @@ const ITEMS = [
     "role": "playing",
     "cat": "bomb",
     "group": "Wake-Up Call",
-    "groupNote": "Unlocks at level 12 · or watch an ad",
+    "groupNote": "Unlocks at level 46 · or watch an ad",
     "template": "Payload",
     "subject": "Wake-Up Call: cute round retro alarm clock with two bells on top and a bundle of red TNT dynamite strapped to it with rope. PANIC state: fuse lit with a live spark, sweating nervously, wide frightened pie-cut eyes, sweat drops flying, cheeks puffed."
   },
@@ -119,7 +120,7 @@ const ITEMS = [
     "role": "win",
     "cat": "bomb",
     "group": "Wake-Up Call",
-    "groupNote": "Unlocks at level 12 · or watch an ad",
+    "groupNote": "Unlocks at level 46 · or watch an ad",
     "template": "Payload",
     "subject": "Wake-Up Call: cute round retro alarm clock with two bells on top and a bundle of red TNT dynamite strapped to it with rope. WIN state: fuse extinguished, relieved happy pie-cut eyes, soft smile, a breath of relief."
   },
@@ -129,7 +130,7 @@ const ITEMS = [
     "role": "lose",
     "cat": "bomb",
     "group": "Wake-Up Call",
-    "groupNote": "Unlocks at level 12 · or watch an ad",
+    "groupNote": "Unlocks at level 46 · or watch an ad",
     "template": "Payload",
     "subject": "Wake-Up Call: cute round retro alarm clock with two bells on top and a bundle of red TNT dynamite strapped to it with rope. FAIL state: mid-explosion, cracked sooty shell, dizzy spiral pie-cut eyes, smoke."
   },
@@ -139,7 +140,7 @@ const ITEMS = [
     "role": "playing",
     "cat": "bomb",
     "group": "Bright Idea",
-    "groupNote": "Unlocks at level 16",
+    "groupNote": "Unlocks at level 57",
     "template": "Payload",
     "subject": "Bright Idea: cute glowing lightbulb with a warm yellow glow and a bundle of red TNT dynamite strapped to it with rope. PANIC state: fuse lit with a live spark, sweating nervously, wide frightened pie-cut eyes, sweat drops flying, cheeks puffed."
   },
@@ -149,7 +150,7 @@ const ITEMS = [
     "role": "win",
     "cat": "bomb",
     "group": "Bright Idea",
-    "groupNote": "Unlocks at level 16",
+    "groupNote": "Unlocks at level 57",
     "template": "Payload",
     "subject": "Bright Idea: cute glowing lightbulb with a warm yellow glow and a bundle of red TNT dynamite strapped to it with rope. WIN state: fuse extinguished, relieved happy pie-cut eyes, soft smile, a breath of relief."
   },
@@ -159,7 +160,7 @@ const ITEMS = [
     "role": "lose",
     "cat": "bomb",
     "group": "Bright Idea",
-    "groupNote": "Unlocks at level 16",
+    "groupNote": "Unlocks at level 57",
     "template": "Payload",
     "subject": "Bright Idea: cute glowing lightbulb with a warm yellow glow and a bundle of red TNT dynamite strapped to it with rope. FAIL state: mid-explosion, cracked sooty shell, dizzy spiral pie-cut eyes, smoke."
   },
@@ -169,7 +170,7 @@ const ITEMS = [
     "role": "playing",
     "cat": "bomb",
     "group": "Dirty Bomb",
-    "groupNote": "Unlocks at level 20 · or watch an ad",
+    "groupNote": "Unlocks at level 67 · or watch an ad",
     "template": "Payload",
     "subject": "Dirty Bomb: cute striped tube sock with a bundle of red TNT dynamite strapped to it with rope. PANIC state: fuse lit with a live spark, sweating nervously, wide frightened pie-cut eyes, sweat drops flying, cheeks puffed."
   },
@@ -179,7 +180,7 @@ const ITEMS = [
     "role": "win",
     "cat": "bomb",
     "group": "Dirty Bomb",
-    "groupNote": "Unlocks at level 20 · or watch an ad",
+    "groupNote": "Unlocks at level 67 · or watch an ad",
     "template": "Payload",
     "subject": "Dirty Bomb: cute striped tube sock with a bundle of red TNT dynamite strapped to it with rope. WIN state: fuse extinguished, relieved happy pie-cut eyes, soft smile, a breath of relief."
   },
@@ -189,7 +190,7 @@ const ITEMS = [
     "role": "lose",
     "cat": "bomb",
     "group": "Dirty Bomb",
-    "groupNote": "Unlocks at level 20 · or watch an ad",
+    "groupNote": "Unlocks at level 67 · or watch an ad",
     "template": "Payload",
     "subject": "Dirty Bomb: cute striped tube sock with a bundle of red TNT dynamite strapped to it with rope. FAIL state: mid-explosion, cracked sooty shell, dizzy spiral pie-cut eyes, smoke."
   },
@@ -199,7 +200,7 @@ const ITEMS = [
     "role": "playing",
     "cat": "bomb",
     "group": "Piggy Boom",
-    "groupNote": "Unlocks at level 24",
+    "groupNote": "Unlocks at level 78",
     "template": "Payload",
     "subject": "Piggy Boom: cute pink piggy bank with a coin slot on top and a bundle of red TNT dynamite strapped to it with rope. PANIC state: fuse lit with a live spark, sweating nervously, wide frightened pie-cut eyes, sweat drops flying, cheeks puffed."
   },
@@ -209,7 +210,7 @@ const ITEMS = [
     "role": "win",
     "cat": "bomb",
     "group": "Piggy Boom",
-    "groupNote": "Unlocks at level 24",
+    "groupNote": "Unlocks at level 78",
     "template": "Payload",
     "subject": "Piggy Boom: cute pink piggy bank with a coin slot on top and a bundle of red TNT dynamite strapped to it with rope. WIN state: fuse extinguished, relieved happy pie-cut eyes, soft smile, a breath of relief."
   },
@@ -219,7 +220,7 @@ const ITEMS = [
     "role": "lose",
     "cat": "bomb",
     "group": "Piggy Boom",
-    "groupNote": "Unlocks at level 24",
+    "groupNote": "Unlocks at level 78",
     "template": "Payload",
     "subject": "Piggy Boom: cute pink piggy bank with a coin slot on top and a bundle of red TNT dynamite strapped to it with rope. FAIL state: mid-explosion, cracked sooty shell, dizzy spiral pie-cut eyes, smoke."
   },
@@ -229,7 +230,7 @@ const ITEMS = [
     "role": "playing",
     "cat": "bomb",
     "group": "Sole Survivor",
-    "groupNote": "Unlocks at level 28",
+    "groupNote": "Unlocks at level 89",
     "template": "Payload",
     "subject": "Sole Survivor: cute worn leather boot with a bundle of red TNT dynamite strapped to it with rope. PANIC state: fuse lit with a live spark, sweating nervously, wide frightened pie-cut eyes, sweat drops flying, cheeks puffed."
   },
@@ -239,7 +240,7 @@ const ITEMS = [
     "role": "win",
     "cat": "bomb",
     "group": "Sole Survivor",
-    "groupNote": "Unlocks at level 28",
+    "groupNote": "Unlocks at level 89",
     "template": "Payload",
     "subject": "Sole Survivor: cute worn leather boot with a bundle of red TNT dynamite strapped to it with rope. WIN state: fuse extinguished, relieved happy pie-cut eyes, soft smile, a breath of relief."
   },
@@ -249,7 +250,7 @@ const ITEMS = [
     "role": "lose",
     "cat": "bomb",
     "group": "Sole Survivor",
-    "groupNote": "Unlocks at level 28",
+    "groupNote": "Unlocks at level 89",
     "template": "Payload",
     "subject": "Sole Survivor: cute worn leather boot with a bundle of red TNT dynamite strapped to it with rope. FAIL state: mid-explosion, cracked sooty shell, dizzy spiral pie-cut eyes, smoke."
   },
@@ -259,7 +260,7 @@ const ITEMS = [
     "role": "playing",
     "cat": "bomb",
     "group": "Hot Head",
-    "groupNote": "Unlocks at level 32",
+    "groupNote": "Unlocks at level 99",
     "template": "Payload",
     "subject": "Hot Head: cute fiery red chili pepper with a green stem and a bundle of red TNT dynamite strapped to it with rope. PANIC state: fuse lit with a live spark, sweating nervously, wide frightened pie-cut eyes, sweat drops flying, cheeks puffed."
   },
@@ -269,7 +270,7 @@ const ITEMS = [
     "role": "win",
     "cat": "bomb",
     "group": "Hot Head",
-    "groupNote": "Unlocks at level 32",
+    "groupNote": "Unlocks at level 99",
     "template": "Payload",
     "subject": "Hot Head: cute fiery red chili pepper with a green stem and a bundle of red TNT dynamite strapped to it with rope. WIN state: fuse extinguished, relieved happy pie-cut eyes, soft smile, a breath of relief."
   },
@@ -279,7 +280,7 @@ const ITEMS = [
     "role": "lose",
     "cat": "bomb",
     "group": "Hot Head",
-    "groupNote": "Unlocks at level 32",
+    "groupNote": "Unlocks at level 99",
     "template": "Payload",
     "subject": "Hot Head: cute fiery red chili pepper with a green stem and a bundle of red TNT dynamite strapped to it with rope. FAIL state: mid-explosion, cracked sooty shell, dizzy spiral pie-cut eyes, smoke."
   },
@@ -289,7 +290,7 @@ const ITEMS = [
     "role": "playing",
     "cat": "bomb",
     "group": "Tube Trouble",
-    "groupNote": "Unlocks at level 36 · or watch an ad",
+    "groupNote": "Unlocks at level 110 · or watch an ad",
     "template": "Payload",
     "subject": "Tube Trouble: cute retro tube television with rabbit-ear antennas and a bundle of red TNT dynamite strapped to it with rope. PANIC state: fuse lit with a live spark, sweating nervously, wide frightened pie-cut eyes, sweat drops flying, cheeks puffed."
   },
@@ -299,7 +300,7 @@ const ITEMS = [
     "role": "win",
     "cat": "bomb",
     "group": "Tube Trouble",
-    "groupNote": "Unlocks at level 36 · or watch an ad",
+    "groupNote": "Unlocks at level 110 · or watch an ad",
     "template": "Payload",
     "subject": "Tube Trouble: cute retro tube television with rabbit-ear antennas and a bundle of red TNT dynamite strapped to it with rope. WIN state: fuse extinguished, relieved happy pie-cut eyes, soft smile, a breath of relief."
   },
@@ -309,7 +310,7 @@ const ITEMS = [
     "role": "lose",
     "cat": "bomb",
     "group": "Tube Trouble",
-    "groupNote": "Unlocks at level 36 · or watch an ad",
+    "groupNote": "Unlocks at level 110 · or watch an ad",
     "template": "Payload",
     "subject": "Tube Trouble: cute retro tube television with rabbit-ear antennas and a bundle of red TNT dynamite strapped to it with rope. FAIL state: mid-explosion, cracked sooty shell, dizzy spiral pie-cut eyes, smoke."
   },
@@ -349,7 +350,7 @@ const ITEMS = [
     "role": "idle",
     "cat": "igniter",
     "group": "Lighter",
-    "groupNote": "Unlocks at level 4 · or watch an ad",
+    "groupNote": "Unlocks at level 14 · or watch an ad",
     "template": "Igniter",
     "subject": "Lighter: retro metal pocket lighter with a thumb-wheel striker. IDLE state: quiet sinister smirk, flame out."
   },
@@ -359,7 +360,7 @@ const ITEMS = [
     "role": "ignition",
     "cat": "igniter",
     "group": "Lighter",
-    "groupNote": "Unlocks at level 4 · or watch an ad",
+    "groupNote": "Unlocks at level 14 · or watch an ad",
     "template": "Igniter",
     "subject": "Lighter: retro metal pocket lighter with a thumb-wheel striker. IGNITION state: evil wide-open laughing mouth, flame burning bright yellow and orange with a fiery spark."
   },
@@ -369,7 +370,7 @@ const ITEMS = [
     "role": "dud",
     "cat": "igniter",
     "group": "Lighter",
-    "groupNote": "Unlocks at level 4 · or watch an ad",
+    "groupNote": "Unlocks at level 14 · or watch an ad",
     "template": "Igniter",
     "subject": "Lighter: retro metal pocket lighter with a thumb-wheel striker. DUD state: frustrated and angry, crossed stick-figure arms, battered dud lighter with no flame."
   },
@@ -379,7 +380,7 @@ const ITEMS = [
     "role": "idle",
     "cat": "igniter",
     "group": "Big Cigar",
-    "groupNote": "Unlocks at level 10 · or watch an ad",
+    "groupNote": "Unlocks at level 36 · or watch an ad",
     "template": "Igniter",
     "subject": "Big Cigar: chubby fat brown cigar with a gold paper band and a rounded ember tip. IDLE state: quiet sinister smirk, ember tip unlit."
   },
@@ -389,7 +390,7 @@ const ITEMS = [
     "role": "ignition",
     "cat": "igniter",
     "group": "Big Cigar",
-    "groupNote": "Unlocks at level 10 · or watch an ad",
+    "groupNote": "Unlocks at level 36 · or watch an ad",
     "template": "Igniter",
     "subject": "Big Cigar: chubby fat brown cigar with a gold paper band and a rounded ember tip. IGNITION state: evil wide-open laughing mouth, ember tip glowing bright red-orange with a fiery spark."
   },
@@ -399,7 +400,7 @@ const ITEMS = [
     "role": "dud",
     "cat": "igniter",
     "group": "Big Cigar",
-    "groupNote": "Unlocks at level 10 · or watch an ad",
+    "groupNote": "Unlocks at level 36 · or watch an ad",
     "template": "Igniter",
     "subject": "Big Cigar: chubby fat brown cigar with a gold paper band and a rounded ember tip. DUD state: frustrated and angry, crossed stick-figure arms, burnt-down stub with a black charred tip."
   }

@@ -1,9 +1,16 @@
 // GameLoop.js — rAF loop, state machine, and the simulation.
 // Owns all mutable game state. Renders through the injected Renderer.
-import { getBezierXY, distToSegment, clamp } from "./MathUtils.js";
+import { distToSegment, clamp, fusePoint, fuseClosest } from "./MathUtils.js";
 import { COMIC_WORDS } from "./Renderer.js";
 
 export const STATE = { PLAYING: "playing", WON: "won", LOST: "lost", PAUSED: "paused" };
+
+// When the win is already guaranteed (every live spark has a cut or douse
+// point ahead of it), remaining burns blaze out at this multiplier instead of
+// dragging — the player still sees the wick burn, just fast. The level clock
+// accounts for the multiplier so the recorded time stays the natural burn
+// time (speed-cutting keeps its reward, pacing is just compressed).
+const BLAZE_MULT = 5.5;
 
 // Radius of the cut circle. Sparks die when they travel within this distance
 // of a cut point; wick-severing counts use the same value so the "+N" popup
@@ -54,6 +61,11 @@ export class GameLoop {
         this.tutorialActive = false;
         this.multikills = []; // { x, y, count, at } — one snip severed N wicks (banking popup)
         this._chime = null; // ascending coin-chime queue for multi-cuts
+        // Blaze-out fast-forward: armed when every live spark is guaranteed to
+        // die (cut/douse ahead), so the remaining burn plays out at BLAZE_MULT
+        // instead of dragging. `frames` feeds the natural-time clock.
+        this.blaze = { active: false, startedAt: 0, frames: 0 };
+        this._recheckBlaze = false;
 
         // Callbacks (wired by main.js).
         this.onSnipsChange = null;
@@ -90,6 +102,8 @@ export class GameLoop {
         this.tutorialActive = false;
         this.lostAt = null;
         this.wonAt = null;
+        this.blaze = { active: false, startedAt: 0, frames: 0 };
+        this._recheckBlaze = false;
 
         this.snipsRemaining = this.level.snipsAllowed;
         this.nodes = this.level.nodes;
@@ -187,6 +201,66 @@ export class GameLoop {
         return (fuse.hits || 0) >= 1;
     }
 
+    // ---- Blaze-out fast-forward ---------------------------------------------
+    //
+    // Once every live spark is mathematically doomed (its fuse is severed with
+    // a cut point AHEAD of it, or a douse point snuffs it first), the level can
+    // only end in a win. Instead of making the player sit through the tail
+    // burn, remaining sparks blaze out at BLAZE_MULT. The guarantee is checked
+    // after each snip (never per-frame), and a near-miss can never fast-forward
+    // because any spark that could still reach a bomb keeps the sim at 1x.
+
+    /** Earliest cut point ahead of `progress` on a fuse (within CUT_RADIUS of
+     *  its wire), or null when the fuse is clear ahead. Cuts are spatial, so a
+     *  cut that severs another wick crossing this one also stops this spark. */
+    _cutAheadOnFuse(fuse, progress) {
+        let best = null;
+        for (const cut of this.cuts) {
+            const { t, dist } = fuseClosest(fuse, cut.x, cut.y);
+            if (dist < CUT_RADIUS && t > progress + 0.005) {
+                if (best == null || t < best) best = t;
+            }
+        }
+        return best;
+    }
+
+    /** True when the level can no longer be lost: every active spark will die
+     *  at a cut or douse point before any bomb. Delayed sparks count too — a
+     *  spark that hasn't ignited yet ignites at t=0, so any cut on its fuse is
+     *  ahead of it. */
+    _winGuaranteed() {
+        for (const spark of this.sparks) {
+            if (!spark.active) continue;
+            if (spark.decoy) continue;
+            const fuse = this.fuses[spark.fuseIndex];
+            // A doused fuse snuffs its spark at the drop — no cut required.
+            const douseAt = this._douseMap?.get(spark.fuseIndex);
+            if (douseAt != null) continue;
+            // A chained spark whose parent is already dead dies with it.
+            if (spark.chain) {
+                const parent = this.sparks[spark.chain.fromFuseIndex];
+                if (!spark.triggered && !parent.active) continue;
+            }
+            // Otherwise the spark must be stopped by a cut ahead of it.
+            if (!this._fuseFullySevered(fuse)) return false;
+            if (this._cutAheadOnFuse(fuse, spark.progress) == null) return false;
+        }
+        return true;
+    }
+
+    _startBlaze() {
+        this.blaze.active = true;
+        this.blaze.startedAt = this.frameCount;
+        // Compress any remaining ignition delays so the cleanup reads as one
+        // quick sweep (the player already won; waiting on a timer adds nothing).
+        for (const spark of this.sparks) {
+            if (spark.delay > this.frameCount) {
+                spark.delay = this.frameCount + Math.max(1, Math.ceil((spark.delay - this.frameCount) / BLAZE_MULT));
+            }
+        }
+        if (this.audio) this.audio.play("blaze");
+    }
+
     /** Whether a fuse is a forbidden color under this level's wire rule. */
     _isForbiddenFuse(fuse) {
         const wr = this.level?.wireRule;
@@ -194,25 +268,32 @@ export class GameLoop {
         return wr.legend[fuse.color] === "no";
     }
 
-    /** Fuses whose curve passes within `radius` of the cut point, excluding
+    /** Fuses whose curve passes within `radius` of the SWIPE SEGMENT, excluding
      *  already-dead fuses. Spark-independent, so a forbidden decoy is caught
-     *  even while its wick never lights. The default radius is the forgiving
+     *  even while its wick never lights. Measuring against the whole blade
+     *  (not just the nearest snip point) matters at shared chokepoints where
+     *  shaped wicks cross the same point from different angles — each one's
+     *  nearest point to the swipe can be many pixels apart, and a single-point
+     *  test would miss the second wick. The default radius is the forgiving
      *  severing distance; the forbidden-wire check passes a tighter radius so
      *  a red wick only trips when the cut lands close to its visible line. */
-    _fusesTouchedByCut(snipPoint, radius = CUT_RADIUS) {
+    _fusesTouchedByCut(swipeStart, swipeEnd, radius = CUT_RADIUS) {
         const touched = [];
         for (const fuse of this.fuses) {
             if (this._fuseFullySevered(fuse)) continue;
-            let minD = Infinity, minT = 0;
+            let minD = Infinity;
+            let minT = 0;
+            let minPt = null;
             for (let t = 0; t <= 1; t += 0.02) {
-                const pt = getBezierXY(t, fuse.startNode, fuse.cp1, fuse.cp2, fuse.endNode);
-                const d = Math.hypot(pt.x - snipPoint.x, pt.y - snipPoint.y);
+                const pt = fusePoint(fuse, t);
+                const d = distToSegment(pt, swipeStart, swipeEnd);
                 if (d < minD) {
                     minD = d;
                     minT = t;
+                    minPt = pt;
                 }
             }
-            if (minD < radius) touched.push({ fuse, minT });
+            if (minD < radius) touched.push({ fuse, minT, point: minPt });
         }
         return touched;
     }
@@ -224,10 +305,14 @@ export class GameLoop {
      *  line, so the hint never points at a cut that would trip the rule. */
     _computeHintTargets() {
         const forbidden = this.fuses.filter((f) => this._isForbiddenFuse(f));
-        const margin = FORBIDDEN_TOUCH_RADIUS + 4; // a little visual slack past the deny radius
+        // Water-doused wicks are put out without cutting — suggesting one
+        // wastes a snip, so they get no marker either.
+        const doused = new Set((this.level?.douse || []).map((d) => d.fuseId));
+        const margin = FORBIDDEN_TOUCH_RADIUS + 8; // a little visual slack past the deny radius
         const targets = [];
         for (const fuse of this.fuses) {
             if (this._isForbiddenFuse(fuse)) continue;
+            if (doused.has(fuse.id)) continue;
             const point = this._hintPointFor(fuse, forbidden, margin);
             targets.push({ fuse, point });
         }
@@ -249,7 +334,7 @@ export class GameLoop {
         let best = null;
         let bestD = Infinity;
         for (let t = 0; t <= 1; t += 0.02) {
-            const pt = getBezierXY(t, fuse.startNode, fuse.cp1, fuse.cp2, fuse.endNode);
+            const pt = fusePoint(fuse, t);
             if (!clear(pt.x, pt.y)) continue;
             const d = it ? Math.hypot(pt.x - it.x, pt.y - it.y) : t;
             if (d < bestD) {
@@ -260,15 +345,9 @@ export class GameLoop {
         return best || it;
     }
 
-    /** Coarse min distance from a point to a fuse's bezier curve. */
+    /** Coarse min distance from a point to a fuse's curve. */
     _distToFuseAt(x, y, fuse) {
-        let m = Infinity;
-        for (let t = 0; t <= 1; t += 0.02) {
-            const p = getBezierXY(t, fuse.startNode, fuse.cp1, fuse.cp2, fuse.endNode);
-            const d = Math.hypot(p.x - x, p.y - y);
-            if (d < m) m = d;
-        }
-        return m;
+        return fuseClosest(fuse, x, y).dist;
     }
 
     tryCut(swipeStart, swipeEnd, trail) {
@@ -283,14 +362,12 @@ export class GameLoop {
         let best = null;
         let deadBest = null; // closest already-severed wick (for re-cut feedback)
         for (const fuse of this.fuses) {
-            const p0 = fuse.startNode;
-            const p3 = fuse.endNode;
             const severed = this._fuseFullySevered(fuse);
             let minDist = Infinity;
             let minPt = null;
             let minT = 0;
             for (let t = 0; t <= 1; t += 0.02) {
-                const pt = getBezierXY(t, p0, fuse.cp1, fuse.cp2, p3);
+                const pt = fusePoint(fuse, t);
                 const dist = distToSegment(pt, swipeStart, swipeEnd);
                 if (dist < minDist) {
                     minDist = dist;
@@ -336,9 +413,12 @@ export class GameLoop {
         // the cut actually lands on its visible line, not anywhere in the
         // generous severing radius. A forbidden color is denied on the first
         // offense (warning, no snip) and detonates on the second.
-        const touched = this._fusesTouchedByCut(snipPoint);
+        const touched = this._fusesTouchedByCut(swipeStart, swipeEnd);
         if (this.level?.wireRule) {
-            const bad = this._fusesTouchedByCut(snipPoint, FORBIDDEN_TOUCH_RADIUS)
+            // Forbidden-wire offense: where the cut LANDS (the snip point), not
+            // the whole swipe — a swipe is a gesture and can pass near a red
+            // wire; only a cut actually placed on its line trips the rule.
+            const bad = this._fusesTouchedByCut(snipPoint, snipPoint, FORBIDDEN_TOUCH_RADIUS)
                 .find(({ fuse }) => this._isForbiddenFuse(fuse));
             if (bad) {
                 this.wireOffenses++;
@@ -362,6 +442,15 @@ export class GameLoop {
         {
             const swipeAngle = Math.atan2(swipeEnd.y - swipeStart.y, swipeEnd.x - swipeStart.x);
             this.cuts.push({ x: snipPoint.x, y: snipPoint.y, radius: CUT_RADIUS, angle: swipeAngle, fuseId: snipFuse.id, snipT });
+            // One cut circle per wick the blade crosses. At a shared chokepoint
+            // the crossings sit a few pixels apart on each wick; a single circle
+            // at the primary fuse's point would leave the other wick burning
+            // straight through the visible gap.
+            for (const { fuse, minT, point } of touched) {
+                if (fuse === snipFuse) continue;
+                if (fuse.neverLights) continue;
+                this.cuts.push({ x: point.x, y: point.y, radius: CUT_RADIUS, angle: swipeAngle, fuseId: fuse.id, snipT: minT });
+            }
             this.cutFlashes.push({ x: snipPoint.x, y: snipPoint.y, angle: swipeAngle, life: 1 });
 
             // The fading blade-trail slash follows the finger path (Cut-the-Rope
@@ -378,7 +467,7 @@ export class GameLoop {
             // frames, clearing that fuse faster — the reward for speed.
             const spark = this.sparks[this.fuses.indexOf(snipFuse)];
             if (spark && spark.ignited && spark.active) {
-                const sparkPos = getBezierXY(spark.progress, snipFuse.startNode, snipFuse.cp1, snipFuse.cp2, snipFuse.endNode);
+                const sparkPos = fusePoint(snipFuse, spark.progress);
                 if (snipT > spark.progress + 0.005 && Math.hypot(snipPoint.x - sparkPos.x, snipPoint.y - sparkPos.y) < 42) {
                     this.perfectSnips++;
                     this.perfectSnipsAt.push({ x: snipPoint.x, y: snipPoint.y, at: this.frameCount });
@@ -426,6 +515,10 @@ export class GameLoop {
             if (this.onSnipsChange) this.onSnipsChange(this.snipsRemaining);
             if (this.audio) this.audio.play("snip");
             if (this.analytics) this.analytics.track("snips_used", { level: this.level.level_id });
+
+            // The last snip may have sealed the level — re-arm the blaze check
+            // so the next frame can fast-forward the remaining tail burn.
+            this._recheckBlaze = true;
 
             for (let p = 0; p < 15; p++) {
                 this.particles.push({
@@ -523,9 +616,11 @@ export class GameLoop {
         return (this.multikills || []).reduce((a, m) => a + (m.count - 1), 0);
     }
 
-    /** Level-clear duration in frames (start → win/lose), for the speed record. */
+    /** Level-clear duration in frames (start → win/lose), for the speed record.
+     *  Blaze-out frames are counted at their natural burn length, so a
+     *  fast-forwarded tail still records the time the burn would have taken. */
     get clearFrames() {
-        return this.frameCount - this.startedAt;
+        return this.frameCount - this.startedAt + this.blaze.frames * (BLAZE_MULT - 1);
     }
 
     // ---- State transitions ------------------------------------------------------
@@ -545,7 +640,7 @@ export class GameLoop {
             if (this.analytics) {
                 this.analytics.track("level_win", {
                     level: this.level.level_id, stars, attempts: this.attempts,
-                    duration: this.frameCount - this.startedAt, snips_used: this.snipsUsed,
+                    duration: this.clearFrames, snips_used: this.snipsUsed,
                     multikills: this.multikills.length, score: this.computeScore(),
                     mode: this.levelMode,
                 });
@@ -561,7 +656,7 @@ export class GameLoop {
             if (this.analytics) {
                 this.analytics.track("level_fail", {
                     level: this.level.level_id, attempts: this.attempts,
-                    duration: this.frameCount - this.startedAt,
+                    duration: this.clearFrames,
                     mode: this.levelMode,
                 });
             }
@@ -613,6 +708,13 @@ export class GameLoop {
     _update() {
         if (this.gameState !== STATE.PLAYING) return;
 
+        // A snip may have sealed the level (every live spark now doomed to a
+        // cut/douse death) — blaze out the remaining burn instead of dragging.
+        if (this._recheckBlaze && !this.blaze.active) {
+            this._recheckBlaze = false;
+            if (this._winGuaranteed()) this._startBlaze();
+        }
+
         let activeSparks = 0;
         let anyBurning = false;
 
@@ -648,7 +750,7 @@ export class GameLoop {
             anyBurning = true;
 
             const fuse = this.fuses[spark.fuseIndex];
-            spark.progress += spark.speed;
+            spark.progress += spark.speed * (this.blaze.active ? BLAZE_MULT : 1);
             fuse.burntProgress = Math.max(fuse.burntProgress, spark.progress);
 
             // When a parent's burn crosses a chained child's trigger point, the
@@ -673,7 +775,7 @@ export class GameLoop {
                 spark.doused = true;
                 fuse.burntProgress = Math.max(fuse.burntProgress, douseAt);
                 if (this.audio) this.audio.play("dud");
-                const dp = getBezierXY(douseAt, fuse.startNode, fuse.cp1, fuse.cp2, fuse.endNode);
+                const dp = fusePoint(fuse, douseAt);
                 for (let p = 0; p < 18; p++) {
                     this.particles.push({
                         x: dp.x, y: dp.y,
@@ -684,7 +786,7 @@ export class GameLoop {
                 continue;
             }
 
-            const pos = getBezierXY(spark.progress, fuse.startNode, fuse.cp1, fuse.cp2, fuse.endNode);
+            const pos = fusePoint(fuse, spark.progress);
 
             // Cut-circle collision: a spark dies if it travels through ANY cut
             // that reaches its position — one snip severs every wick it crosses,
@@ -781,6 +883,11 @@ export class GameLoop {
         if (activeSparks === 0 && this.gameState === STATE.PLAYING) {
             this._finishLevel(true);
         }
+
+        // Blaze-out natural-time accounting: each blazing frame represents
+        // BLAZE_MULT frames of real burn, so the recorded clear time matches
+        // the burn the sparks actually made (speed-cutting keeps its reward).
+        if (this.blaze.active) this.blaze.frames++;
 
         // Wick-crackle loop follows the burn state.
         if (anyBurning) this.audio?.startLoop("wick_crackle");

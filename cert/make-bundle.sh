@@ -13,7 +13,8 @@ rm -rf "$STAGE"
 mkdir -p "$STAGE/src" "$STAGE/assets" "$OUT_DIR"
 
 for f in favicon.ico favicon-16.png favicon-32.png favicon-48.png \
-         apple-touch-icon.png icon-192.png icon-512.png site.webmanifest; do
+         apple-touch-icon.png icon-192.png icon-512.png site.webmanifest \
+         LICENSE NOTICE; do
   if [[ -f "$ROOT/$f" ]]; then cp "$ROOT/$f" "$STAGE/"; fi
 done
 

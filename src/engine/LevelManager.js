@@ -1,6 +1,6 @@
 // LevelManager.js — parses a levels.json config into the runtime node graph.
 // Everything is data-driven: nodes, forced-intersection fuses, sparks, camera.
-import { createForcedIntersectionFuse, getBezierXY } from "./MathUtils.js";
+import { createForcedIntersectionFuse, buildShapedPath, fusePoint, shapedPathMinSelfDistance, bezierLength as bezierLen } from "./MathUtils.js";
 import { findPayloadSkin, findIgniterType } from "../data/skins.js";
 
 const PLACEHOLDER_PAYLOAD = {
@@ -143,13 +143,38 @@ export function buildLevel(config, viewport, assets = null) {
     const sparks = [];
     const fuseIndexById = new Map((config.fuses || []).map((f, i) => [f.id || `f${i}`, i]));
 
+    /** Attach a multi-bend shape to a runtime fuse when the config asks for one
+     *  (generator emits `shape` for the wiggled wicks). The path is built from
+     *  the same inputs the generator used, so the drawn wire and every sampled
+     *  cut/distance/position agree byte-for-byte. */
+    const finalizeFuseShape = (fuse, cf, start, end, intersection) => {
+        if (cf.shape) {
+            fuse.shape = cf.shape;
+            fuse.path = buildShapedPath(start, end, intersection, cf.bulge ?? 0, cf.shape);
+            if (fuse.path) {
+                fuse._segs = [];
+                let prev = start;
+                for (const s of fuse.path) {
+                    fuse._segs.push({ p0: prev, cp1: s.cp1, cp2: s.cp2, p3: s.end });
+                    prev = s.end;
+                }
+                fuse._lens = fuse._segs.map((s) =>
+                    bezierLen(s.p0, s.cp1, s.cp2, s.p3));
+                // Keep cp1/cp2 = first segment's controls so any legacy sampler
+                // still points at the wire's start bow rather than the air.
+                fuse.cp1 = fuse.path[0].cp1;
+                fuse.cp2 = fuse.path[0].cp2;
+            }
+        }
+    };
+
     const resolveStart = (f, i) => {
         if (!f.branchOf) return { start: nodeMap[f.start], chain: null };
         const parentIdx = fuseIndexById.get(f.branchOf);
         const parentFuse = parentIdx != null ? fuses[parentIdx] : null;
         if (!parentFuse) return { start: null, chain: null };
         const at = f.at ?? 0.5;
-        const P = getBezierXY(at, parentFuse.startNode, parentFuse.cp1, parentFuse.cp2, parentFuse.endNode);
+        const P = fusePoint(parentFuse, at);
         // A synthetic "branch" node — the fork. It is NOT a spawn, so no
         // matchstick is drawn there and the new spark appears at the fork.
         const node = {
@@ -173,6 +198,7 @@ export function buildLevel(config, viewport, assets = null) {
         const intersection = intersectionMap[f.routeThrough] || { x: (start.x + end.x) / 2, y: (start.y + end.y) / 2 };
 
         const fuse = createForcedIntersectionFuse(f.id || `f${i}`, start, end, intersection, f.bulge ?? 0);
+        finalizeFuseShape(fuse, f, start, end, intersection);
         fuse.routeThrough = f.routeThrough || null;
         fuse.speed = f.speed ?? 0.001;
         fuse.delayFrames = f.delayFrames ?? 0;
@@ -193,6 +219,7 @@ export function buildLevel(config, viewport, assets = null) {
         const intersection = intersectionMap[f.routeThrough] || { x: (start.x + end.x) / 2, y: (start.y + end.y) / 2 };
 
         const fuse = createForcedIntersectionFuse(f.id || `f${i}`, start, end, intersection, f.bulge ?? 0);
+        finalizeFuseShape(fuse, f, start, end, intersection);
         fuse.routeThrough = f.routeThrough || null;
         fuse.speed = f.speed ?? 0.001;
         fuse.delayFrames = f.delayFrames ?? 0;
@@ -234,9 +261,7 @@ export function buildLevel(config, viewport, assets = null) {
         const fuseIndex = fuseIndexById.get(p.fuse);
         const fuse = fuseIndex != null ? fuses[fuseIndex] : null;
         const at = p.at ?? 0.5;
-        const pos = fuse
-            ? getBezierXY(at, fuse.startNode, fuse.cp1, fuse.cp2, fuse.endNode)
-            : { x: 0, y: 0 };
+        const pos = fuse ? fusePoint(fuse, at) : { x: 0, y: 0 };
         return {
             id: p.id || `pickup${i}`,
             fuseId: p.fuse,
@@ -430,7 +455,10 @@ export function validateLevel(config) {
     // Wick fold guard: with the single-control-point forced-intersection curve,
     // when a chokepoint's projection onto the spawn->payload chord leaves the
     // segment, the wick folds back on itself and the spark reverses mid-path
-    // (looks like the wick ends early / turns around).
+    // (looks like the wick ends early / turns around). Multi-bend wicks skip
+    // that projection rule — their C1 junctions can't fold — but are probed
+    // for self-intersection instead (generator caps bend magnitude so the
+    // sampled self-distance stays well clear).
     const nodeMap = {};
     [...(config.spawns || []), config.payload, ...(config.payloads || []), ...(config.intersections || [])].forEach((n) => n && (nodeMap[n.id] = n));
     const payloadOf = (end) => (end === config.payload?.id || !config.payloads?.length ? config.payload : nodeMap[end]);
@@ -439,6 +467,15 @@ export function validateLevel(config) {
         if (!start) continue;
         const endP = payloadOf(f.end) || config.payload;
         const I = nodeMap[f.routeThrough] || { x: (start.x + endP.x) / 2, y: (start.y + endP.y) / 2 };
+        if (f.shape === "s" || f.shape === "wave") {
+            const minSelf = shapedPathMinSelfDistance(start, endP, I, f.bulge ?? 0, f.shape);
+            if (minSelf < 6) {
+                warnings.push(
+                    `level ${config.level_id}: fuse '${f.start}' shape '${f.shape}' nearly self-intersects (min self-distance ${minSelf.toFixed(1)}px)`
+                );
+            }
+            continue;
+        }
         const wx = endP.x - start.x, wy = endP.y - start.y;
         const L2 = wx * wx + wy * wy;
         const cp = { x: (I.x - 0.125 * (start.x + endP.x)) / 0.75, y: (I.y - 0.125 * (start.y + endP.y)) / 0.75 };

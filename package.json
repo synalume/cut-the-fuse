@@ -9,6 +9,7 @@
     "start": "node server.js",
     "collect": "node server/collector.mjs",
     "smoke": "node tools/smoke/smoke.mjs",
+    "smoke:hints": "node tools/smoke/verify-hints.mjs",
     "gen:levels": "node tools/level-gen/gen-levels.mjs",
     "audio:list": "node tools/gen-audio/gen-mmaudio.mjs list",
     "art:queue": "echo 'open tools/art-queue/art-queue.html via the dev server'",

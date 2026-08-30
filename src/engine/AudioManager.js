@@ -15,6 +15,9 @@ const CUES = {
     // Unbaked: file stays null so loadAll skips the 404 — the synth fallback
     // plays until a take is approved and the filename is filled in.
     win: { file: null, synth: "win", gain: 0.7 },
+    // Blaze-out fast-forward: a quick rising whoosh when the win is sealed and
+    // the remaining burn sweeps to a stop.
+    blaze: { file: null, synth: "blaze", gain: 0.5 },
     wick_crackle: { file: "wick_crackle.wav", loop: true, synth: null, gain: 0.5 },
 };
 
@@ -95,12 +98,20 @@ export class AudioManager {
         if (this._lastPlay[cueId] && now - this._lastPlay[cueId] < 60) return;
         this._lastPlay[cueId] = now;
 
-        if (this._buffers[cueId]) {
-            this._playBuffer(cueId, this._buffers[cueId], cue.loop, opts.rate);
-        } else if (cue.synth === "snip") {
-            this._synthSnip();
-        } else if (cue.synth === "win") {
-            this._synthWin();
+        try {
+            if (this._buffers[cueId]) {
+                this._playBuffer(cueId, this._buffers[cueId], cue.loop, opts.rate);
+            } else if (cue.synth === "snip") {
+                this._synthSnip();
+            } else if (cue.synth === "win") {
+                this._synthWin();
+            } else if (cue.synth === "blaze") {
+                this._synthBlaze();
+            }
+        } catch (err) {
+            // An audio glitch must never take the game down with it — the loop
+            // keeps running even if a synth call throws on some browser.
+            console.warn("[audio] cue failed:", cueId, err);
         }
     }
 
@@ -214,5 +225,37 @@ export class AudioManager {
         gain.connect(ctx.destination);
         osc.start(t0 + 0.32);
         osc.stop(t0 + 0.52);
+    }
+
+    /** Blaze-out fast-forward whoosh: filtered noise swells and sweeps up as
+     *  the sealed win burns to a stop (~0.45s, bright but brief). */
+    _synthBlaze() {
+        const ctx = this.ensureCtx();
+        if (!ctx) return;
+        const t0 = ctx.currentTime;
+        const dur = 0.45;
+
+        const buffer = ctx.createBuffer(1, Math.max(1, Math.floor(ctx.sampleRate * dur)), ctx.sampleRate);
+        const data = buffer.getChannelData(0);
+        for (let i = 0; i < data.length; i++) {
+            const p = i / data.length;
+            data[i] = (Math.random() * 2 - 1) * Math.sin(Math.PI * p);
+        }
+        const src = ctx.createBufferSource();
+        src.buffer = buffer;
+        const filter = ctx.createBiquadFilter();
+        filter.type = "bandpass";
+        filter.Q.value = 1.1;
+        filter.frequency.setValueAtTime(500, t0);
+        filter.frequency.exponentialRampToValueAtTime(3400, t0 + dur);
+        const gain = ctx.createGain();
+        gain.gain.setValueAtTime(0.0001, t0);
+        gain.gain.exponentialRampToValueAtTime(0.55, t0 + 0.07);
+        gain.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+        src.connect(filter);
+        filter.connect(gain);
+        gain.connect(ctx.destination);
+        src.start(t0);
+        src.stop(t0 + dur);
     }
 }

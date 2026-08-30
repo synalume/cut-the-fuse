@@ -1,4 +1,5 @@
 // main.js — entry point: fetch levels.json, build the engine stack, wire UI.
+// Cut the Fuse: Bomb Puzzle. Copyright © 2026 Synalume, LLC. All rights reserved.
 import { GameLoop, STATE } from "./engine/GameLoop.js";
 import { Renderer, REACTION_WORDS } from "./engine/Renderer.js";
 import { InputHandler } from "./engine/InputHandler.js";
