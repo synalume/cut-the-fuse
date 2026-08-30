@@ -78,18 +78,27 @@ const pgInit = () => {
     window.__CUT_THE_FUSE_PLAYGAMA__ = true;
     window.__mock = { order: [], messages: [], subs: {}, adCalls: [], storageReads: 0, storageWrites: 0 };
     const store = {};
+    // Real Bridge v2 keeps `bridge.storage` undefined until initialize() resolves;
+    // the storage module is only registered mid-init. Mock that faithfully.
+    let inited = false;
+    let storage = undefined;
     window.bridge = {
-        initialize: () => new Promise((res) => setTimeout(() => { window.__mock.order.push("init-resolve"); res(); }, 30)),
+        initialize: () => new Promise((res) => setTimeout(() => {
+            window.__mock.order.push("init-resolve");
+            storage = {
+                get: async (keys) => { window.__mock.order.push("storage-get"); window.__mock.storageReads++; return keys.map((k) => store[k] ?? null); },
+                set: async (keys, vals) => { window.__mock.order.push("storage-set"); window.__mock.storageWrites++; keys.forEach((k, i) => { store[k] = vals[i]; }); },
+            };
+            inited = true;
+            res();
+        }, 30)),
+        get storage() { return inited ? storage : undefined; },
         EVENT_NAME: { PAUSE_STATE_CHANGED: "pause_state_changed", AUDIO_STATE_CHANGED: "audio_state_changed" },
         platform: {
             language: "en",
             isAudioEnabled: true,
             sendMessage: (m) => { window.__mock.messages.push(m); window.__mock.order.push("message:" + m); return Promise.resolve(); },
             on: (evt, cb) => { window.__mock.subs[evt] = cb; return () => {}; },
-        },
-        storage: {
-            get: async (keys) => { window.__mock.order.push("storage-get"); window.__mock.storageReads++; return keys.map((k) => store[k] ?? null); },
-            set: async (keys, vals) => { window.__mock.order.push("storage-set"); window.__mock.storageWrites++; keys.forEach((k, i) => { store[k] = vals[i]; }); },
         },
         advertisement: {
             showRewarded: () => { window.__mock.order.push("rewarded"); window.__mock.adCalls.push("rewarded"); return new Promise((res) => setTimeout(res, 5)); },

@@ -37,14 +37,19 @@ export class SaveManager {
 
     /** Platform-sanctioned async storage, when the build runs inside a portal
      *  that forbids direct localStorage (Playgama Bridge storage / YouTube
-     *  Playables saveData). Returns null on plain local / live-URL builds. */
+     *  Playables saveData). Returns null on plain local / live-URL builds.
+     *
+     *  On the real Playgama Bridge v2 SDK, `bridge.storage` is undefined until
+     *  `bridge.initialize()` resolves, so the storage methods are looked up
+     *  lazily at call time (init() runs after platform.ready() awaited init). */
     _detectAsyncBackend() {
         const hasWindow = typeof window !== "undefined";
         const inPlaygama = hasWindow && !!window.__CUT_THE_FUSE_PLAYGAMA__;
-        if (inPlaygama && typeof bridge !== "undefined" && bridge.storage?.get && bridge.storage?.set) {
+        if (inPlaygama && typeof bridge !== "undefined") {
             return {
                 name: "playgama",
                 load: async () => {
+                    if (!bridge.storage?.get) return null;
                     const arr = await bridge.storage.get([KEY]);
                     return (Array.isArray(arr) && typeof arr[0] === "string" && arr[0]) || null;
                 },
@@ -69,8 +74,15 @@ export class SaveManager {
 
     /** Hydrate from the platform backend. MUST be awaited before gameplay so
      *  the player's real progress shows (both portals also require awaiting
-     *  load before any save). No-op on plain builds. */
+     *  load before any save). No-op on plain builds.
+     *
+     *  The backend is re-detected here, not just at construction: on the real
+     *  Playgama Bridge v2 SDK, `bridge.storage` only exists after
+     *  `bridge.initialize()` resolves, so a constructor-time check sees it as
+     *  undefined and would silently fall back to localStorage. main.js calls
+     *  this after `await platform.ready()`, which awaits Bridge init. */
     async init() {
+        this.async = this._detectAsyncBackend();
         if (!this.async) return;
         try {
             const raw = await this.async.load();
@@ -81,7 +93,14 @@ export class SaveManager {
     _load() {
         // Async platform backends are the source of truth — never read
         // localStorage directly on them (portal moderation requirement).
-        if (this.async) return freshDefaults();
+        // This holds even before init() re-detects the backend: on Playgama
+        // the bridge global is present but bridge.storage is still undefined
+        // until Bridge init, so `this.async` is null here — check the flags too.
+        const hasWindow = typeof window !== "undefined";
+        const inPortal =
+            (hasWindow && (!!window.__CUT_THE_FUSE_PLAYGAMA__ || !!window.__CUT_THE_FUSE_PLAYABLES__)) ||
+            (typeof ytgame !== "undefined" && !!ytgame.IN_PLAYABLES_ENV);
+        if (this.async || inPortal) return freshDefaults();
         try {
             if (this.impl && typeof this.impl.get === "function") {
                 const raw = this.impl.get(KEY);
@@ -96,6 +115,10 @@ export class SaveManager {
     _save() {
         try {
             const raw = JSON.stringify(this.data);
+            const hasWindow = typeof window !== "undefined";
+            const inPortal =
+                (hasWindow && (!!window.__CUT_THE_FUSE_PLAYGAMA__ || !!window.__CUT_THE_FUSE_PLAYABLES__)) ||
+                (typeof ytgame !== "undefined" && !!ytgame.IN_PLAYABLES_ENV);
             if (this.async) {
                 // Fire-and-forget through the platform backend, serialized so
                 // rapid saves keep order (each write ships the full snapshot).
@@ -104,6 +127,9 @@ export class SaveManager {
                     .catch(() => { /* platform save failed; keep the session copy */ });
             } else if (this.impl && typeof this.impl.set === "function") {
                 this.impl.set(KEY, raw);
+            } else if (inPortal) {
+                // On a portal build whose backend hasn't been detected yet (Bridge
+                // init still resolving), never leak progress into localStorage.
             } else {
                 localStorage.setItem(KEY, raw);
             }
