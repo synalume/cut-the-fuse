@@ -25,7 +25,7 @@ renderer.root = $("game-container");
 const audio = new AudioManager();
 const save = new SaveManager();
 const analytics = new Analytics();
-const platform = new Platform({ audio, save });
+const platform = new Platform({ audio, save, canvas });
 
 const game = new GameLoop({ canvas, renderer, audio, analytics, platform });
 platform.onEvent = (name, val) => {
@@ -761,14 +761,24 @@ async function boot() {
     game.start();
     window.addEventListener("resize", () => {
         renderer.resize();
+        // Resize reallocates the canvas backing store, which detaches Poki's
+        // captureStream — re-point it at the new buffer so playtest recordings
+        // don't freeze on the pre-resize frame.
+        platform.pokiBindPlaytestCapture(canvas);
     });
     // iOS Safari landscape toolbar + PWA chrome resize the VISUAL viewport
     // without always firing window resize — re-fit the game to the visible area.
     if (window.visualViewport) {
-        window.visualViewport.addEventListener("resize", () => renderer.resize());
+        window.visualViewport.addEventListener("resize", () => {
+            renderer.resize();
+            platform.pokiBindPlaytestCapture(canvas);
+        });
     }
     window.addEventListener("orientationchange", () => {
-        setTimeout(() => renderer.resize(), 80); // wait for the rotation to settle
+        setTimeout(() => {
+            renderer.resize();
+            platform.pokiBindPlaytestCapture(canvas);
+        }, 80); // wait for the rotation to settle
     });
 
     // Host pause (Playgama / Playables) freezes the loop even when visible.
@@ -800,7 +810,12 @@ async function boot() {
     }
 
     if (window.__CUT_THE_FUSE_POKI__) {
-        // Poki records gameplay via a hidden capture canvas; keep the main canvas visible.
+        // The playtest recorder captures the MAIN canvas (playtestSetCanvas in
+        // Platform.pokiBindPlaytestCapture). A first bind happens at Poki init;
+        // resize re-binds because the backing store is reallocated. The DOM UI
+        // (controls / tutorial / modals) is opted into the recording via
+        // playtestCaptureHtmlOn, so playtest videos show the full game.
+        platform.pokiBindPlaytestCapture(canvas);
     }
 }
 

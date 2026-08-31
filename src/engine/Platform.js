@@ -8,9 +8,10 @@ const IN_PLAYABLES =
     (typeof ytgame !== "undefined" && !!ytgame.IN_PLAYABLES_ENV && !/localhost|127\.0\.0\.1/i.test(location.hostname));
 
 export class Platform {
-    constructor({ audio, save }) {
+    constructor({ audio, save, canvas }) {
         this.audio = audio;
         this.save = save;
+        this.canvas = canvas || null;
         this.pausedByHost = false;
         this.adOpen = false;
         this._pokiInitDone = false;
@@ -147,10 +148,35 @@ export class Platform {
         });
         const inited = () => {
             this._pokiInitDone = true;
+            this._pokiBindPlaytestCapture();
             this._pokiMaybeLoaded();
         };
         if (typeof PokiSDK === "undefined") inited();
         else PokiSDK.init().then(inited).catch(inited);
+    }
+
+    /** Poki's playtest recorder uses canvas.captureStream() — it records the
+     *  canvas' pixels only. HTML/DOM overlays (controls, tutorial, modals) are
+     *  invisible unless we opt in, and the recorder must be told WHICH canvas to
+     *  track. Without this the playtest videos show a black canvas with none of
+     *  the UI. Re-bind after every canvas buffer realloc (resize changes
+     *  canvas.width/height, which detaches the stream). Idempotent. */
+    pokiBindPlaytestCapture(canvas) {
+        if (!IN_POKI || typeof PokiSDK === "undefined") return;
+        const target = canvas || this.canvas;
+        if (!target) return;
+        try {
+            if (typeof PokiSDK.playtestSetCanvas === "function") {
+                PokiSDK.playtestSetCanvas(target);
+            }
+            if (typeof PokiSDK.playtestCaptureHtmlOn === "function") {
+                PokiSDK.playtestCaptureHtmlOn();
+            }
+        } catch { /* noop */ }
+    }
+
+    _pokiBindPlaytestCapture() {
+        this.pokiBindPlaytestCapture();
     }
 
     _pokiMaybeLoaded() {

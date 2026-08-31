@@ -72,7 +72,10 @@ export class Renderer {
         // HiDPI: the backing store is device-pixel sized so phones (dpr 2-3)
         // render art crisply instead of the browser upscaling a 1x canvas.
         // All game math uses logical CSS-pixel width/height below.
-        this.dpr = Math.max(1, window.devicePixelRatio || 1);
+        // On Poki, cap the backing-store scale: playtest captureStream attaches
+        // at load and reallocating canvas.width afterwards freezes the recording
+        // (wobble-run lesson). A 1.5 cap keeps the buffer stable from frame 0.
+        this.dpr = this._dpr();
         this.images = {};
         // Sliding-hand demo pointer (level-1 onboarding) — same asset the UFO
         // puzzle animates along its hint path. Content bbox is computed lazily.
@@ -102,11 +105,21 @@ export class Renderer {
         return { width: window.innerWidth, height: window.innerHeight };
     }
 
+    /** Backing-store scale. On Poki cap at 1.5: the playtest recorder binds
+     *  canvas.captureStream() at load, and reallocating canvas.width later
+     *  freezes the recording on the last pre-resize frame (wobble-run lesson).
+     *  Keeping the buffer size stable from frame 0 avoids that entirely. */
+    _dpr() {
+        const dpr = Math.max(1, window.devicePixelRatio || 1);
+        if (window.__CUT_THE_FUSE_POKI__) return Math.min(dpr, 1.5);
+        return dpr;
+    }
+
     resize() {
         const { width, height } = this._viewportSize();
         this.width = width;
         this.height = height;
-        this.dpr = Math.max(1, window.devicePixelRatio || 1);
+        this.dpr = this._dpr();
         this.canvas.width = Math.round(width * this.dpr);
         this.canvas.height = Math.round(height * this.dpr);
         this.canvas.style.width = width + "px";
