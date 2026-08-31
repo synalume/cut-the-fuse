@@ -255,6 +255,56 @@ export function buildLevel(config, viewport, assets = null) {
         });
     });
 
+    // Sticky wicks: a fuse that crosses a cross-section (routed chokepoint or
+    // fork) can't be cut before that junction — cutting the sticky zone snaps
+    // back (denied, snip refunded) so the spark always reaches the maze.
+    // Poisoned crossroads are exempt: a chokepoint shared with a forbidden
+    // wire can only be severed upstream on each safe leg, so sticky would make
+    // those levels unwinnable.
+    {
+        const wr = config.wireRule || null;
+        const isForb = (f) => !!(wr && f.color && wr.legend[f.color] === "no");
+        const poisoned = new Set();
+        if (wr) {
+            const byCp = new Map();
+            for (const f of config.fuses || []) {
+                if (!f.routeThrough) continue;
+                if (!byCp.has(f.routeThrough)) byCp.set(f.routeThrough, []);
+                byCp.get(f.routeThrough).push(f);
+            }
+            for (const grp of byCp.values()) {
+                if (grp.some(isForb)) for (const f of grp) poisoned.add(f.id);
+            }
+        }
+        // Global parameter where a fuse passes closest to its routed chokepoint.
+        const tAtPoint = (fuse, x, y) => {
+            let best = 1;
+            let bestD = Infinity;
+            for (let t = 0.005; t <= 1.0; t += 0.01) {
+                const p = fusePoint(fuse, t);
+                const d = (p.x - x) ** 2 + (p.y - y) ** 2;
+                if (d < bestD) { bestD = d; best = t; }
+            }
+            return best;
+        };
+        (config.fuses || []).forEach((f) => {
+            const fuse = fuses[fuseIndexById.get(f.id)];
+            if (!fuse || fuse.neverLights || poisoned.has(f.id)) return;
+            let stickyT = 1;
+            const I = intersectionMap[f.routeThrough];
+            if (I) stickyT = Math.min(stickyT, tAtPoint(fuse, I.x, I.y));
+            fuse.stickyT = stickyT < 1 ? stickyT : null;
+        });
+        // Fork parents are sticky from the fork point — earlier than their own
+        // routed chokepoint — so the branch can't be starved by an early cut.
+        for (const spark of sparks) {
+            if (!spark.chain) continue;
+            const parent = fuses[spark.chain.fromFuseIndex];
+            if (!parent || parent.stickyT == null) continue;
+            parent.stickyT = Math.min(parent.stickyT, spark.chain.at);
+        }
+    }
+
     // Pickups (gold bonus-snip stars) and douse points (water drops) resolve to
     // world positions on their fuse once all geometry exists.
     const pickups = (config.pickups || []).map((p, i) => {

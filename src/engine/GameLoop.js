@@ -1,6 +1,6 @@
 // GameLoop.js — rAF loop, state machine, and the simulation.
 // Owns all mutable game state. Renders through the injected Renderer.
-import { distToSegment, clamp, fusePoint, fuseClosest } from "./MathUtils.js";
+import { distToSegment, clamp, fusePoint, fuseClosest, fuseLength } from "./MathUtils.js";
 import { COMIC_WORDS } from "./Renderer.js";
 
 export const STATE = { PLAYING: "playing", WON: "won", LOST: "lost", PAUSED: "paused" };
@@ -126,6 +126,10 @@ export class GameLoop {
         this.wireOffenses = 0;
         this.wireOffenseAt = null; // { at, x, y } — "WRONG WIRE!" popup
         this.wireDeniedSlash = null; // red denied slash for the denied cut
+        // Sticky-wick snap: cutting a cross-sectioned wick before its junction
+        // is denied with an amber snap slash + "SNAP!" popup (snip refunded).
+        this.snapAt = null;    // { at, x, y } — "SNAP!" popup
+        this.snapSlash = null; // amber denied slash for the snapped-back cut
         // Re-cutting a severed wick: denied with a grey slash + "ALREADY CUT!".
         this.deadCutAt = null; // { at, x, y } — "ALREADY CUT!" popup
         // Bonus snips banked by touching a gold pickup star.
@@ -134,6 +138,7 @@ export class GameLoop {
         for (const f of this.fuses) {
             f.burntProgress = 0;
             f.hits = 0;
+            f.snapAnim = null; // the sticky "pluck" is per-attempt
         }
         for (const s of this.sparks) {
             s.progress = 0;
@@ -408,6 +413,31 @@ export class GameLoop {
         const snipPoint = liveBest.point;
         const snipT = liveBest.t;
 
+        // Sticky-wick rule: a wick that splits at a cross-section snaps back
+        // when cut before its junction — the snip is refused (refunded) and the
+        // spark keeps running, so the level can't be ended at the root. Only the
+        // PRIMARY target is judged: branch wicks start at their fork on the
+        // parent's line, so checking every fuse the swipe passes near would deny
+        // legitimate leg cuts on poisoned crossroads (the branch is a few px
+        // from the parent's pre-fork segment). Poisoned crossroads are exempt
+        // in the level build — their upstream leg cuts are the play.
+        if (snipFuse.stickyT != null && snipT < snipFuse.stickyT - 0.08) {
+            // Collecting a gold bonus-snip star always lands — stars are the
+            // level's intended economy wherever the generator placed them.
+            const banksStar = (this.pickups || []).some((p) => !p.collected && Math.hypot(p.x - snipPoint.x, p.y - snipPoint.y) < 26);
+            if (!banksStar) {
+                const swipeAngle = Math.atan2(swipeEnd.y - swipeStart.y, swipeEnd.x - swipeStart.x);
+                this.snapAt = { at: this.frameCount, x: snipPoint.x, y: snipPoint.y, fuse: snipFuse.id };
+                this.snapSlash = { start: { ...swipeStart }, end: { ...swipeEnd }, life: 1, angle: swipeAngle };
+                // Renderer-only "pluck": the wick boings like a plucked string,
+                // decaying over ~0.7s, strongest at the denied cut point.
+                snipFuse.snapAnim = { at: this.frameCount, u: snipT };
+                if (this.audio) this.audio.play("dud");
+                if (this.analytics) this.analytics.track("sticky_snap", { level: this.level.level_id, fuse: snipFuse.id });
+                return false;
+            }
+        }
+
         // Forbidden-wire rule: before committing, check every fuse this cut
         // would touch — but with a TIGHT radius so a red wick only trips when
         // the cut actually lands on its visible line, not anywhere in the
@@ -596,11 +626,40 @@ export class GameLoop {
 
     // ---- Star scoring ----------------------------------------------------------
 
+    /** Burn coverage: the share of the live wick network that actually burned
+     *  before defuse. Sparks stamp fuse.burntProgress as they travel, so a fuse
+     *  whose spark died at a cut or douse point contributes exactly the length
+     *  it burned. Forbidden decoys (neverLights) never burn and are excluded
+     *  from both numerator and denominator. */
+    get burnCoverage() {
+        let totalLen = 0;
+        let burned = 0;
+        for (const fuse of this.fuses) {
+            if (fuse.neverLights) continue;
+            const len = fuseLength(fuse);
+            totalLen += len;
+            burned += len * (fuse.burntProgress || 0);
+        }
+        return totalLen > 0 ? burned / totalLen : 1;
+    }
+
+    /** Stars reward reading the maze, not speed-cutting at the root. Every
+     *  level's intended chokepoint solution burns ≥34% of the wick network
+     *  (realistic cut-circle death — the tightest is L5 at 34.6%), so 3★
+     *  needs a real burn; a root-cut that starves the maze hangs below the
+     *  2★ floor.
+     *  Tutorial band (L1-3) is the exception: those levels have NO cross-
+     *  sections, so coverage would only measure how late the player cut — a
+     *  skill the game isn't about. Any win there is 3★; the coverage lesson
+     *  starts with the first junction (L4). */
     computeStars() {
-        // Every level now carries at least one spare snip, so 3 stars is always
-        // achievable: 3★ = finish with a snip left, 2★ = used the whole budget.
-        if (this.snipsRemaining >= 1) return 3;
-        return 2;
+        const hasCrossSection = (this.fuses || []).some((f) => f.routeThrough)
+            || (this.sparks || []).some((s) => s.chain);
+        if (!hasCrossSection) return 3;
+        const c = this.burnCoverage;
+        if (c >= 0.3) return 3;
+        if (c >= 0.15) return 2;
+        return 1;
     }
 
     /** Efficiency score: fewer snips used → more points. 100 for a clear, +100
@@ -864,6 +923,12 @@ export class GameLoop {
         if (this.wireDeniedSlash) {
             this.wireDeniedSlash.life -= 0.05;
             if (this.wireDeniedSlash.life <= 0) this.wireDeniedSlash = null;
+        }
+        // Sticky snap slash fades like the wire denial — the SNAP! popup carries
+        // the message after the slash settles.
+        if (this.snapSlash) {
+            this.snapSlash.life -= 0.05;
+            if (this.snapSlash.life <= 0) this.snapSlash = null;
         }
 
         // Multi-cut coin chime: one ascending note per extra wick sliced. Time-

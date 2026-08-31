@@ -112,6 +112,22 @@ const l8Text = await page.evaluate(() => document.getElementById("tutorial-text"
 check(l8Text.includes("fork") && l8Text.includes("NEW wick"), "L8 tutorial teaches the fork mechanic", l8Text.slice(0, 80));
 const l8Config = levels.find((l) => l.level_id === 8);
 check(l8Config.fuses.filter((f) => f.branchOf).length === 1, "L8 config has exactly one branch wick", "");
+const forkDemo = await page.evaluate(() => {
+    const g = window.__CTF__.game;
+    const bi = g.sparks.findIndex((s) => s.chain);
+    const chain = bi >= 0 ? g.sparks[bi].chain : null;
+    const r = window.__CTF__.renderer;
+    return {
+        tutorialActive: g.tutorialActive,
+        hasChain: !!chain,
+        forkAt: chain?.at,
+        handLoaded: r._handImg?.complete,
+        hasDemo: typeof r._drawForkTutorialDemo === "function",
+    };
+});
+check(forkDemo.tutorialActive && forkDemo.hasChain && forkDemo.forkAt > 0 && forkDemo.forkAt < 1,
+    "L8 tutorial: fork point resolves on the parent wick", `at=${forkDemo.forkAt}`);
+check(forkDemo.hasDemo && forkDemo.handLoaded, "L8 tutorial: pointing-hand fork demo is armed", "");
 await page.click("#tutorial-next");
 
 // ---- 3b. L8 fork visuals: cold → warm → dud ---------------------------------
@@ -140,8 +156,9 @@ if (warmed) {
     console.log("  → screenshot tools/smoke/verify-l8-fork-warm.png");
 }
 
-// Dud: fresh attempt, cut the parent's wick BEFORE the fork → the branch stays
-// unlit (dark wick + dark junction dot).
+// Sticky snap: fresh attempt, cut the parent's wick BEFORE the fork → the cut
+// snaps back (denied, snip refunded) and the branch still lights — forks can
+// no longer be starved by an early parent cut.
 await page.evaluate(() => window.__CTF__.game.resetLevel());
 await page.waitForTimeout(100);
 const cutParentEarly = await page.evaluate(() => {
@@ -158,39 +175,43 @@ const cutParentEarly = await page.evaluate(() => {
             y: u * u * u * y0 + 3 * u * u * t * y1 + 3 * u * t * t * y2 + t * t * t * y3,
         };
     };
-    const t = Math.max(0.05, cs.chain.at - 0.08);
+    const t = Math.max(0.05, cs.chain.at - 0.12);
     const p = bez(t);
-    return g.tryCut(
+    const res = g.tryCut(
         { x: p.x - 8, y: p.y },
         { x: p.x + 8, y: p.y },
         [{ x: p.x - 8, y: p.y }, { x: p.x + 8, y: p.y }]
     );
+    return { res, snap: !!g.snapAt, snips: g.snipsRemaining, allowed: g.level.snipsAllowed };
 });
-check(cutParentEarly === true, "L8 dud: cut placed on the parent before the fork", String(cutParentEarly));
-const dud = await page
+check(cutParentEarly.res === false, "L8 sticky: pre-fork cut snaps back (denied)", `res=${cutParentEarly.res}`);
+check(cutParentEarly.snap === true, "L8 sticky: SNAP! feedback fired", String(cutParentEarly.snap));
+check(cutParentEarly.snips === cutParentEarly.allowed, "L8 sticky: snip refunded", `snips=${cutParentEarly.snips}/${cutParentEarly.allowed}`);
+const relit = await page
     .waitForFunction(() => {
         const g = window.__CTF__.game;
         const cs = g.sparks.find((s) => s.chain);
-        const ps = g.sparks[cs.chain.fromFuseIndex];
-        return !ps.active && !cs.ignited;
-    }, null, { timeout: 15000 })
+        return cs && cs.triggered && cs.ignited;
+    }, null, { timeout: 20000 })
     .then(() => true)
     .catch(() => false);
-check(dud, "L8 dud: branch stays unlit after the parent is cut early", "");
+check(relit, "L8 sticky: branch still lights after the denied pre-fork cut", "");
 await page.waitForTimeout(150);
-await page.screenshot({ path: path.join(ROOT, "tools/smoke/verify-l8-fork-dud.png") });
-console.log("  → screenshot tools/smoke/verify-l8-fork-dud.png");
+await page.screenshot({ path: path.join(ROOT, "tools/smoke/verify-l8-fork-snap.png") });
+console.log("  → screenshot tools/smoke/verify-l8-fork-snap.png");
 
-// ---- 4. PERFECT SNIP on L4 via the QA hook ---------------------------------
+// ---- 4. PERFECT SNIP on L3 via the QA hook ---------------------------------
 console.log("\n[verify] PERFECT SNIP detection (live game loop)");
 await page.evaluate(() => {
-    const cell = document.getElementById("level-grid").children[3];
+    const cell = document.getElementById("level-grid").children[2];
     cell.click();
 });
-// L4 teaches staggered delays — dismiss its tutorial so the sim starts.
+// L3 is a single direct fuse — non-sticky — so the ahead-cut can land anywhere
+// on it. Dismiss its tutorial so the sim starts.
 await page.waitForFunction(() => document.getElementById("tutorial-overlay").style.display === "flex", null, { timeout: 8000 });
 await page.click("#tutorial-next");
-// Wait until the first spark is ignited and moving.
+// Wait until the first spark is ignited and moving. (L1 is a direct fuse —
+// non-sticky — so the ahead-cut can land anywhere on it.)
 await page.waitForFunction(() => {
     const g = window.__CTF__.game;
     return g.sparks.some((s) => s.ignited && s.active);

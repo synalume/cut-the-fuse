@@ -2664,13 +2664,13 @@ function buildLevels() {
             };
         } else if (n === 3) {
             level.tutorial = {
-                text: "This fuse burns FAST! The moment the spark appears, cut it — don't wait.",
+                text: "This fuse burns FAST! The spark races — cut the wick AHEAD of it before it reaches the end.",
                 focus: "spawn",
                 highlight: "s1",
             };
         } else if (n === 4) {
             level.tutorial = {
-                text: "Sparks start one at a time — watch the delay, snip each fuse as it ignites.",
+                text: "Sparks start one at a time — watch the delay, snip each fuse as it ignites. These wicks are STICKY: cutting near the match makes them snap back — let the spark reach the junction, then cut.",
                 focus: "spawn",
                 highlight: "s1",
             };
@@ -2682,7 +2682,7 @@ function buildLevels() {
             };
         } else if (n === 8) {
             level.tutorial = {
-                text: "See that fork in the wick? When the fire reaches it, a NEW wick lights from that point! Snip the first fuse EARLY to stop it — or be ready to cut the new wick.",
+                text: "See that fork in the wick? When the fire reaches it, a NEW wick lights from that point! The fork is sticky — cut the parent PAST the fork, then snip the new wick too.",
                 focus: "spawn",
                 highlight: "s1",
             };
@@ -2700,7 +2700,7 @@ function buildLevels() {
             };
         } else if (n === 25) {
             level.tutorial = {
-                text: "TWO wicks fork now. Cut a parent EARLY to stop both — or be ready to snip every new wick it lights.",
+                text: "TWO wicks fork now. Both forks are sticky — cut each parent PAST its fork, then snip every new wick it lights.",
                 focus: "spawn",
                 highlight: "s1",
             };

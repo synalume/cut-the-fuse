@@ -250,6 +250,7 @@ canvas { display: block; position: absolute; z-index: 10; }
     text-transform: uppercase;
 }
 #win-stats .stat.record { background: #d97706; color: #fff7ed; padding: 8px 13px 2px; animation: win-record-pulse 0.9s ease-in-out infinite alternate; } /* pure-caps pills: Luckiest Guy's tall "!" sits high, needs extra top padding */
+#win-stats .stat.coverage { background: #dc2626; color: #fef2f2; } /* flame-red: how much of the maze actually burned */
 #win-stats .stat.perfect { background: #16a34a; color: #f0fdf4; padding: 8px 13px 1px; } /* larger-glyph pills need more top-heavy padding */
 #win-stats .stat.streak { background: #b45309; color: #fffbeb; padding: 8px 13px 2px; animation: win-record-pulse 0.9s ease-in-out infinite alternate; }
 #win-stats .stat.score { background: #f59e0b; color: #451a03; font-size: 1.1rem; padding: 9px 13px 0; }

@@ -109,7 +109,7 @@
             }
         ],
         "tutorial": {
-            "text": "This fuse burns FAST! The moment the spark appears, cut it — don't wait.",
+            "text": "This fuse burns FAST! The spark races — cut the wick AHEAD of it before it reaches the end.",
             "focus": "spawn",
             "highlight": "s1"
         }
@@ -164,7 +164,7 @@
             }
         ],
         "tutorial": {
-            "text": "Sparks start one at a time — watch the delay, snip each fuse as it ignites.",
+            "text": "Sparks start one at a time — watch the delay, snip each fuse as it ignites. These wicks are STICKY: cutting near the match makes them snap back — let the spark reach the junction, then cut.",
             "focus": "spawn",
             "highlight": "s1"
         }
@@ -440,7 +440,7 @@
             }
         ],
         "tutorial": {
-            "text": "See that fork in the wick? When the fire reaches it, a NEW wick lights from that point! Snip the first fuse EARLY to stop it — or be ready to cut the new wick.",
+            "text": "See that fork in the wick? When the fire reaches it, a NEW wick lights from that point! The fork is sticky — cut the parent PAST the fork, then snip the new wick too.",
             "focus": "spawn",
             "highlight": "s1"
         }
@@ -448,7 +448,7 @@
     {
         "level_id": 9,
         "layout": "offset",
-        "snipsAllowed": 5,
+        "snipsAllowed": 2,
         "par": 16.9,
         "payload": {
             "id": "bomb",
@@ -563,7 +563,7 @@
     {
         "level_id": 10,
         "layout": "hub",
-        "snipsAllowed": 4,
+        "snipsAllowed": 3,
         "par": 17.2,
         "payload": {
             "id": "bomb",
@@ -658,7 +658,7 @@
     {
         "level_id": 11,
         "layout": "split",
-        "snipsAllowed": 4,
+        "snipsAllowed": 3,
         "par": 16.4,
         "payload": {
             "id": "bomb",
@@ -887,7 +887,7 @@
     {
         "level_id": 13,
         "layout": "hub",
-        "snipsAllowed": 4,
+        "snipsAllowed": 3,
         "par": 18,
         "payload": {
             "id": "bomb",
@@ -1495,7 +1495,7 @@
     {
         "level_id": 18,
         "layout": "split",
-        "snipsAllowed": 5,
+        "snipsAllowed": 4,
         "par": 18.9,
         "payload": {
             "id": "bomb",
@@ -1611,7 +1611,7 @@
     {
         "level_id": 19,
         "layout": "offset",
-        "snipsAllowed": 5,
+        "snipsAllowed": 4,
         "par": 13.5,
         "payload": {
             "id": "bomb",
@@ -2241,7 +2241,7 @@
     {
         "level_id": 24,
         "layout": "hub",
-        "snipsAllowed": 5,
+        "snipsAllowed": 3,
         "par": 18.2,
         "payload": {
             "id": "bomb",
@@ -2358,7 +2358,7 @@
     {
         "level_id": 25,
         "layout": "rings",
-        "snipsAllowed": 6,
+        "snipsAllowed": 5,
         "par": 21,
         "payload": {
             "id": "bomb",
@@ -2525,7 +2525,7 @@
             }
         },
         "tutorial": {
-            "text": "TWO wicks fork now. Cut a parent EARLY to stop both — or be ready to snip every new wick it lights.",
+            "text": "TWO wicks fork now. Both forks are sticky — cut each parent PAST its fork, then snip every new wick it lights.",
             "focus": "spawn",
             "highlight": "s1"
         }
@@ -2533,7 +2533,7 @@
     {
         "level_id": 26,
         "layout": "split",
-        "snipsAllowed": 6,
+        "snipsAllowed": 4,
         "par": 22.5,
         "payload": {
             "id": "bomb",
@@ -2709,7 +2709,7 @@
     {
         "level_id": 27,
         "layout": "hub",
-        "snipsAllowed": 6,
+        "snipsAllowed": 5,
         "par": 16.2,
         "payload": {
             "id": "bomb",
@@ -2881,7 +2881,7 @@
     {
         "level_id": 28,
         "layout": "rings",
-        "snipsAllowed": 6,
+        "snipsAllowed": 5,
         "par": 14.4,
         "payload": {
             "id": "bomb",
@@ -3211,7 +3211,7 @@
     {
         "level_id": 30,
         "layout": "split",
-        "snipsAllowed": 6,
+        "snipsAllowed": 4,
         "par": 20.9,
         "payload": {
             "id": "bomb",
@@ -3381,7 +3381,7 @@
     {
         "level_id": 31,
         "layout": "offset",
-        "snipsAllowed": 6,
+        "snipsAllowed": 5,
         "par": 20.8,
         "payload": {
             "id": "bomb",
@@ -3698,7 +3698,7 @@
     {
         "level_id": 33,
         "layout": "hub",
-        "snipsAllowed": 6,
+        "snipsAllowed": 5,
         "par": 21.8,
         "payload": {
             "id": "bomb",
@@ -3867,7 +3867,7 @@
     {
         "level_id": 34,
         "layout": "split",
-        "snipsAllowed": 5,
+        "snipsAllowed": 4,
         "par": 11.5,
         "payload": {
             "id": "bomb",
@@ -4366,7 +4366,7 @@
     {
         "level_id": 37,
         "layout": "weave",
-        "snipsAllowed": 6,
+        "snipsAllowed": 5,
         "par": 11.9,
         "payload": {
             "id": "bomb",
@@ -5399,7 +5399,7 @@
     {
         "level_id": 43,
         "layout": "hub",
-        "snipsAllowed": 6,
+        "snipsAllowed": 5,
         "par": 18.5,
         "payload": {
             "id": "bomb",
@@ -5570,7 +5570,7 @@
     {
         "level_id": 44,
         "layout": "offset",
-        "snipsAllowed": 7,
+        "snipsAllowed": 4,
         "par": 25.7,
         "payload": {
             "id": "bomb",
@@ -5738,7 +5738,7 @@
     {
         "level_id": 45,
         "layout": "weave",
-        "snipsAllowed": 7,
+        "snipsAllowed": 6,
         "par": 28.9,
         "payload": {
             "id": "bomb",
@@ -6113,7 +6113,7 @@
     {
         "level_id": 47,
         "layout": "weave",
-        "snipsAllowed": 5,
+        "snipsAllowed": 4,
         "par": 21.6,
         "payload": {
             "id": "bomb",
@@ -6479,7 +6479,7 @@
     {
         "level_id": 49,
         "layout": "split",
-        "snipsAllowed": 5,
+        "snipsAllowed": 4,
         "par": 17.9,
         "payload": {
             "id": "bomb",
@@ -6855,7 +6855,7 @@
     {
         "level_id": 51,
         "layout": "split",
-        "snipsAllowed": 6,
+        "snipsAllowed": 3,
         "par": 24.6,
         "payload": {
             "id": "bomb",
@@ -7066,7 +7066,7 @@
     {
         "level_id": 52,
         "layout": "weave",
-        "snipsAllowed": 4,
+        "snipsAllowed": 3,
         "par": 29.7,
         "payload": {
             "id": "bomb",
@@ -7472,7 +7472,7 @@
     {
         "level_id": 54,
         "layout": "split",
-        "snipsAllowed": 6,
+        "snipsAllowed": 5,
         "par": 24.4,
         "payload": {
             "id": "bomb",
@@ -7671,7 +7671,7 @@
     {
         "level_id": 55,
         "layout": "offset",
-        "snipsAllowed": 6,
+        "snipsAllowed": 4,
         "par": 32.7,
         "payload": {
             "id": "bomb",
@@ -8844,7 +8844,7 @@
     {
         "level_id": 61,
         "layout": "weave",
-        "snipsAllowed": 5,
+        "snipsAllowed": 4,
         "par": 22.3,
         "payload": {
             "id": "bomb",
@@ -8991,7 +8991,7 @@
     {
         "level_id": 62,
         "layout": "offset",
-        "snipsAllowed": 5,
+        "snipsAllowed": 4,
         "par": 14.9,
         "payload": {
             "id": "bomb",
@@ -9784,7 +9784,7 @@
     {
         "level_id": 68,
         "layout": "hub",
-        "snipsAllowed": 5,
+        "snipsAllowed": 4,
         "par": 17.9,
         "payload": {
             "id": "bomb",
@@ -9920,7 +9920,7 @@
     {
         "level_id": 69,
         "layout": "weave",
-        "snipsAllowed": 5,
+        "snipsAllowed": 4,
         "par": 15.9,
         "payload": {
             "id": "bomb",
@@ -10072,7 +10072,7 @@
     {
         "level_id": 70,
         "layout": "hub",
-        "snipsAllowed": 5,
+        "snipsAllowed": 4,
         "par": 20.8,
         "payload": {
             "id": "bomb",
@@ -10232,7 +10232,7 @@
     {
         "level_id": 71,
         "layout": "offset",
-        "snipsAllowed": 4,
+        "snipsAllowed": 3,
         "par": 16.4,
         "payload": {
             "id": "bomb",
@@ -11170,7 +11170,7 @@
     {
         "level_id": 77,
         "layout": "weave",
-        "snipsAllowed": 5,
+        "snipsAllowed": 4,
         "par": 20.9,
         "payload": {
             "id": "bomb",
@@ -11522,7 +11522,7 @@
     {
         "level_id": 79,
         "layout": "rings",
-        "snipsAllowed": 5,
+        "snipsAllowed": 4,
         "par": 26.5,
         "payload": {
             "id": "bomb",
@@ -11878,7 +11878,7 @@
     {
         "level_id": 81,
         "layout": "rings",
-        "snipsAllowed": 5,
+        "snipsAllowed": 4,
         "par": 28,
         "payload": {
             "id": "bomb",
@@ -12059,7 +12059,7 @@
     {
         "level_id": 82,
         "layout": "weave",
-        "snipsAllowed": 6,
+        "snipsAllowed": 5,
         "par": 27.9,
         "payload": {
             "id": "bomb",
@@ -12228,7 +12228,7 @@
     {
         "level_id": 83,
         "layout": "offset",
-        "snipsAllowed": 5,
+        "snipsAllowed": 4,
         "par": 31.7,
         "payload": {
             "id": "bomb",
@@ -12404,7 +12404,7 @@
     {
         "level_id": 84,
         "layout": "hub",
-        "snipsAllowed": 7,
+        "snipsAllowed": 6,
         "par": 21.7,
         "payload": {
             "id": "bomb",
@@ -14073,7 +14073,7 @@
     {
         "level_id": 93,
         "layout": "twin",
-        "snipsAllowed": 5,
+        "snipsAllowed": 4,
         "par": 13.5,
         "payload": {
             "id": "bomb1",
@@ -15712,7 +15712,7 @@
     {
         "level_id": 103,
         "layout": "twin",
-        "snipsAllowed": 5,
+        "snipsAllowed": 4,
         "par": 24.6,
         "payload": {
             "id": "bomb1",
@@ -17155,7 +17155,7 @@
     {
         "level_id": 111,
         "layout": "twin",
-        "snipsAllowed": 5,
+        "snipsAllowed": 3,
         "par": 30.5,
         "payload": {
             "id": "bomb1",

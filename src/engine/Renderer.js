@@ -260,6 +260,7 @@ export class Renderer {
         this._drawSnipFeedback(game);
         // Onboarding demo hand rides on top of everything while the tutorial is up.
         this._drawTutorialDemo(game);
+        this._drawForkTutorialDemo(game);
 
         ctx.restore();
 
@@ -590,7 +591,9 @@ export class Renderer {
                     const t = fuseTangent(fuse, u);
                     // Static organic jitter only — no time-based vibration.
                     const amp = 0.35 * Math.sin(u * 27 + seed) + 0.15 * Math.sin(u * 9 + seed * 2);
-                    return { x: pt.x - t.y * amp, y: pt.y + t.x * amp };
+                    // Sticky "pluck": the damped wiggle after a denied early cut.
+                    const snap = this._snapWiggle(game, fuse, u);
+                    return { x: pt.x - t.y * (amp + snap), y: pt.y + t.x * (amp + snap) };
                 };
 
                 // A branch wick renders like any live wick — the fork is meant
@@ -646,6 +649,32 @@ export class Renderer {
                 }
             }
         }
+    }
+
+    /** Sticky "pluck" — the damped wick wiggle after a denied early cut. The
+     *  matchstick→junction segment boings like a plucked string (peaks at the
+     *  denied cut point, settles at the junction, dies out ~0.7s), while the
+     *  maze past the cross-section stays still. Renderer-only: the sim never
+     *  reads this. */
+    _snapWiggle(game, fuse, u) {
+        const anim = fuse.snapAnim;
+        if (!anim) return 0;
+        const age = game.frameCount - anim.at;
+        const DURATION = 44; // ~0.73s at 60fps
+        if (age < 0 || age > DURATION) return 0;
+        // Only the sticky segment (before the junction) moves; past it, the
+        // wiggle fades so the maze reads as solid ground the spark still runs.
+        const sticky = fuse.stickyT || 0.5;
+        let zone = 1;
+        if (u >= sticky) {
+            zone = Math.max(0, 1 - (u - sticky) / 0.15);
+            if (zone <= 0) return 0;
+        }
+        const env = Math.exp(-age / 9); // time decay
+        const dist = (u - anim.u) / sticky; // parameter distance from the denied point
+        const spread = Math.exp(-dist * dist * 4); // gaussian falloff along the wick
+        const osc = Math.sin(u * 9 - age * 1.5); // traveling ripples that settle
+        return 7 * env * spread * osc * zone;
     }
 
     /** Water drops: a droplet rides each doused fuse at its douse point. When
@@ -1556,6 +1585,38 @@ export class Renderer {
     _drawSnipFeedback(game) {
         const ctx = this.ctx;
 
+        if (game.snapSlash && game.snapSlash.life > 0.02) {
+            const d = game.snapSlash;
+            const mx = (d.start.x + d.end.x) / 2;
+            const my = (d.start.y + d.end.y) / 2;
+            ctx.save();
+            ctx.lineCap = "round";
+            // Bold amber slash: the denied cut reads as elastic snap-back, not
+            // a live cut (which flashes white) nor a wrong-wire (red X).
+            ctx.globalAlpha = 0.95 * d.life;
+            ctx.lineWidth = 12 * d.life + 2;
+            ctx.strokeStyle = "#f59e0b";
+            ctx.beginPath();
+            ctx.moveTo(d.start.x, d.start.y);
+            ctx.lineTo(d.end.x, d.end.y);
+            ctx.stroke();
+            // Zig-zag at the middle: the wick "boinged" back.
+            const ang = d.angle || Math.atan2(d.end.y - d.start.y, d.end.x - d.start.x);
+            const perp = ang + Math.PI / 2;
+            ctx.lineWidth = 4;
+            ctx.strokeStyle = `rgba(245, 158, 11, ${(0.9 * d.life).toFixed(3)})`;
+            const amp = 8 * d.life + 2;
+            for (let i = -2; i <= 2; i++) {
+                const bx = mx + Math.cos(ang) * i * 6;
+                const by = my + Math.sin(ang) * i * 6;
+                ctx.beginPath();
+                ctx.moveTo(bx - Math.cos(perp) * amp * (0.5 + Math.abs(i) * 0.2), by - Math.sin(perp) * amp * (0.5 + Math.abs(i) * 0.2));
+                ctx.lineTo(bx + Math.cos(perp) * amp * (0.5 + Math.abs(i) * 0.2), by + Math.sin(perp) * amp * (0.5 + Math.abs(i) * 0.2));
+                ctx.stroke();
+            }
+            ctx.restore();
+        }
+
         if (game.wireDeniedSlash && game.wireDeniedSlash.life > 0.02) {
             const d = game.wireDeniedSlash;
             const mx = (d.start.x + d.end.x) / 2;
@@ -1624,6 +1685,9 @@ export class Renderer {
     _activePopupWords(game) {
         const active = (at, dur) => at != null && game.frameCount >= at && game.frameCount - at < dur;
         const out = [];
+        if (game.snapAt && active(game.snapAt.at, 70)) {
+            out.push({ kind: "word", text: "SNAP!", color: "#f59e0b", x: game.snapAt.x, y: game.snapAt.y, size: 27, at: game.snapAt.at, duration: 70, dy: -44 });
+        }
         if (game.wireOffenseAt && active(game.wireOffenseAt.at, 75)) {
             out.push({ kind: "word", text: "WRONG WIRE!", color: "#ef4444", x: game.wireOffenseAt.x, y: game.wireOffenseAt.y, size: 27, at: game.wireOffenseAt.at, duration: 75, dy: -52 });
         }
@@ -1854,6 +1918,59 @@ export class Renderer {
         if (t < 14) alpha = t / 14;
         if (t % (2 * halfCycle) > 2 * halfCycle - 16) alpha = Math.max(0, (2 * halfCycle - (t % (2 * halfCycle))) / 16);
         this._drawHandPointer(ctx, pos.x, pos.y, fingerDir, alpha);
+    }
+
+    /** Level-8 fork lesson: a pointing hand + pulsing halo at the spot where
+     *  the parent wick splits, so the player can SEE where the new wick lights.
+     *  The text card says "see that fork" but a fork on a curved wick is easy
+     *  to miss — the halo marks the fork while the hand points at it from the
+     *  side, fingertip clear of the junction. */
+    _drawForkTutorialDemo(game) {
+        if (!game.tutorialActive) return;
+        if (game.level?.level_id !== 8) return;
+        if (game.snipsUsed > 0) return; // player started — hide the demo
+
+        const bi = (game.sparks || []).findIndex((s) => s.chain);
+        if (bi < 0) return;
+        const chain = game.sparks[bi].chain;
+        const parent = game.fuses[chain.fromFuseIndex];
+        const branch = game.fuses[bi];
+        if (!parent || !branch) return;
+
+        const F = fusePoint(parent, chain.at);
+        const tanP = fuseTangent(parent, chain.at);
+        const branchDir = fuseTangent(branch, 0.02);
+        // Perpendicular to the parent wick, on the side OPPOSITE the branch, so
+        // the hand approaches the fork from clear space (not through the new wick).
+        let perp = { x: -tanP.y, y: tanP.x };
+        if (perp.x * branchDir.x + perp.y * branchDir.y > 0) perp = { x: -perp.x, y: -perp.y };
+        const approach = { x: -perp.x, y: -perp.y }; // hand side → fork
+
+        // Wall-clock time (the sim is frozen while the tutorial is up).
+        const t = performance.now() / 16.667;
+
+        const ctx = this.ctx;
+        // Pulsing halo so the fork point reads even in peripheral vision.
+        const pulse = Math.sin(t * 0.08);
+        ctx.save();
+        ctx.globalAlpha = 0.55 + pulse * 0.2;
+        ctx.lineWidth = 4;
+        ctx.strokeStyle = "#f59e0b";
+        ctx.beginPath();
+        ctx.arc(F.x, F.y, 24 + pulse * 3, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.restore();
+
+        // Hand: positioned a short distance off the fork along the approach
+        // side (left of the junction), fingertip aimed AT the split so it
+        // points to the spot without covering the branch point. Bobbing gently
+        // perpendicular to the aim so the finger stays on target.
+        let alpha = 1;
+        if (t < 14) alpha = t / 14;
+        const GAP = 44; // world units from the fork to the fingertip
+        const bob = Math.sin(t * 0.055) * 8;
+        const pos = { x: F.x + perp.x * (GAP + bob), y: F.y + perp.y * (GAP + bob) };
+        this._drawHandPointer(ctx, pos.x, pos.y, approach, alpha);
     }
 
     /** Draw the pointer hand rotated so its finger points along `tan`, with its

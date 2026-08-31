@@ -36,7 +36,7 @@ globalThis.cancelAnimationFrame = () => {};
 // ---------------------------------------------------------------------------
 import { buildLevel, validateLevel, computeFitCamera, resolveAssets } from "../../src/engine/LevelManager.js";
 import { GameLoop, STATE } from "../../src/engine/GameLoop.js";
-import { getBezierXY, fusePoint } from "../../src/engine/MathUtils.js";
+import { getBezierXY, fusePoint, fuseLength } from "../../src/engine/MathUtils.js";
 import { SaveManager } from "../../src/engine/SaveManager.js";
 
 function makeStubs() {
@@ -150,8 +150,7 @@ check(swept === levels.length, `winnability sweep: all ${levels.length} levels w
 
 // Shared-chokepoint regression: levels route several wicks through the same
 // intersection (e.g. L4's cut1). ONE snip at the shared spot severs EVERY
-// wick crossing it — the multi-cut (+N) showcase. A 2nd snip at the same spot
-// is correctly rejected (every fuse there is already severed).
+// wick crossing it — the multi-cut (+N) showcase.
 {
     const cfg = levels.find((l) => l.level_id === 4);
     const g = new GameLoop({ canvas: null, ...makeStubs() });
@@ -164,7 +163,7 @@ check(swept === levels.length, `winnability sweep: all ${levels.length} levels w
         [{ x: cp.x - 26, y: cp.y }, { x: cp.x + 26, y: cp.y }]
     );
 
-    check(swipe() === true && g.cuts.length === 2 && g.snipsRemaining === 1,
+    check(swipe() === true && g.cuts.length === 2 && g.snipsRemaining === cfg.snipsAllowed - 1,
         "L4: first snip at shared chokepoint lands (1 snip left)");
     check(g.cutFlashes.length === 1 && g.cutFlashes[0].life === 1,
         "L4: snip spawns a cut flash (vivid slash burst)");
@@ -172,8 +171,70 @@ check(swept === levels.length, `winnability sweep: all ${levels.length} levels w
         "L4: one snip severs both wicks at the shared chokepoint (+2)");
     check(g.fuses.every((f) => g._fuseFullySevered(f)),
         "L4: both fuses are fully severed by the single snip");
-    check(swipe() === false && g.cuts.length === 2 && g.snipsRemaining === 1,
-        "L4: a 2nd snip at the same spot is rejected (both wicks already cut)");
+    check(swipe() === false && g.cuts.length === 2 && g.snipsRemaining === cfg.snipsAllowed - 1,
+        "L4: re-cutting the severed chokepoint rejected even with a snip left");
+}
+
+// Re-cutting an already-severed chokepoint is rejected even WITH a snip to
+// spare: L7 routes 4 wicks through cut1 on a 2-snip budget, so the second
+// swipe must fail because every fuse is already severed — not the budget.
+{
+    const cfg = levels.find((l) => l.level_id === 7);
+    const g = new GameLoop({ canvas: null, ...makeStubs() });
+    g.loadLevel(buildLevel(cfg, { width: 1280, height: 720 }), 0);
+    const cp = g.level.intersectionMap.cut1;
+
+    const swipe = () => g.tryCut(
+        { x: cp.x - 26, y: cp.y },
+        { x: cp.x + 26, y: cp.y },
+        [{ x: cp.x - 26, y: cp.y }, { x: cp.x + 26, y: cp.y }]
+    );
+
+    check(swipe() === true && g.multikills.length === 1 && g.multikills[0].count === 4,
+        "L7: first snip severs all 4 wicks at the shared chokepoint");
+    check(swipe() === false && g.cuts.length === 4 && g.snipsRemaining === 1,
+        "L7: 2nd snip at the same spot rejected (every wick already cut)");
+}
+
+// Sticky wicks: a cross-sectioned wick can't be cut before its junction — the
+// cut snaps back (denied, snip refunded) so the spark always reaches the maze
+// instead of the player ending the level at the root.
+{
+    // L4: routed chokepoint at t≈0.5 — an early cut snaps, the junction cut lands.
+    const cfg4 = levels.find((l) => l.level_id === 4);
+    const g4 = new GameLoop({ canvas: null, ...makeStubs() });
+    g4.loadLevel(buildLevel(cfg4, { width: 1280, height: 720 }), 0);
+    const f0 = g4.fuses[0];
+    check(f0.stickyT != null && f0.stickyT < 1, "sticky: routed L4 wicks carry a junction t", String(f0.stickyT));
+    const early = fusePoint(f0, 0.2);
+    const before = g4.snipsRemaining;
+    const denied = !swipeAcross(g4, early.x, early.y);
+    check(denied && g4.snipsRemaining === before && g4.snapAt != null && g4.snapSlash != null,
+        "sticky: cutting before the junction snaps back (denied, snip refunded, snap FX)");
+    check(f0.snapAnim != null && f0.snapAnim.u < f0.stickyT,
+        "sticky: the denied wick carries a pluck animation at the denied point", String(f0.snapAnim?.u));
+    g4.resetLevel();
+    check(f0.snapAnim == null, "sticky: the pluck clears on reset");
+    const cp = g4.level.intersectionMap.cut1;
+    check(swipeAcross(g4, cp.x, cp.y), "sticky: cutting AT the junction lands");
+
+    // L5: the root-cut shortcut (one swipe through the spawn cluster) is denied.
+    const cfg5 = levels.find((l) => l.level_id === 5);
+    const g5 = new GameLoop({ canvas: null, ...makeStubs() });
+    g5.loadLevel(buildLevel(cfg5, { width: 1280, height: 720 }), 0);
+    const s = g5.level.nodeMap;
+    const before5 = g5.snipsRemaining;
+    const denied5 = !swipeAcross(g5, (s.s1.x + s.s2.x + s.s3.x) / 3, s.s1.y);
+    check(denied5 && g5.snipsRemaining === before5, "sticky: L5 root-cut through the spawn cluster is denied");
+
+    // Poisoned crossroads are exempt: L9's safe wicks share cut1 with a red
+    // decoy, so their upstream leg cuts must still land.
+    const cfg9 = levels.find((l) => l.level_id === 9);
+    const g9 = new GameLoop({ canvas: null, ...makeStubs() });
+    g9.loadLevel(buildLevel(cfg9, { width: 1280, height: 720 }), 0);
+    check(g9.fuses[0].stickyT == null, "sticky: poisoned-crossroad wicks are exempt", String(g9.fuses[0].stickyT));
+    const leg = fusePoint(g9.fuses[0], 0.24);
+    check(swipeAcross(g9, leg.x, leg.y), "sticky: L9 leg cut (u=0.24) still lands");
 }
 
 // Snip-budget onboarding: the LAST SNIP! heads-up fires when dropping to 1, and
@@ -526,52 +587,83 @@ check(swept === levels.length, `winnability sweep: all ${levels.length} levels w
     check(g.ddaTier === 3 && g.snipsRemaining === baseSnips + 1, "DDA: capped at max tier");
 }
 
-// Star scoring
+// Star scoring (burn-coverage model). Runs on L4 — the first junction level —
+// so the coverage path is what's exercised; the tutorial band (L1-3) is a
+// win-based 3★ exception tested after.
 {
     const g = new GameLoop({ canvas: null, ...makeStubs() });
-    g.loadLevel(lvl1, 0);
-    g.snipsRemaining = 1;
-    check(g.computeStars() === 3, "Stars: 1+ snips left → 3★");
-    g.snipsRemaining = 0;
-    g.snipsUsed = 2;
-    check(g.computeStars() === 2, "Stars: all snips used → 2★");
+    g.loadLevel(buildLevel(levels.find((l) => l.level_id === 4), { width: 1280, height: 720 }), 0);
 
-    // The 3-star goal ("finish with a snip left") must stay reachable on every
-    // level: either a spare snip, or — on star-critical zero-slack levels — a
-    // gold pickup star that banks one. min-cuts uses the NEW winnability math
-    // (poisoned crossroads, doused/forbidden freebies).
-    const minCutsFor = (c) => {
-        const wr = c.wireRule || null;
-        const isForb = (f) => !!(wr && wr.legend[f.color] === "no");
-        const doused = new Set((c.douse || []).map((d) => d.fuse));
-        const byCp = new Map();
-        for (const f of c.fuses) {
-            if (!f.routeThrough) continue;
-            if (!byCp.has(f.routeThrough)) byCp.set(f.routeThrough, []);
-            byCp.get(f.routeThrough).push(f);
+    // burnCoverage = share of live wick that actually burned (decoys excluded).
+    g.fuses.forEach((f) => (f.burntProgress = 0.5));
+    check(Math.abs(g.burnCoverage - 0.5) < 1e-9, "Stars: burnCoverage is the live-wick fraction", String(g.burnCoverage));
+    check(g.computeStars() === 3, "Stars: 50% burn → 3★");
+    // Values sit just OFF the thresholds (0.3 / 0.15) — float accumulation over
+    // multiple fuses makes an exact 0.30 read 0.2999…, and real play never lands
+    // on the boundary anyway (tightest intended burn is 34.6%).
+    g.fuses.forEach((f) => (f.burntProgress = 0.31));
+    check(g.computeStars() === 3, "Stars: 31% burn (above 3★ threshold) → 3★");
+    g.fuses.forEach((f) => (f.burntProgress = 0.25));
+    check(g.computeStars() === 2, "Stars: 25% burn → 2★");
+    g.fuses.forEach((f) => (f.burntProgress = 0.16));
+    check(g.computeStars() === 2, "Stars: 16% burn (above 2★ floor) → 2★");
+    g.fuses.forEach((f) => (f.burntProgress = 0.05));
+    check(g.computeStars() === 1, "Stars: 5% burn (root-cut) → 1★");
+
+    // Tutorial band: L1 has no cross-sections, so even a ~0% burn wins 3★.
+    const gTut = new GameLoop({ canvas: null, ...makeStubs() });
+    gTut.loadLevel(lvl1, 0);
+    gTut.fuses.forEach((f) => (f.burntProgress = 0.01));
+    check(gTut.computeStars() === 3, "Stars: junctionless L1 wins 3★ regardless of burn (tutorial band)");
+
+    // The 3★ goal (sparks burn ≥30% of the live wick network) must stay
+    // reachable on every level with the intended chokepoint/douse cuts. Model
+    // the real death point — a spark dies the first time it comes within
+    // CUT_RADIUS of a stop cut, not at the exact chokepoint — plus branch
+    // starvation (a parent cut before the fork never lights its child).
+    const CUT_RADIUS = 15;
+    const tAtStop = (fuse, x, y) => {
+        for (let t = 0; t <= 1.001; t += 0.005) {
+            const p = fusePoint(fuse, t);
+            if (Math.hypot(p.x - x, p.y - y) <= CUT_RADIUS) return t;
         }
-        let min = 0;
-        for (const [, grp] of byCp) {
-            const hasForbidden = grp.some(isForb);
-            const cuttable = grp.filter((f) => !isForb(f) && !doused.has(f.id));
-            if (hasForbidden) {
-                for (const f of cuttable) min += 1;
-            } else if (cuttable.length) {
-                min += 1;
-            }
-        }
-        for (const f of c.fuses) {
-            if (f.routeThrough || isForb(f) || doused.has(f.id)) continue;
-            min += 1;
-        }
-        return min;
+        return 1;
     };
-    let noSlack = [];
+    const low = [];
     for (const c of levels) {
-        const spare = c.snipsAllowed - minCutsFor(c);
-        if (spare < 1 && !(c.pickups && c.pickups.length)) noSlack.push(`L${c.level_id}`);
+        const lv = buildLevel(c, { width: 480, height: 800 });
+        const douseT = new Map((c.douse || []).map((d) => [d.fuse, d.at]));
+        const stopT = lv.fuses.map((f, i) => {
+            if (f.neverLights) return 0;
+            let t = 1;
+            const cf = c.fuses[i];
+            if (cf.routeThrough && lv.intersectionMap[cf.routeThrough]) {
+                const I = lv.intersectionMap[cf.routeThrough];
+                t = tAtStop(f, I.x, I.y);
+            }
+            const dt = douseT.get(f.id);
+            if (dt != null) t = Math.min(t, dt);
+            return t;
+        });
+        const parentStop = lv.fuses.map((f, i) => {
+            const sp = lv.sparks[i];
+            if (sp.chain) {
+                const p = sp.chain.fromFuseIndex;
+                if (stopT[p] != null && stopT[p] < sp.chain.at) return 0;
+            }
+            return 1;
+        });
+        let tot = 0;
+        let burned = 0;
+        for (let i = 0; i < lv.fuses.length; i++) {
+            const len = lv.fuses[i].neverLights ? 0 : fuseLength(lv.fuses[i]);
+            tot += len;
+            burned += len * stopT[i] * parentStop[i];
+        }
+        const cov = tot ? burned / tot : 1;
+        if (cov < 0.3) low.push(`L${c.level_id} (${(cov * 100).toFixed(0)}%)`);
     }
-    check(noSlack.length === 0, "Stars: 3★ reachable via a spare snip or pickup stars", noSlack.join(", "));
+    check(low.length === 0, "Stars: 3★ burn ≥30% reachable on every level", low.join(", "));
 }
 
 // Fork ignition: a branch wick splits off its parent's wick at the fork point.
@@ -579,8 +671,8 @@ check(swept === levels.length, `winnability sweep: all ${levels.length} levels w
 // exists once the parent's burn crosses the fork (`at`), then it races down the
 // branch. The fork sits BEFORE the parent's cut target (t=0.5), so a normal
 // chokepoint cut CANNOT silently erase the branch — it lights first and
-// demands its own cut. To PREVENT the branch the player must cut the parent
-// EARLY (before the fork), saving that snip.
+// demands its own cut. Sticky forks make the old "cut the parent EARLY to
+// starve the branch" play illegal: cutting before the fork snaps back.
 {
     const forkLvls = levels.filter((l) => l.fuses.some((f) => f.branchOf));
     const firstFork = levels.find((l) => l.fuses.some((f) => f.branchOf));
@@ -645,16 +737,25 @@ check(swept === levels.length, `winnability sweep: all ${levels.length} levels w
         "fork: cutting all chokepoints still lets the branch light (no early win) — it dies at its own cut"
     );
 
-    // Prevention: cut the parent's wick BEFORE the fork → the branch duds and
-    // never lights. The early cut must land FIRST (a severed fuse can't take a
-    // second cut through the real pipeline).
+    // Sticky forks: cutting the parent BEFORE the fork snaps back (denied, snip
+    // refunded) — the fork is a cross-section, so the branch can't be starved.
+    // The parent dies at its chokepoint cut after the fork lights, and the
+    // branch dies at its own cut, so the level still wins on all chokepoint cuts.
     const parentFuse = level.fuses[parentSpark.fuseIndex];
     const early = getBezierXY(childSpark.chain.at - 0.1, parentFuse.startNode, parentFuse.cp1, parentFuse.cp2, parentFuse.endNode);
+    {
+        const g0 = new GameLoop({ canvas: null, ...makeStubs() });
+        g0.loadLevel(buildLevel(cfg, { width: 1280, height: 720 }), 0);
+        const before = g0.snipsRemaining;
+        const denied = !swipeAcross(g0, early.x, early.y);
+        check(denied && g0.snipsRemaining === before && g0.snapAt != null,
+            "fork: cutting the parent before the fork snaps back (sticky deny, snip refunded)");
+    }
     const gPrev = run([{ x: early.x, y: early.y }, ...allCuts]);
     const childPrev = gPrev.sparks.find((s) => s.chain);
     check(
-        gPrev.gameState === STATE.WON && !childPrev.ignited && !childPrev.active,
-        "fork: cutting the parent BEFORE the fork breaks the branch (never lights)"
+        gPrev.gameState === STATE.WON && childPrev.ignited && childPrev.triggered,
+        "fork: a denied pre-fork cut still lets the branch light and die at its own cut"
     );
 
     // A parent that dies AFTER crossing the fork must still light the branch:
@@ -993,9 +1094,10 @@ check(swept === levels.length, `winnability sweep: all ${levels.length} levels w
 }
 
 // PERFECT SNIP: a cut placed just ahead of a burning spark counts; a cut far
-// from the spark does not.
+// from the spark does not. Runs on L1 — a direct (non-sticky) fuse so the
+// ahead-cut lands regardless of the sticky-wick rule.
 {
-    const cfg = levels.find((l) => l.level_id === 4); // one shared chokepoint, slow spark
+    const cfg = levels.find((l) => l.level_id === 1); // single direct fuse, slow spark
     const g = new GameLoop({ canvas: null, ...makeStubs() });
     const level = buildLevel(cfg, { width: 1280, height: 720 });
     g.loadLevel(level, 0);

@@ -61,6 +61,7 @@ const menuStars = $("menu-stars");
 const winStars = $("win-stars");
 const winTime = $("win-time");
 const winRecord = $("win-record");
+const winCoverage = $("win-coverage");
 const winPerfect = $("win-perfect");
 const winPerfectCount = $("win-perfect-count");
 const winScore = $("win-score");
@@ -397,6 +398,16 @@ game.onLevelComplete = (levelId, stars, won) => {
         const isRecord = save.setBestTime(levelId, seconds);
         winTime.textContent = `TIME ${seconds.toFixed(1)}s`;
         winRecord.style.display = isRecord ? "inline-block" : "none";
+        // Maze readout: how much of the wick network actually burned. Root-cut
+        // shortcuts that starve the maze hang near 0-10% and read as 1★; the
+        // intended deep cuts land ≥30%. Tutorial levels (no cross-sections)
+        // skip it — their 3★ is win-based, so a low burn would read as a bug.
+        const hasCrossSection = (game.fuses || []).some((f) => f.routeThrough)
+            || (game.sparks || []).some((s) => s.chain);
+        winCoverage.style.display = hasCrossSection ? "" : "none";
+        if (hasCrossSection) {
+            winCoverage.textContent = `BURN COVERAGE ${Math.round(game.burnCoverage * 100)}%`;
+        }
 
         // Efficiency score: fewer snips used → higher. Fewest snips = most
         // thinking about where to cut, so it scores highest.
