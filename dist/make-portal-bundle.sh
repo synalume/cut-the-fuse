@@ -11,7 +11,6 @@ set -euo pipefail
 DIST_DIR="$(cd "$(dirname "$0")" && pwd)"
 ROOT="$(cd "$DIST_DIR/.." && pwd)"
 OUT_DIR="$DIST_DIR/out"
-STAGE="$OUT_DIR/stage"
 
 POKI=0
 for arg in "$@"; do
@@ -26,8 +25,13 @@ done
 
 if [[ "$POKI" -eq 1 ]]; then
   ZIP="$OUT_DIR/cut-the-fuse-poki.zip"
+  # Separate stage per build type — a later generic portal build must never
+  # overwrite the Poki stage, or the Poki Inspector sees a build with no SDK
+  # and reports "Has the game initialized the SDK?" as not met.
+  STAGE="$OUT_DIR/stage-poki"
 else
   ZIP="$OUT_DIR/cut-the-fuse-portal.zip"
+  STAGE="$OUT_DIR/stage"
 fi
 
 rm -rf "$STAGE"
@@ -65,7 +69,8 @@ portal_flag = "<script>window.__CUT_THE_FUSE_PORTAL__=true;</script>\n"
 poki_bits = (
     "<!-- POKI_BUILD — PokiSDK (allowed CDN) + gameplay/loading hooks -->\n"
     "<script src=\"https://game-cdn.poki.com/scripts/v2/poki-sdk.js\"></script>\n"
-    "<script>window.__CUT_THE_FUSE_PORTAL__=true;window.__CUT_THE_FUSE_POKI__=true;</script>\n"
+    "<script>window.__CUT_THE_FUSE_PORTAL__=true;window.__CUT_THE_FUSE_POKI__=true;"
+    "console.info(\"%c[cut-the-fuse] POKI BUILD (SDK attached)\", \"color:#22c55e;font-weight:bold\");</script>\n"
 )
 
 inject = marker + (poki_bits if poki else portal_flag)

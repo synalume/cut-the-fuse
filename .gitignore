@@ -1,7 +1,7 @@
 # Generated Playables / portal stage + zip copies
 cert/out/
 playgama/out/stage/
-dist/out/stage/
+dist/out/
 *.zip
 # MuAPI-generated masters — regenerate via tools/gen-marketing
 tools/gen-marketing/out/
