@@ -685,7 +685,13 @@ export class GameLoop {
     // ---- State transitions ------------------------------------------------------
 
     _finishLevel(win) {
-        if (this.gameState !== STATE.PLAYING) return;
+        // No level loaded (menu / boot window) → nothing to finish. Without
+        // this guard any path that reaches here with a null level (empty
+        // spark list + PLAYING state, e.g. the first frames of boot before a
+        // level exists) crashes reading this.level.level_id below. _update
+        // bails earlier too, but _finishLevel is also reachable from input
+        // paths (wire-offense detonation), so guard at the source.
+        if (this.gameState !== STATE.PLAYING || !this.level) return;
         this.audio?.stopLoop("wick_crackle");
         if (win) {
             const stars = this.computeStars();
@@ -765,7 +771,10 @@ export class GameLoop {
     }
 
     _update() {
-        if (this.gameState !== STATE.PLAYING) return;
+        // No level yet (menu/home before PLAY) → nothing to simulate. Without
+        // this guard an empty spark list + PLAYING state would instantly
+        // "win" a null level (_finishLevel reads this.level.level_id).
+        if (this.gameState !== STATE.PLAYING || !this.level) return;
 
         // A snip may have sealed the level (every live spark now doomed to a
         // cut/douse death) — blaze out the remaining burn instead of dragging.

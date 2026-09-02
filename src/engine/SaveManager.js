@@ -1,7 +1,7 @@
 // SaveManager.js — best stars per level, progress, star bank, skins, and the
 // daily-challenge streak.
 // Storage abstraction: localStorage locally, swappable to bridge.storage on
-// Playgama / ytgame.saveData on YouTube Playables. On those platforms the
+// Playgama / ytgame.game.saveData on YouTube Playables. On those platforms the
 // SANCTIONED async backend is the source of truth (both portals forbid direct
 // localStorage) — the synchronous in-memory `data` is what the game reads, and
 // `init()` hydrates it from the platform before boot finishes. Saves are
@@ -59,14 +59,14 @@ export class SaveManager {
         const inPlayables =
             (hasWindow && !!window.__CUT_THE_FUSE_PLAYABLES__) ||
             (typeof ytgame !== "undefined" && !!ytgame.IN_PLAYABLES_ENV);
-        if (inPlayables && typeof ytgame !== "undefined" && ytgame.loadData && ytgame.saveData) {
+        if (inPlayables && typeof ytgame !== "undefined" && ytgame.game?.loadData && ytgame.game?.saveData) {
             return {
                 name: "playables",
                 load: async () => {
-                    const raw = await ytgame.loadData();
+                    const raw = await ytgame.game.loadData();
                     return typeof raw === "string" && raw ? raw : null;
                 },
-                save: async (raw) => { await ytgame.saveData(raw); },
+                save: async (raw) => { await ytgame.game.saveData(raw); },
             };
         }
         return null;

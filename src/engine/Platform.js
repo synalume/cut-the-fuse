@@ -39,10 +39,11 @@ export class Platform {
         if (IN_POKI && typeof PokiSDK !== "undefined") {
             this._pokiBoot();
         }
-        if (IN_PLAYABLES && typeof ytgame !== "undefined" && ytgame.gameReady) {
-            // Readiness is signaled from loadingFinished() (firstFrameReady →
-            // gameReady) once the first playable frame exists; nothing to do at
-            // boot beyond grabbing the callbacks for pause/resume.
+        if (IN_PLAYABLES && typeof ytgame !== "undefined" && ytgame.game?.gameReady) {
+            // Readiness is signaled from main.js on the first painted frame
+            // (signalFirstFrameReady → signalGameReady), with loadingFinished()
+            // as an idempotent backstop; nothing to do at boot beyond grabbing
+            // the callbacks for pause/resume.
         }
         if (IN_PLAYGAMA) {
             window.addEventListener("message", (e) => this._onBridgeMessage(e));
@@ -189,12 +190,12 @@ export class Platform {
         this._pokiUiReady = true;
         this._pokiMaybeLoaded();
         if (IN_PLAYABLES && typeof ytgame !== "undefined") {
-            // Playables lifecycle: firstFrameReady MUST precede gameReady —
-            // first signals frames are rendering, gameReady says the menu is
-            // interactable (the menu IS the first frame here; there's no
-            // separate loading screen).
-            try { if (ytgame.firstFrameReady) ytgame.firstFrameReady(); } catch { /* noop */ }
-            try { if (ytgame.gameReady) ytgame.gameReady(); } catch { /* noop */ }
+            // Backstop only — the normal flow signals both from the first
+            // painted frame in main.js (firstFrameReady MUST NOT wait for the
+            // background art/audio warm: the cert suite times out while assets
+            // still stream on slow connections). Idempotent + order-safe.
+            this.signalFirstFrameReady();
+            this.signalGameReady();
         }
         if (IN_PLAYGAMA && typeof bridge !== "undefined" && bridge.platform?.sendMessage) {
             // Playgama required message once the first playable frame is up —
@@ -203,6 +204,33 @@ export class Platform {
                 try { bridge.platform.sendMessage("game_ready"); } catch { /* noop */ }
             });
         }
+    }
+
+    /** YouTube Playables lifecycle, phase 1: the first frame has rendered.
+     *  Signaled from the first rAF paint in main.js, NOT after assets finish.
+     *  Idempotent — later calls (e.g. loadingFinished backstop) are no-ops.
+     *  Real SDK shape: ytgame.game.firstFrameReady() (NOT top-level — Big
+     *  Fluff passes the cert suite with this namespace). If the game
+     *  namespace isn't present yet the flag stays clear so a later path
+     *  (loadingFinished) retries. */
+    signalFirstFrameReady() {
+        if (this._ffrSent) return;
+        const fn = IN_PLAYABLES && typeof ytgame !== "undefined" ? ytgame.game?.firstFrameReady : null;
+        if (typeof fn !== "function") return; // SDK / game namespace not ready — retry later
+        this._ffrSent = true;
+        try { fn.call(ytgame.game); } catch { /* noop */ }
+    }
+
+    /** YouTube Playables lifecycle, phase 2: the game is interactable. The
+     *  main menu renders and accepts input once openMenu() runs (level art
+     *  loads lazily on PLAY). Idempotent. Real SDK shape:
+     *  ytgame.game.gameReady(). */
+    signalGameReady() {
+        if (this._grSent) return;
+        const fn = IN_PLAYABLES && typeof ytgame !== "undefined" ? ytgame.game?.gameReady : null;
+        if (typeof fn !== "function") return; // SDK / game namespace not ready — retry later
+        this._grSent = true;
+        try { fn.call(ytgame.game); } catch { /* noop */ }
     }
 
     // ---- gameplay / ads ------------------------------------------------------

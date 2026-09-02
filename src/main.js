@@ -732,6 +732,17 @@ function buyLockedItem(item, price) {
 // ---- boot -----------------------------------------------------------------------------
 
 async function boot() {
+    // Start rendering IMMEDIATELY — firstFrameReady must signal on the very
+    // first painted frame, before levels.json / save / art finish loading.
+    // draw() handles the no-level home state (menu spark over the paper bg),
+    // so this is safe from the first rAF. game.start()'s rAF is registered
+    // first, so the one below runs right after the game's first draw in the
+    // same animation frame.
+    game.start();
+    if (platform.isPlayables) {
+        requestAnimationFrame(() => platform.signalFirstFrameReady());
+    }
+
     try {
         const res = await fetch("src/data/levels.json");
         levels = await res.json();
@@ -761,6 +772,10 @@ async function boot() {
     updateUi();
     renderer.menuCard = $("modal-menu");
     openMenu();
+    // The menu is now interactable (star bank + story position from save), so
+    // gameReady follows firstFrameReady. Idempotent; the onAssetsReady
+    // loadingFinished() backstop below can never fire it out of order or twice.
+    if (platform.isPlayables) platform.signalGameReady();
 
     // Load baked audio cues from assets/audio/ (silently skips un-baked cues).
     audio.loadAll();
@@ -769,7 +784,6 @@ async function boot() {
         platform.loadingFinished();
     });
 
-    game.start();
     window.addEventListener("resize", () => {
         renderer.resize();
         // Resize reallocates the canvas backing store, which detaches Poki's
@@ -800,9 +814,10 @@ async function boot() {
         if (typeof ytgame !== "undefined") {
             // Pause/resume freeze the game AND suspend the audio graph (big-
             // fluff pattern). onPause also covers backgrounding/leaving, where
-            // the platform evicts shortly after.
-            try { if (ytgame.onPause) ytgame.onPause(() => { game.setPaused(true); audio.suspend(); }); } catch { /* noop */ }
-            try { if (ytgame.onResume) ytgame.onResume(() => { audio.resume(); game.setPaused(false); }); } catch { /* noop */ }
+            // the platform evicts shortly after. Real SDK shape:
+            // ytgame.system.onPause / ytgame.system.onResume.
+            try { if (ytgame.system?.onPause) ytgame.system.onPause(() => { game.setPaused(true); audio.suspend(); }); } catch { /* noop */ }
+            try { if (ytgame.system?.onResume) ytgame.system.onResume(() => { audio.resume(); game.setPaused(false); }); } catch { /* noop */ }
             // The viewer's YouTube setting is a veto our own control cannot
             // lift — mirror it onto the host mute flag.
             try {

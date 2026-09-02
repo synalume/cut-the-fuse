@@ -171,17 +171,24 @@ console.log("\n[verify] YouTube Playables compliance (mock SDK)");
 const pbInit = () => {
     window.__CUT_THE_FUSE_PLAYABLES__ = true;
     window.__mock = { order: [], saves: [], loads: 0, onPause: null, onResume: null, audioEnabled: true };
+    // Real Playables SDK shape: lifecycle + storage live under ytgame.game,
+    // host signals under ytgame.system (verified against the Big Fluff build
+    // that passes the official cert suite). Top-level ytgame.firstFrameReady
+    // etc. do NOT exist — a mock shaped like the real SDK catches namespace
+    // regressions.
     window.ytgame = {
         IN_PLAYABLES_ENV: true,
-        firstFrameReady: () => window.__mock.order.push("firstFrameReady"),
-        gameReady: () => window.__mock.order.push("gameReady"),
-        loadData: async () => { window.__mock.loads++; return null; },
-        saveData: async (s) => { window.__mock.saves.push(s); },
-        onPause: (cb) => { window.__mock.onPause = cb; },
-        onResume: (cb) => { window.__mock.onResume = cb; },
+        game: {
+            firstFrameReady: () => window.__mock.order.push("firstFrameReady"),
+            gameReady: () => window.__mock.order.push("gameReady"),
+            loadData: async () => { window.__mock.loads++; return null; },
+            saveData: async (s) => { window.__mock.saves.push(s); },
+        },
         system: {
             isAudioEnabled: () => window.__mock.audioEnabled,
             onAudioEnabledChange: (cb) => { window.__mock.onAudioEnabledChange = cb; },
+            onPause: (cb) => { window.__mock.onPause = cb; },
+            onResume: (cb) => { window.__mock.onResume = cb; },
         },
     };
 };
