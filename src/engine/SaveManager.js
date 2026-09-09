@@ -22,6 +22,7 @@ const freshDefaults = () => ({
     selectedIgniter: null,
     bestTimes: {}, // levelId -> best clear seconds (float)
     bestScores: {}, // levelId -> best efficiency score (int)
+    hints: 3, // X-ray hint credits (rewarded-ad refill on Playables)
     dailyStreak: 0, // consecutive days with a completed daily challenge
     lastDailyDay: null, // "YYYY-MM-DD" of the last completed daily
     dailyCompleted: {}, // "YYYY-MM-DD" -> true
@@ -50,8 +51,15 @@ export class SaveManager {
                 name: "playgama",
                 load: async () => {
                     if (!bridge.storage?.get) return null;
-                    const arr = await bridge.storage.get([KEY]);
-                    return (Array.isArray(arr) && typeof arr[0] === "string" && arr[0]) || null;
+                    const res = await bridge.storage.get([KEY]);
+                    // Real Bridge v2 parses stored JSON on read (get's
+                    // tryParseJson defaults true), so a value we saved as a
+                    // JSON STRING can come back as an already-parsed OBJECT.
+                    // Accept both shapes — anything else normalizes back to
+                    // the JSON string the rest of the pipeline expects.
+                    const raw = Array.isArray(res) ? res[0] : res;
+                    if (raw == null) return null;
+                    return typeof raw === "string" ? raw : JSON.stringify(raw);
                 },
                 save: async (raw) => { await bridge.storage.set([KEY], [raw]); },
             };
@@ -259,7 +267,6 @@ export class SaveManager {
     getBestScore(levelId) {
         return this.data.bestScores[String(levelId)] || 0;
     }
-
     /** Store a new best efficiency score. Returns true if it was a new best. */
     setBestScore(levelId, score) {
         levelId = String(levelId);
@@ -270,6 +277,30 @@ export class SaveManager {
             return true;
         }
         return false;
+    }
+
+    // ---- X-ray hints (rewarded-refill economy on ad platforms) -------------
+
+    /** Remaining hint credits. Old saves without the field default to 3. */
+    getHints() {
+        const h = this.data.hints;
+        return typeof h === "number" && isFinite(h) && h >= 0 ? Math.floor(h) : 3;
+    }
+
+    /** Spend one hint credit. Returns false when the bank is empty. */
+    useHint() {
+        if (this.getHints() <= 0) return false;
+        this.data.hints = this.getHints() - 1;
+        this._save();
+        return true;
+    }
+
+    /** Add hint credits (rewarded-ad refill: +3 per watch). */
+    addHints(n) {
+        const add = Math.max(0, Math.floor(n));
+        if (add === 0) return;
+        this.data.hints = this.getHints() + add;
+        this._save();
     }
 
     // ---- daily challenge ---------------------------------------------------

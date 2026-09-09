@@ -19,6 +19,15 @@
 
 ## Review rounds
 
+- **2026-09-07 (round 3):** reviewer reported "Progress is not restored" after
+  reload (save did fire). Root cause: real Bridge v2 `storage.get` auto-parses
+  stored JSON on read (`tryParseJson` defaults true), so the save — a JSON
+  *string* — came back as an already-parsed *object*, and `load`'s
+  `typeof === "string"` guard treated it as "no data" → fresh defaults on every
+  reload. Fix in `SaveManager.js`: the Playgama load accepts a string OR a
+  parsed object (normalizes via `JSON.stringify`). `verify-playgama-save.mjs`
+  upgraded to a cross-reload regression test with a faithful auto-parse mock
+  (the old mock was same-session only and couldn't catch this). Zip rebuilt.
 - **2026-09-02 (round 2, resubmitted):** reviewer hit an intermittent cold-start
   crash — `TypeError: can't access property "level_id", this.level is null` in
   `_finishLevel`. Cause: the render loop starts at the top of `boot()` (before

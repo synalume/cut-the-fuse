@@ -84,11 +84,16 @@
         <div class="controls">
             <button id="btn-menu" title="Main Menu">☰</button>
             <button id="btn-mute" title="Mute"><img src="assets/ui/ui-icon-mute.png" alt="Mute"></button>
-            <button id="btn-hint" title="Toggle X-Ray Hint"><img src="assets/ui/ui-icon-hint.png" alt="Hint"></button>
+            <button id="btn-hint" title="X-Ray Hint"><img src="assets/ui/ui-icon-hint.png" alt="Hint"><span id="hint-count" class="hint-count"></span></button>
             <button id="btn-zoom-out" title="Zoom Out"><img src="assets/ui/ui-icon-zoom-out.png" alt="Zoom out"></button>
             <button id="btn-zoom-in" title="Zoom In"><img src="assets/ui/ui-icon-zoom-in.png" alt="Zoom in"></button>
         </div>
     </div>
+
+    <!-- Host-pause shield: while the platform pauses (console pause / ad),
+         this transparent full-screen layer swallows every tap/key so the UI
+         is completely unclickable until the host resumes. -->
+    <div id="host-shield" class="host-shield"></div>
 
     <!-- Tutorial overlay (driven by level.tutorial) -->
     <div id="tutorial-overlay">
@@ -123,6 +128,15 @@
         <p id="dda-text"></p>
         <button id="btn-dda-accept">YES, HELP ME</button>
         <button id="btn-dda-decline">NO, I GOT THIS</button>
+    </div>
+
+    <!-- Rewarded hint refill (YouTube Playables): the bank is empty, so a
+         short rewarded ad buys the next batch of 3 X-ray hints. -->
+    <div id="modal-hints" class="message-box">
+        <h1 style="color: #2563eb;">OUT OF HINTS</h1>
+        <p>Watch a short ad to earn <strong>3 more hints</strong>.</p>
+        <button id="btn-hints-ad"><img src="assets/ui/ui-icon-hint.png" alt="">WATCH AD FOR +3 HINTS</button>
+        <button id="btn-hints-later">LATER</button>
     </div>
 
     <!-- End of content -->

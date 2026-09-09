@@ -147,12 +147,41 @@ canvas { display: block; position: absolute; z-index: 10; }
 }
 .controls button:hover { background: #e7e5e4; transform: translateY(-2px); }
 .controls button.active { background: #fef08a; }
+
+/* X-ray hint credit badge (rewarded builds only — Playables). Shows the
+   remaining free/rewarded hint count on the corner of the hint button. */
+.hint-count {
+    display: none; /* hidden unless updateUi arms the rewarded economy */
+    position: absolute; top: -6px; right: -6px;
+    min-width: 22px; height: 22px; padding: 0 5px;
+    border-radius: 11px;
+    background: #2563eb; color: #fff;
+    border: 2px solid #1c1917;
+    font-size: 0.8rem; font-weight: bold; line-height: 18px;
+    text-align: center; pointer-events: none;
+}
+.controls button.out { background: #fecaca; animation: hint-empty-pulse 1.2s ease-in-out infinite; }
+@keyframes hint-empty-pulse {
+    0%, 100% { box-shadow: 4px 4px 0px rgba(0,0,0,0.2); }
+    50% { box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.35), 4px 4px 0px rgba(0,0,0,0.2); }
+}
 /* Muted speaker: dimmed + red slash badge */
 #btn-mute.muted img { filter: grayscale(0.85) brightness(0.55); }
 #btn-mute.muted::after {
     content: "✕";
     position: absolute; top: 6px; right: 8px;
     font-size: 1rem; line-height: 1; color: #ef4444; font-weight: bold;
+}
+
+/* Host-pause / ad shield: covers EVERYTHING (canvas, controls, modals) with a
+   transparent layer so no pointer event reaches the game while the platform
+   pauses (console pause) or an ad plays. Paired with body.inert for keyboard
+   activation. z-index sits above .message-box (100). */
+.host-shield {
+    position: fixed; inset: 0; z-index: 200;
+    background: transparent;
+    display: none;
+    cursor: default;
 }
 
 /* Modals at bottom, high z-index to prevent canvas blocking clicks */

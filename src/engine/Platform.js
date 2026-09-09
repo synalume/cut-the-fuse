@@ -28,11 +28,25 @@ export class Platform {
     get isPoki() { return IN_POKI; }
     get isPlayables() { return IN_PLAYABLES; }
 
-    /** True only when a rewarded-ad SDK is actually wired (Poki / Playgama
-     *  portal builds). The live URL build has no ad SDK, so the armory unlocks
-     *  purely by progression (levels/stars) and never offers a Watch Ad button. */
+    /** True only when the armory may offer Watch Ad unlocks (Poki / Playgama
+     *  portal builds). The live URL build has no ad SDK and the YouTube
+     *  Playables build keeps the armory progression-only (only the X-ray hint
+     *  refill uses rewarded ads there, per the MediaCube review) — so the
+     *  armory never offers a Watch button on those. */
     get canShowRewarded() {
         return IN_POKI || IN_PLAYGAMA;
+    }
+
+    /** YouTube Playables ad APIs (official ytgame.ads namespace — the ONLY
+     *  legal ad path on Playables; off-platform SDKs are prohibited). */
+    get hasPlayablesAds() {
+        return (
+            IN_PLAYABLES &&
+            typeof ytgame !== "undefined" &&
+            !!ytgame.ads &&
+            typeof ytgame.ads.requestInterstitialAd === "function" &&
+            typeof ytgame.ads.requestRewardedAd === "function"
+        );
     }
 
     _boot() {
@@ -250,6 +264,13 @@ export class Platform {
     /** Ad at a natural break (results / level clear). */
     commercialBreak(next) {
         const go = typeof next === "function" ? next : () => {};
+        if (IN_PLAYABLES && this.hasPlayablesAds) {
+            // YouTube Playables: interstitial at the level-clear results panel.
+            // The loop is frozen + UI locked for the ad's duration (the emit-
+            // pause path in main.js), then everything resumes.
+            this.playablesInterstitial("level_complete").then(go, go);
+            return;
+        }
         if (IN_PLAYGAMA && typeof bridge !== "undefined" && bridge.advertisement?.showInterstitial) {
             (this._bridgeReady || Promise.resolve()).then(() => {
                 this.gameplayStop();
@@ -273,6 +294,48 @@ export class Platform {
                 .catch(() => { this.adOpen = false; go(); });
         } else {
             go();
+        }
+    }
+
+    /** YouTube Playables interstitial at a natural breakpoint (level clear,
+     *  leaving a live level, starting a fresh level). Resolves true when an ad
+     *  ran. No-ops (resolved false) on non-Playables builds, while an ad is
+     *  already open, or during a host pause. Level-START ads are gated by a
+     *  short re-arm window so a win-panel ad + immediate NEXT don't stack two
+     *  ads on one transition; YouTube also frequency-caps server-side.
+     *
+     *  Per the Playables guidance, an interstitial is treated like a pause
+     *  signal: freeze the sim + audio and lock the UI for its duration (via
+     *  the emit-pause path), then resume. */
+    playablesInterstitial(reason = "transition") {
+        if (!this.hasPlayablesAds) return Promise.resolve(false);
+        if (this.adOpen || this.pausedByHost) return Promise.resolve(false);
+        if (reason === "level_start" && this._lastAdAt && performance.now() - this._lastAdAt < 45000) {
+            return Promise.resolve(false); // just showed one at the win panel
+        }
+        this._lastAdAt = performance.now();
+        this.adOpen = true;
+        this._emit("pause", true); // main.js: freeze loop + audio + lock UI
+        let done = false;
+        // Never let a hung SDK leave the UI locked — 60s fail-safe.
+        const t = setTimeout(() => finish(), 60000);
+        const finish = () => {
+            if (done) return;
+            done = true;
+            clearTimeout(t);
+            this.adOpen = false;
+            this._emit("pause", false); // main.js: resume (unless a menu is open)
+        };
+        try {
+            return Promise.race([
+                Promise.resolve(ytgame.ads.requestInterstitialAd())
+                    .then(() => { finish(); return true; })
+                    .catch(() => { finish(); return false; }),
+                new Promise((res) => setTimeout(() => { finish(); res(false); }, 60000)),
+            ]);
+        } catch {
+            finish();
+            return Promise.resolve(false);
         }
     }
 
@@ -354,6 +417,34 @@ export class Platform {
                     resume();
                     return false;
                 }
+            }
+        }
+
+        if (IN_PLAYABLES && this.hasPlayablesAds) {
+            // YouTube Playables rewarded ad. requestRewardedAd(rewardId)
+            // resolves true only when the viewer earned the reward. Freeze the
+            // loop + audio + lock the UI for the ad (emit-pause path), exactly
+            // like the host-pause contract. 60s fail-safe so a hung SDK can
+            // never leave the UI locked.
+            this.adOpen = true;
+            this._emit("pause", true);
+            let done = false;
+            const finish = (granted) => {
+                if (done) return;
+                done = true;
+                this.adOpen = false;
+                this._emit("pause", false);
+                return granted;
+            };
+            try {
+                return await Promise.race([
+                    Promise.resolve(ytgame.ads.requestRewardedAd(placement || "reward"))
+                        .then((earned) => finish(!!earned))
+                        .catch(() => finish(false)),
+                    new Promise((res) => setTimeout(() => res(finish(false)), 60000)),
+                ]);
+            } catch {
+                return finish(false);
             }
         }
 

@@ -2,6 +2,16 @@
 
 YouTube Playables / MC Play upload. Build: `./cert/make-bundle.sh` → `cert/out/cut-the-fuse-playables.zip`.
 
+## Status (2026-09-09)
+
+- **MediaCube moderator feedback addressed** (interstitial + rewarded hints + console-pause UI freeze). Zip rebuilt: `./cert/make-bundle.sh` → `cert/out/cut-the-fuse-playables.zip` (9.84 MiB).
+- **Ads added to the Playables build** (official `ytgame.ads` only — third-party ad SDKs stay prohibited on Playables; none in the zip):
+  - **Interstitials** at natural breaks, per the reviewer's placements: at the level-clear results panel (`commercialBreak` → `platform.playablesInterstitial("level_complete")`), when leaving a live level to the hub/level-select (`level_abandon`), and before a fresh level begins from the hub/selector (`level_start`, with a 45 s re-arm so one win→next transition never stacks two ads; YouTube also frequency-caps server-side). During an ad the loop + audio freeze and the UI hard-locks (same emit-pause path as a host pause), with a 60 s fail-safe so a hung SDK can never leave the game locked.
+  - **Rewarded hints** (`ytgame.ads.requestRewardedAd("hint_refill")`): the X-ray hint is now a credit economy on Playables — every fresh save starts with **3 free hints** (`save.hints`), each reveal spends one, and an empty bank opens the "OUT OF HINTS" modal offering a rewarded ad for **+3 more** (one is auto-spent so the tap pays off immediately). Balance persists through `ytgame.game.saveData` and shows as a badge on the hint button. Armory stays progression-only on Playables (unchanged); the DDA "YES, HELP ME" auto-hint stays free.
+  - Submission form: interstitial = **Yes** (level clear / level start / abandon); rewarded = **Yes** (hint refill, 3-free then +3 per watch).
+- **Console pause hard freeze** (MediaCube recheck): a host pause (Playgama `pause_state_changed` / Playables `ytgame.system.onPause`) now locks the ENTIRE UI — a transparent full-screen shield swallows every pointer event and `body.inert` kills focus/keyboard activation, so no navigation button, in-game menu, or "Play" can be tapped until the host resumes. Esc and all open-menu paths are inert-guarded. Resume only ever comes from the host signal.
+- **Re-verified**: `verify-portal.mjs` now 25/25 against the exact staged build (adds console-pause UI-lock, level-clear + abandon + rewarded-hint assertions; mock gains the real `ytgame.ads` shape). Full pass on smoke, verify-ui, verify-coverage, verify-playgama-save, verify-hints.
+
 ## Status (2026-09-02)
 
 - **MediaCube dashboard: Premoderation approved**; Playables zip submitted for final review 2026-09-02 (build below).
@@ -59,9 +69,12 @@ Verified by `tools/smoke/verify-portal.mjs` (mock Playgama Bridge v2 + mock Play
   localization; saves go through `bridge.storage.get/set` (never localStorage,
   re-detected after Bridge init); interstitial shown at level clear via
   `bridge.advertisement.showInterstitial("level_complete")`.
-- **YouTube Playables** — `ytgame.firstFrameReady()` precedes `ytgame.gameReady()`;
-  `ytgame.onPause/onResume` replace the Page Visibility API; saves go through
-  `ytgame.loadData/saveData`.
+- **YouTube Playables** (real SDK shape — nested namespaces) — `ytgame.game.firstFrameReady()`
+  precedes `ytgame.game.gameReady()`; `ytgame.system.onPause/onResume` replace the Page
+  Visibility API and hard-freeze the UI (shield + inert); saves go through
+  `ytgame.game.loadData/saveData`; ads via `ytgame.ads.requestInterstitialAd()`
+  (level clear / abandon / fresh level start) and `ytgame.ads.requestRewardedAd()`
+  (X-ray hint refill — 3 free, then +3 per watch).
 
 > Bundle-size: cert zip is ~11 MiB (dead root-level UI PNGs removed — the game
 > only references `assets/ui/*`). Well under the Playables 30 MiB initial cap.

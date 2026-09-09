@@ -8,6 +8,7 @@
 //              saveData/loadData used for persistence.
 import { chromium } from "playwright";
 
+const BASE = process.env.PORTAL_BASE || "http://localhost:8080";
 const browser = await chromium.launch();
 const results = [];
 const ok = (name, cond, extra = "") => {
@@ -111,8 +112,12 @@ const pgInit = () => {
 {
     const page = await browser.newPage({ viewport: { width: 480, height: 800 } });
     page.on("pageerror", (e) => console.error("  [pageerror]", e.message));
+    // The cert zip references the YouTube game_api script; stub it whenever the
+    // suite runs against a flagged stage build (the host wrapper provides it).
+    await page.route("https://www.youtube.com/game_api/v1", (route) =>
+        route.fulfill({ status: 200, contentType: "text/javascript", body: "" }));
     await page.addInitScript(pgInit);
-    await page.goto("http://localhost:8080");
+    await page.goto(BASE);
     await page.waitForFunction(
         () => window.__CTF__?.levels?.length === 120 && window.__mock?.order?.includes("init-resolve") &&
               Object.keys(window.__mock?.subs || {}).length >= 2,
@@ -170,12 +175,12 @@ const pgInit = () => {
 console.log("\n[verify] YouTube Playables compliance (mock SDK)");
 const pbInit = () => {
     window.__CUT_THE_FUSE_PLAYABLES__ = true;
-    window.__mock = { order: [], saves: [], loads: 0, onPause: null, onResume: null, audioEnabled: true };
+    window.__mock = { order: [], saves: [], loads: 0, onPause: null, onResume: null, audioEnabled: true, adCalls: [] };
     // Real Playables SDK shape: lifecycle + storage live under ytgame.game,
-    // host signals under ytgame.system (verified against the Big Fluff build
-    // that passes the official cert suite). Top-level ytgame.firstFrameReady
-    // etc. do NOT exist — a mock shaped like the real SDK catches namespace
-    // regressions.
+    // host signals under ytgame.system, ads under ytgame.ads (verified against
+    // the Big Fluff build that passes the official cert suite). Top-level
+    // ytgame.firstFrameReady etc. do NOT exist — a mock shaped like the real
+    // SDK catches namespace regressions.
     window.ytgame = {
         IN_PLAYABLES_ENV: true,
         game: {
@@ -190,6 +195,10 @@ const pbInit = () => {
             onPause: (cb) => { window.__mock.onPause = cb; },
             onResume: (cb) => { window.__mock.onResume = cb; },
         },
+        ads: {
+            requestInterstitialAd: async () => { window.__mock.order.push("interstitial"); window.__mock.adCalls.push("interstitial"); },
+            requestRewardedAd: async (placement) => { window.__mock.order.push("rewarded:" + placement); window.__mock.adCalls.push("rewarded"); return true; },
+        },
     };
 };
 
@@ -200,7 +209,7 @@ const pbInit = () => {
     await page.route("https://www.youtube.com/game_api/v1", (route) =>
         route.fulfill({ status: 200, contentType: "text/javascript", body: "" }));
     await page.addInitScript(pbInit);
-    await page.goto("http://localhost:8080");
+    await page.goto(BASE);
     await page.waitForFunction(
         () => window.__CTF__?.levels?.length === 120 &&
               typeof window.__mock?.onPause === "function" &&
@@ -226,10 +235,115 @@ const pbInit = () => {
     ok("host audio veto ducks audio (master gain 0)", muted === 0, `master=${muted}`);
     await page.evaluate(() => { window.__mock.audioEnabled = true; window.__mock.onAudioEnabledChange(true); });
 
+    // MediaCube console-pause: while the host pauses, gameplay freezes AND the
+    // whole UI must be dead — no menu, no nav, no resume. Shield + inert make
+    // every control unclickable; the openMenu guard keeps even synthetic
+    // clicks from opening the hub.
+    await page.evaluate(() => { window.__mock.onPause(); });
+    await page.waitForFunction(
+        () => document.body.hasAttribute("inert") && document.getElementById("host-shield").style.display === "block",
+        null, { timeout: 3000 });
+    const lockCheck = await page.evaluate(() => {
+        const shield = document.getElementById("host-shield");
+        const menu = document.getElementById("modal-menu");
+        const shieldCovers = (() => {
+            const r = shield.getBoundingClientRect();
+            return r.top <= 0 && r.left <= 0 && r.width >= innerWidth && r.height >= innerHeight;
+        })();
+        document.getElementById("btn-menu").click(); // must be a no-op while paused
+        const menuOpened = menu.style.display !== "none";
+        return { shieldCovers, menuOpened, inert: document.body.hasAttribute("inert") };
+    });
+    ok("console pause locks the UI (shield covers viewport + inert)",
+       lockCheck.shieldCovers && lockCheck.inert && !lockCheck.menuOpened,
+       `shield=${lockCheck.shieldCovers} menuOpened=${lockCheck.menuOpened} inert=${lockCheck.inert}`);
+    await page.evaluate(() => { window.__mock.onResume(); });
+    await page.waitForFunction(
+        () => !document.body.hasAttribute("inert") && window.__CTF__?.game?.gameState === "playing",
+        null, { timeout: 3000 });
+    ok("host resume unlocks the UI", true);
+
+    // Leaving a live level (☰ hub) is the second interstitial placement —
+    // the ad fires and the hub opens behind it (loop frozen during the ad).
+    const adsBeforeAbandon = await page.evaluate(() => window.__mock.adCalls.length);
+    await page.evaluate(() => document.getElementById("btn-menu").click());
+    await page.waitForFunction(
+        () => document.getElementById("modal-menu").style.display === "flex",
+        null, { timeout: 3000 });
+    const abandonAds = await page.evaluate(() => window.__mock.adCalls.length);
+    ok("leaving a live level requests an interstitial", abandonAds > adsBeforeAbandon,
+       `ads=${adsBeforeAbandon} → ${abandonAds}`);
+    // Close the hub in place (mirrors closeMenu) so the live level resumes
+    // exactly where it was — PLAY would reload the level instead.
+    await page.evaluate(() => {
+        document.getElementById("modal-menu").style.display = "none";
+        const g = window.__CTF__.game;
+        if (g.gameState === "paused") g.setPaused(false);
+    });
+    await page.waitForFunction(() => window.__CTF__?.game?.gameState === "playing", null, { timeout: 3000 });
+
+    await page.waitForFunction(
+        () => window.__CTF__?.game?.gameState === "playing" &&
+              window.__CTF__.game.sparks.some((s) => s.active && s.ignited && s.progress < 0.9),
+        null, { timeout: 5000 });
+
+    const adsBeforeWin = await page.evaluate(() => window.__mock.adCalls.length);
     await winCurrentLevel(page);
-    await page.waitForFunction(() => window.__mock?.saves?.length >= 1, null, { timeout: 5000 });
+    // A level-start interstitial may already have fired at PLAY; require a NEW
+    // call at the level-clear results panel.
+    await page.waitForFunction(
+        (n) => window.__mock?.adCalls?.length > n,
+        adsBeforeWin, { timeout: 8000 });
     const after = await page.evaluate(() => window.__mock);
+    ok("interstitial shown at level clear (ytgame.ads)", after.adCalls.length > adsBeforeWin, `ads=${after.adCalls.join(",")}`);
     ok("progress persisted via ytgame.saveData", after.saves.length >= 1, `saves=${after.saves.length}`);
+    await page.close();
+}
+
+// Rewarded-hint economy (MediaCube feature request): fresh save starts with 3
+// free hint credits; an empty bank opens the rewarded prompt; watching grants
+// +3 (one spent immediately on the reveal) and the new balance persists.
+{
+    const page = await browser.newPage({ viewport: { width: 480, height: 800 } });
+    page.on("pageerror", (e) => console.error("  [pageerror]", e.message));
+    await page.route("https://www.youtube.com/game_api/v1", (route) =>
+        route.fulfill({ status: 200, contentType: "text/javascript", body: "" }));
+    await page.addInitScript(pbInit);
+    await page.goto(BASE);
+    await page.waitForFunction(
+        () => window.__CTF__?.levels?.length === 120 && window.__mock?.order?.includes("gameReady"),
+        null, { timeout: 10000 });
+
+    const initialHints = await page.evaluate(() => window.__CTF__.save.getHints());
+    ok("fresh save starts with 3 free hints", initialHints === 3, `hints=${initialHints}`);
+
+    // Drain the free bank through the save API (same path the button uses).
+    await page.evaluate(() => { const s = window.__CTF__.save; for (let i = 0; i < 10 && s.useHint(); i++) { /* drain */ } });
+
+    // Hint button with an empty bank → rewarded prompt modal.
+    await page.evaluate(() => document.getElementById("btn-hint").click());
+    await page.waitForFunction(
+        () => document.getElementById("modal-hints").style.display === "flex",
+        null, { timeout: 3000 });
+    ok("empty hint bank opens the rewarded prompt", true);
+
+    await page.evaluate(() => document.getElementById("btn-hints-ad").click());
+    await page.waitForFunction(
+        () => {
+            const g = window.__CTF__.game;
+            return g.hintActive === true &&
+                   window.__CTF__.save.getHints() === 2 &&
+                   document.getElementById("modal-hints").style.display === "none";
+        },
+        null, { timeout: 5000 });
+    const adAfter = await page.evaluate(() => window.__mock);
+    ok("rewarded ad grants +3 hints (reveal spends one)", adAfter.adCalls.includes("rewarded") && adAfter.saves.length >= 1,
+       `ads=${adAfter.adCalls.join(",")} saves=${adAfter.saves.length}`);
+    const lastSave = await page.evaluate(() => {
+        const s = window.__mock.saves.at(-1);
+        try { return JSON.parse(s); } catch { return null; }
+    });
+    ok("hint balance persisted to ytgame.saveData", !!lastSave && lastSave.hints === 2, `hints=${lastSave?.hints}`);
     await page.close();
 }
 

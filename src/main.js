@@ -28,8 +28,38 @@ const analytics = new Analytics();
 const platform = new Platform({ audio, save, canvas });
 
 const game = new GameLoop({ canvas, renderer, audio, analytics, platform });
+
+/** Hard freeze of ALL game UI. Used for the host-pause veto (Playgama /
+ *  Playables console pause) and for the duration of a YouTube Playables ad:
+ *  a transparent full-screen shield swallows every pointer event and body
+ *  inert kills focus + keyboard activation, so no button can be tapped or
+ *  keyboard-activated while the host has the game paused. */
+function uiLock(on) {
+    hostShield.style.display = on ? "block" : "none";
+    if (document.body) {
+        document.body.classList.toggle("host-paused", on);
+        try { document.body.inert = on; } catch { /* inert unsupported — shield still blocks pointers */ }
+    }
+}
+
+/** True while the host has the game paused (shield + inert). Defensive over
+ *  document.body for the smoke suite's fake-DOM boot. */
+const uiLocked = () => !!(document.body && document.body.inert);
+
 platform.onEvent = (name, val) => {
-    if (name === "pause") game.setPaused(val);
+    if (name !== "pause") return;
+    uiLock(!!val);
+    if (val) {
+        game.setPaused(true);
+        audio.suspend();
+    } else {
+        audio.resume();
+        // Resume only when no menu modal is up — a menu opened before/under
+        // the pause stays paused until the player closes it (selectorPaused).
+        if (!selectorPaused && !MENU_MODALS().some((m) => m.style.display !== "none")) {
+            game.setPaused(false);
+        }
+    }
 };
 
 const input = new InputHandler(canvas, game);
@@ -53,6 +83,11 @@ const modalEnd = $("modal-end");
 const modalSkins = $("modal-skins");
 const modalLevels = $("modal-levels");
 const modalMenu = $("modal-menu");
+const modalHints = $("modal-hints");
+const hostShield = $("host-shield");
+const hintCount = $("hint-count");
+const btnHintsAd = $("btn-hints-ad");
+const btnHintsLater = $("btn-hints-later");
 const levelGrid = $("level-grid");
 const tutorialOverlay = $("tutorial-overlay");
 const tutorialText = $("tutorial-text");
@@ -92,6 +127,11 @@ function storyStartIndex() {
 
 async function loadLevel(index) {
     levelIndex = index;
+    // YouTube Playables: an interstitial before a fresh level begins (hub /
+    // level-select / daily starts). Skipped when a win-panel ad just ran
+    // (45s re-arm in platform.playablesInterstitial) so one transition never
+    // stacks two ads. No-op elsewhere — resolves instantly.
+    await platform.playablesInterstitial("level_start");
     const config = levels[index];
     // Live resolution: the level's own art when pinned, else the player's
     // loadout (payload skin + igniter), else the placeholder set.
@@ -138,16 +178,23 @@ function updateUi() {
     if (menuStars) menuStars.textContent = bank;
     btnHint.classList.toggle("active", game.hintActive);
     btnMute.classList.toggle("muted", audio.muted || audio.hostMuted);
+
+    // Hint credit badge — only on rewarded builds (Playables). Plain builds
+    // keep the free X-ray and no badge.
+    const rewardedHints = HINTS_REWARDED();
+    hintCount.style.display = rewardedHints ? "block" : "none";
+    hintCount.textContent = rewardedHints ? save.getHints() : "";
+    btnHint.classList.toggle("out", rewardedHints && !game.hintActive && save.getHints() <= 0);
 }
 
-// Modals that pause a live game (the hub, level select, armory). Opening one
-// closes every other overlay, so two modals can never stack on top of each
-// other — the level-select/armory overlap bug.
-const MENU_MODALS = () => [modalLevels, modalSkins, modalMenu];
+// Modals that pause a live game (the hub, level select, armory, hint ad
+// prompt). Opening one closes every other overlay, so two modals can never
+// stack on top of each other — the level-select/armory overlap bug.
+const MENU_MODALS = () => [modalLevels, modalSkins, modalMenu, modalHints];
 
 function openModal(el, display = "flex") {
     // Hide every other overlay, then take the screen.
-    for (const m of [modalLose, modalWin, modalDda, modalEnd, modalSkins, modalLevels, modalMenu]) {
+    for (const m of [modalLose, modalWin, modalDda, modalEnd, modalSkins, modalLevels, modalMenu, modalHints]) {
         if (m !== el) m.style.display = "none";
     }
     tutorialOverlay.style.display = "none";
@@ -180,6 +227,7 @@ function closeModals() {
     modalSkins.style.display = "none";
     modalLevels.style.display = "none";
     modalMenu.style.display = "none";
+    modalHints.style.display = "none";
     tutorialOverlay.style.display = "none";
     game.tutorialActive = false;
     resumeIfPausedByMenu();
@@ -188,6 +236,8 @@ function closeModals() {
 // ---- level selector --------------------------------------------------------------
 
 function openLevelSelect() {
+    if (uiLocked()) return; // host-paused — nothing may open
+    maybeAdOnLeaveLevel();
     renderLevelGrid();
     renderDailyRow();
     openModal(modalLevels, "flex");
@@ -202,9 +252,22 @@ function closeLevelSelect() {
 /** The hub is the home screen: PLAY resumes or starts the current level, and
  *  everything else (daily, level select, armory) opens its own modal. */
 function openMenu() {
+    if (uiLocked()) return; // host-paused — nothing may open
+    maybeAdOnLeaveLevel();
     updateUi();
     renderDailyRow(); // keep the hub daily button in sync (REPLAY after a clear)
     openModal(modalMenu, "flex");
+}
+
+/** Leaving a LIVE level back to a menu is a natural interstitial breakpoint
+ *  on Playables (reviewer-approved placement). No-op unless a level is
+ *  actually running and no menu modal is already up (modal BACK flows). */
+function maybeAdOnLeaveLevel() {
+    if (!platform.isPlayables || !platform.hasPlayablesAds) return;
+    const modalUp = MENU_MODALS().some((m) => m.style.display !== "none");
+    if (game.level && game.gameState === STATE.PLAYING && !modalUp) {
+        platform.playablesInterstitial("level_abandon");
+    }
 }
 
 function closeMenu() {
@@ -511,8 +574,55 @@ $("btn-end-replay").addEventListener("click", () => {
 
 // ---- controls ----------------------------------------------------------------------
 
+/** X-ray hints. On ad platforms (YouTube Playables) hints are a rewarded
+ *  economy: the player starts with 3 free credits, each reveal costs one, and
+ *  an empty bank offers a rewarded ad for +3. Everywhere else (local / portal
+ *  / Poki / Playgama builds) the toggle stays free — only the Playables build
+ *  was reviewed for the rewarded-hint loop. */
+const HINTS_REWARDED = () => platform.isPlayables && platform.hasPlayablesAds;
+
 btnHint.addEventListener("click", () => {
-    game.toggleHint();
+    if (uiLocked()) return; // host-paused
+    if (game.hintActive) {
+        game.setHint(false); // turning the X-ray OFF is always free
+        updateUi();
+        return;
+    }
+    if (!HINTS_REWARDED()) {
+        game.toggleHint(); // plain builds: free X-ray as before
+        updateUi();
+        return;
+    }
+    if (save.useHint()) {
+        game.setHint(true); // spent a credit — reveal now
+    } else {
+        openHintAdPrompt(); // out of hints — rewarded refill
+    }
+    updateUi();
+});
+
+function openHintAdPrompt() {
+    openModal(modalHints, "flex");
+    updateUi();
+}
+
+btnHintsAd.addEventListener("click", async () => {
+    if (uiLocked()) return;
+    const earned = await platform.showRewarded("hint_refill");
+    modalHints.style.display = "none";
+    resumeIfPausedByMenu();
+    if (earned) {
+        save.addHints(3); // batch of 3 per the reviewer's spec
+        save.useHint(); // spend one right away so the tap pays off
+        game.setHint(true);
+    }
+    updateUi();
+});
+
+btnHintsLater.addEventListener("click", () => {
+    if (uiLocked()) return;
+    modalHints.style.display = "none";
+    resumeIfPausedByMenu();
     updateUi();
 });
 
@@ -524,8 +634,10 @@ btnMute.addEventListener("click", () => {
 btnZoomIn.addEventListener("click", () => game.changeZoom(0.2));
 btnZoomOut.addEventListener("click", () => game.changeZoom(-0.2));
 
-// Esc closes any open modal / tutorial (YouTube Playables requirement).
+// Esc closes any open modal / tutorial (YouTube Playables requirement). While
+// the host has the game paused (inert + shield), no UI action may fire.
 window.addEventListener("game:escape", () => {
+    if (uiLocked()) return;
     if (tutorialOverlay.style.display === "flex") {
         game.tutorialActive = false;
         tutorialOverlay.style.display = "none";
@@ -537,6 +649,9 @@ window.addEventListener("game:escape", () => {
         modalLose.style.display = "none";
     } else if (modalDda.style.display === "block") {
         modalDda.style.display = "none";
+    } else if (modalHints.style.display === "flex" || modalHints.style.display === "block") {
+        modalHints.style.display = "none";
+        resumeIfPausedByMenu();
     } else if (modalSkins.style.display === "block") {
         closeModal(modalSkins);
     } else if (modalMenu.style.display === "flex") {
@@ -815,9 +930,15 @@ async function boot() {
             // Pause/resume freeze the game AND suspend the audio graph (big-
             // fluff pattern). onPause also covers backgrounding/leaving, where
             // the platform evicts shortly after. Real SDK shape:
-            // ytgame.system.onPause / ytgame.system.onResume.
-            try { if (ytgame.system?.onPause) ytgame.system.onPause(() => { game.setPaused(true); audio.suspend(); }); } catch { /* noop */ }
-            try { if (ytgame.system?.onResume) ytgame.system.onResume(() => { audio.resume(); game.setPaused(false); }); } catch { /* noop */ }
+            // ytgame.system.onPause / ytgame.system.onResume. Routed through
+            // platform.setPaused → emit("pause") so the UI hard-freezes too
+            // (shield + inert): while the host pauses, NO button may open a
+            // menu, navigate, or resume the game — the reviewer's console
+            // pause requires the whole app to be dead to input.
+            const hostPause = (paused) =>
+                platform.setPaused(paused, (p) => platform._emit("pause", p));
+            try { if (ytgame.system?.onPause) ytgame.system.onPause(() => hostPause(true)); } catch { /* noop */ }
+            try { if (ytgame.system?.onResume) ytgame.system.onResume(() => hostPause(false)); } catch { /* noop */ }
             // The viewer's YouTube setting is a veto our own control cannot
             // lift — mirror it onto the host mute flag.
             try {
