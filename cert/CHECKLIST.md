@@ -4,6 +4,7 @@ YouTube Playables / MC Play upload. Build: `./cert/make-bundle.sh` → `cert/out
 
 ## Status (2026-09-11)
 
+- **SUBMITTED to MC Play 2026-09-11** — round 4 zip carrying **both** rotation and cold-boot fixes, on top of the ads + console-pause round. Artifact: `cert/out/cut-the-fuse-playables.zip`, 9.84 MiB (10,323,172 bytes), sha256 `dde3655483ee40ea…`. Source: `main` @ `5d783b3` (rotation fix `e2df22f`). Awaiting moderator review.
 - **MediaCube feedback addressed — zero-size cold-boot latch**: *"The game started while the frame had zero size, the frame has since grown, and the game still has not reached a working state — either gameReady never arrived, or nothing has been rendered."* Zip rebuilt 2026-09-11 (9.84 MiB) and re-verified on the staged build.
   - **Root cause**: `new Renderer(canvas)` measured the viewport **once** in its constructor (module load, before `boot()` even ran), and the `resize` listeners were only attached at the **end** of `boot()` — after `await fetch("src/data/levels.json")` (488 KiB) and `platform.ready()`/`save.init()`. YouTube boots a playable in a 0×0 WebView and grows it during exactly that window, so the growth event could fire before anything was listening. The 0×0 measurement was latched: a zero-size backing store, `--app-h: 0px`, a collapsed `#game-container`, and `draw()` with nothing to paint into.
   - **Fix**: a zero measurement is now **refused rather than latched** (`Renderer.resize()` returns false and changes nothing when width/height are 0); `main.js` attaches the resize listeners **before** the awaits; and, decisively, the loop is now the source of truth — `Renderer.ensureViewport()` is called every frame from `GameLoop._frame()` and refits whenever the viewport disagrees with the canvas, so a *missed* resize event self-corrects on the next frame. `resize()` early-outs when nothing moved, so this costs nothing at 60fps and never needlessly reallocates the buffer (which would reset the drawing surface and detach Poki's `captureStream`).
@@ -14,7 +15,7 @@ YouTube Playables / MC Play upload. Build: `./cert/make-bundle.sh` → `cert/out
   - **Fix**: new `relayoutLevel()` (`src/engine/LevelManager.js`) re-centres an already-built level in place for a new viewport, and `game.relayout()` (`src/engine/GameLoop.js`) re-fits the camera and carries the world-space state with it. `main.js` now routes `resize`, `visualViewport.resize` and `orientationchange` (immediate + 80 ms + 300 ms settle passes) through the single `renderer.onViewportChange` hook.
   - Progress is untouched: sparks live at a `progress` t along their fuse, so they ride along with the wick; douse points, stickiness and arc lengths are `at`-relative/translation-invariant. **Cut marks must move** — `_cutAheadOnFuse()` compares `game.cuts` against fuse coordinates every frame, so stale points would let a severed spark burn straight through its own cut. Transient cosmetics (slash bursts, dust, popups) are cleared rather than translated: several hold bare references to the same swipe-point objects and a double shift would fling them across the screen.
   - Shifted by object identity (a `Set`): `fuse.cp1/cp2` alias `path[0]`'s controls on shaped fuses and `_segs` aliases both `path` entries and the start node, so a naive per-array shift moves those twice.
-  - **New regression test** `tools/smoke/verify-rotation.mjs` (23 checks, passes on source *and* the staged zip): portrait→landscape and the round trip must match a fresh load in that orientation exactly (camera, nodes, fuse controls, shaped paths, arc lengths), `--app-h`/`#game-container`/canvas follow, header + controls stay in bounds, a real swipe's cut keeps the same `t` and stays within the cut radius of its shifted wick, and shaped wicks + gold stars re-fit (evidence: `tools/smoke/rotate-portrait.png`, `rotate-landscape.png`).
+  - **New regression test** `tools/smoke/verify-rotation.mjs` (21 checks, passes on source *and* the staged zip): portrait→landscape and the round trip must match a fresh load in that orientation exactly (camera, nodes, fuse controls, shaped paths, arc lengths), `--app-h`/`#game-container`/canvas follow, header + controls stay in bounds, a real swipe's cut keeps the same `t` and stays within the cut radius of its shifted wick, and shaped wicks + gold stars re-fit (evidence: `tools/smoke/rotate-portrait.png`, `rotate-landscape.png`).
 - **Re-verified**: smoke, verify-ui, verify-coverage, verify-portal (25/25), verify-rotation, verify-coldboot-size all pass; wheel untouched (levels 1-60 geometry unchanged). `verify-hints` exits 1 with output identical to HEAD (a pre-existing audit note that hint-following on L49/L51/L111 needs more snips than the tightened budgets — informational, not a regression).
 
 ## Status (2026-09-09)
@@ -55,7 +56,7 @@ YouTube Playables / MC Play upload. Build: `./cert/make-bundle.sh` → `cert/out
 - [x] `__CUT_THE_FUSE_PLAYABLES__ = true` flag injected
 - [x] No `tools/`, `cert/`, `locked-branding/` in zip
 - [x] All filenames `[A-Za-z0-9._-]` (script checks)
-- [x] Zip `< 30 MiB` initial (actual ~11.3 MiB with placeholder assets)
+- [x] Zip `< 30 MiB` initial (actual 9.84 MiB with placeholder assets)
 
 ## QA walk (in the Playables test environment)
 
@@ -67,6 +68,10 @@ YouTube Playables / MC Play upload. Build: `./cert/make-bundle.sh` → `cert/out
 - [x] Audio files play from the zip (no live-only synth bed)
 - [x] Color pillar: wire legend renders near the bomb; a forbidden-color cut is denied once with a red "WRONG WIRE!" warning, then detonates on the second offense
 - [x] Mechanics sweep: gold stars bank a snip (chime + "SNIP +1"), water drops douse their fuse, twin bombs both show reaction words when threatened
+- [x] **Cold boot renders** — the 0×0 warm-up WebView never latches; the frame grows and the game reaches a working state (`verify-coldboot-size.mjs`)
+- [x] **Rotation re-fits the live level** — portrait ↔ landscape re-centres and re-zooms immediately, no trip through the menu (`verify-rotation.mjs`)
+- [x] Console pause leaves EVERY control unclickable (shield + `body.inert`), incl. the hub
+- [x] Interstitials fire at level clear / level start / abandon; rewarded ads refill hints (3 free, then +3)
 
 ## Ref (Mediacube / review bookmarks)
 
@@ -85,12 +90,32 @@ Verified by `tools/smoke/verify-portal.mjs` (mock Playgama Bridge v2 + mock Play
   re-detected after Bridge init); interstitial shown at level clear via
   `bridge.advertisement.showInterstitial("level_complete")`.
 - **YouTube Playables** (real SDK shape — nested namespaces) — `ytgame.game.firstFrameReady()`
-  precedes `ytgame.game.gameReady()`; `ytgame.system.onPause/onResume` replace the Page
+  precedes `ytgame.game.gameReady()`, and is now fired from the loop's first draw
+  **at a real viewport size** (never a 0×0 warm-up frame); `ytgame.system.onPause/onResume` replace the Page
   Visibility API and hard-freeze the UI (shield + inert); saves go through
   `ytgame.game.loadData/saveData`; ads via `ytgame.ads.requestInterstitialAd()`
   (level clear / abandon / fresh level start) and `ytgame.ads.requestRewardedAd()`
   (X-ray hint refill — 3 free, then +3 per watch).
 
-> Bundle-size: cert zip is ~11 MiB (dead root-level UI PNGs removed — the game
+> Bundle-size: cert zip is 9.84 MiB (dead root-level UI PNGs removed — the game
 > only references `assets/ui/*`). Well under the Playables 30 MiB initial cap.
 > Every individual file < 512 KiB (MediaCube `individual_file_size_recommended`).
+
+## Regression suites (run before every submit)
+
+| Suite | Covers |
+|-------|--------|
+| `npm run smoke` | Engine + UI state machine, star scoring, sticky-wick snap logic |
+| `verify-ui.mjs` | Tutorials (incl. L8 fork demo), win modal, perfect snip |
+| `verify-coverage.mjs` | Burn-coverage stars + win-modal readout |
+| `verify-portal.mjs` | Playgama + Playables SDK compliance (25 checks) |
+| `verify-playgama-save.mjs` | Cross-reload progress restore |
+| `verify-rotation.mjs` | Rotation re-fits the live level (21 checks) |
+| `verify-coldboot-size.mjs` | 0×0 cold boot self-heals (16 checks) |
+
+`verify-coldboot-size.mjs` case B is the important one: it grows the frame with
+**no resize event at all**, so only the loop's per-frame `ensureViewport()` can
+save it — the exact failure YouTube's warm-up WebView produces.
+
+> Note: `verify-hints.mjs` exits 1 (audit only) — hint-following on L49/L51/L111
+> needs more snips than the tightened budgets. Pre-existing, informational.

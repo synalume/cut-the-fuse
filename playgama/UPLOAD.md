@@ -17,6 +17,12 @@
 
 4. Submit only after the walk — fix before Update/Submit, not after rejection.
 
+**Current build: 2026-09-11** — `playgama/out/cut-the-fuse-playgama.zip`, 11.31 MiB
+(11,860,517 bytes), sha256 `1c7f26030a8fea6e…`, from `main` @ `5d783b3`. Carries
+**both** round-4 fixes (screen-rotation re-layout + zero-size cold-boot latch)
+plus the ads and console-pause work. **Not yet resubmitted to Playgama** — the
+round-4 zip went to MC Play only; walk the QA table above before uploading.
+
 ## Review rounds
 
 - **2026-09-11 (round 4, second fix):** MediaCube flagged a zero-size cold-boot
