@@ -69,6 +69,13 @@ export class Renderer {
     constructor(canvas) {
         this.canvas = canvas;
         this.ctx = canvas.getContext("2d");
+        // Measured viewport, in logical CSS px. 0 until a real measurement
+        // succeeds — a zero-size boot must never be latched (see resize()).
+        this.width = 0;
+        this.height = 0;
+        /** Fired with (width, height) whenever the fit actually changes — wired
+         *  by main.js to re-layout the live level and re-bind Poki's recorder. */
+        this.onViewportChange = null;
         // HiDPI: the backing store is device-pixel sized so phones (dpr 2-3)
         // render art crisply instead of the browser upscaling a 1x canvas.
         // All game math uses logical CSS-pixel width/height below.
@@ -115,13 +122,55 @@ export class Renderer {
         return dpr;
     }
 
-    resize() {
+    /** Poll the viewport and refit when it disagrees with the canvas.
+     *
+     *  Called every frame from the loop, because a resize event is not something
+     *  a game can count on hearing: YouTube Playables boots every build in a
+     *  zero-size WebView and grows the frame afterwards, which can land before
+     *  any listener exists (and, on a cold boot, before levels.json has even
+     *  downloaded). Polling here makes the loop — not the event — the source of
+     *  truth, so a missed event self-corrects on the next frame. resize() does
+     *  the comparison (a few property reads, no allocation) and returns early
+     *  when nothing moved, so this stays free at 60fps. */
+    ensureViewport() {
         const { width, height } = this._viewportSize();
+        // Still the zero-size warm-up frame — nothing to fit to yet.
+        if (!(width > 0) || !(height > 0)) return false;
+        return this.resize();
+    }
+
+    /** Fit the backing store + CSS shell to the current viewport.
+     *
+     *  Returns true when it actually changed anything (and fires
+     *  `onViewportChange`), so callers can treat a repeat call as a no-op and
+     *  nothing reallocates the canvas buffer needlessly — reassigning
+     *  canvas.width resets the drawing surface, which would also detach Poki's
+     *  playtest captureStream. `force` re-syncs unconditionally, for the one
+     *  case the comparison cannot see: the constructor measures before
+     *  `this.root` has been assigned. */
+    resize(force = false) {
+        const { width, height } = this._viewportSize();
+        // A zero measurement is refused outright rather than latched: YouTube
+        // boots playables in a zero-size WebView, and measuring once there used
+        // to pin a 0x0 backing store, `--app-h: 0px` and a collapsed container —
+        // the game then drew nothing forever even after the frame grew.
+        // ensureViewport() re-measures each frame until a real size appears.
+        if (!(width > 0) || !(height > 0)) return false;
+
+        const dpr = this._dpr();
+        const bufferW = Math.round(width * dpr);
+        const bufferH = Math.round(height * dpr);
+        const changed = width !== this.width || height !== this.height
+            || bufferW !== this.canvas.width || bufferH !== this.canvas.height;
+        // Early-out keeps the per-frame ensureViewport() call free and, crucially,
+        // leaves the buffer (and any captureStream bound to it) untouched.
+        if (!changed && !force) return false;
+
         this.width = width;
         this.height = height;
-        this.dpr = this._dpr();
-        this.canvas.width = Math.round(width * this.dpr);
-        this.canvas.height = Math.round(height * this.dpr);
+        this.dpr = dpr;
+        this.canvas.width = bufferW;
+        this.canvas.height = bufferH;
         this.canvas.style.width = width + "px";
         this.canvas.style.height = height + "px";
         // Keep the CSS app shell sized to the same visible viewport (fixes iOS
@@ -134,6 +183,10 @@ export class Renderer {
             root.style.setProperty("--app-h", height + "px");
         }
         if (this.root) this.root.style.height = height + "px";
+        // One hook for both the listener-driven and the self-healing path, so the
+        // live level is re-laid-out (and Poki's recorder re-bound) either way.
+        if (this.onViewportChange) this.onViewportChange(width, height);
+        return true;
     }
 
     computeFitCamera(level) {

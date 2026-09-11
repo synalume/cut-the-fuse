@@ -56,6 +56,8 @@ export class GameLoop {
         this.attempts = 0;
         this.startedAt = 0;
         this.lastLevelWin = null;
+        this._firstFrameDrawn = false; // gates the firstFrameReady signal
+        this.onFirstFrame = null;      // wired by main.js (Playables lifecycle)
         this.lostAt = null; // frameCount when the bomb detonated (drives the blast FX)
         this.wonAt = null; // frameCount when the level was defused (drives the win text)
         this.comicWord = null; // comic word for the win/lose beat, picked per attempt
@@ -814,6 +816,11 @@ export class GameLoop {
 
     _frame(t) {
         if (!this._running) return;
+        // Refit before update/draw so the frame that notices a viewport change is
+        // already drawn at the right size. This is the reliable signal: YouTube
+        // boots playables at 0x0 and grows the frame afterwards, which a resize
+        // listener registered later can miss entirely (see Renderer.resize).
+        this.renderer.ensureViewport();
         const dt = Math.min(32, t - this._lastT);
         this._lastT = t;
 
@@ -825,6 +832,15 @@ export class GameLoop {
             this._update();
         }
         this.renderer.draw(this);
+        // firstFrameReady has to describe a frame that actually painted. Signalling
+        // it off the bare first rAF would announce a 0x0 WebView frame (MediaCube's
+        // "the game started while the frame had zero size" flag), so wait for the
+        // first draw at a real size — still frame 1 whenever the frame has a size,
+        // and never gated behind levels.json or the art.
+        if (!this._firstFrameDrawn && this.renderer.width > 0 && this.renderer.height > 0) {
+            this._firstFrameDrawn = true;
+            if (this.onFirstFrame) this.onFirstFrame();
+        }
         this._rafId = requestAnimationFrame((nt) => this._frame(nt));
     }
 

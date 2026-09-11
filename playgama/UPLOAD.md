@@ -19,7 +19,22 @@
 
 ## Review rounds
 
-- **2026-09-11 (round 4, proactive):** fixed the screen-rotation UI alignment
+- **2026-09-11 (round 4, second fix):** MediaCube flagged a zero-size cold-boot
+  latch — "the game started while the frame had zero size, the frame has since
+  grown, and the game still has not reached a working state". `new
+  Renderer(canvas)` measured the viewport once at module load and the resize
+  listeners were only attached at the END of `boot()`, after `levels.json`
+  (488 KiB) and save hydration; YouTube grows the frame from 0×0 during exactly
+  that window, so the 0×0 measurement was latched (zero-size backing store,
+  `--app-h: 0px`, collapsed container, nothing drawn). `Renderer.resize()` now
+  refuses a zero measurement instead of latching it, the listeners attach before
+  the awaits, and `Renderer.ensureViewport()` polls every frame from
+  `GameLoop._frame()` so a *missed* resize event self-corrects on the next
+  frame. `firstFrameReady` also no longer announces an empty frame — it fires
+  from the loop's first draw at a real size. Regression test:
+  `tools/smoke/verify-coldboot-size.mjs` (fails on the pre-fix code). Zip
+  rebuilt 2026-09-11.
+- **2026-09-11 (round 4, first fix):** fixed the screen-rotation UI alignment
   bug MediaCube reported on the Playables build (same code, so the Playgama zip
   is rebuilt too). Level geometry is laid out as `viewport centre + config
   offset` and the camera is fitted to the build-time viewport, so rotating
@@ -28,8 +43,8 @@
   the level rebuilt it. New `relayoutLevel()` (`LevelManager.js`) re-centres a
   built level in place and `game.relayout()` (`GameLoop.js`) re-fits the camera
   and moves the world-space state; `main.js` routes `resize`,
-  `visualViewport.resize` and `orientationchange` through one
-  `handleViewportChange()`. Progress is untouched. Regression test:
+  `visualViewport.resize` and `orientationchange` through the single
+  `renderer.onViewportChange` hook. Progress is untouched. Regression test:
   `tools/smoke/verify-rotation.mjs`. Zip rebuilt 2026-09-11 (`make-playgama-bundle.sh`).
 - **2026-09-07 (round 3):** reviewer reported "Progress is not restored" after
   reload (save did fire). Root cause: real Bridge v2 `storage.get` auto-parses

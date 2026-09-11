@@ -856,13 +856,57 @@ async function boot() {
     // Start rendering IMMEDIATELY — firstFrameReady must signal on the very
     // first painted frame, before levels.json / save / art finish loading.
     // draw() handles the no-level home state (menu spark over the paper bg),
-    // so this is safe from the first rAF. game.start()'s rAF is registered
-    // first, so the one below runs right after the game's first draw in the
-    // same animation frame.
+    // so this is safe from the first rAF; the onFirstFrame hook below fires from
+    // the first frame that actually painted at a real size.
     game.start();
-    if (platform.isPlayables) {
-        requestAnimationFrame(() => platform.signalFirstFrameReady());
+
+    // One entry point for every viewport change. Resizing the canvas alone is
+    // not enough: the level was built against the OLD viewport, so a rotation
+    // left the puzzle (and its camera fit) laid out for the previous
+    // orientation until the level was rebuilt — the reviewer's "UI breaks on
+    // rotation", which only exiting to the menu and re-entering cured. Re-fit
+    // the live level in place after every resize so rotation lands correctly
+    // on the very next frame, with progress intact. Set as a Renderer hook so
+    // the loop's per-frame ensureViewport() self-heal takes the same path.
+    renderer.onViewportChange = () => {
+        // Resize reallocates the canvas backing store, which detaches Poki's
+        // captureStream — re-point it at the new buffer so playtest recordings
+        // don't freeze on the pre-resize frame.
+        platform.pokiBindPlaytestCapture(canvas);
+        game.relayout({ width: renderer.width, height: renderer.height });
+    };
+    // ...and fire it now. The Renderer measured the viewport in its constructor,
+    // which ran before `root` existed and before this hook was wired, so force
+    // one sync to size the CSS shell and take the relayout path.
+    renderer.root = $("game-container");
+    renderer.resize(true);
+
+    // firstFrameReady describes the first frame that actually painted — a
+    // zero-size WebView frame must not be announced (MediaCube: "the game
+    // started while the frame had zero size"). Fired from the loop, so it still
+    // lands long before gameReady.
+    if (platform.isPlayables) game.onFirstFrame = () => platform.signalFirstFrameReady();
+
+    // Registered BEFORE the awaits below on purpose: YouTube boots a playable in
+    // a zero-size WebView and grows it during loading, which is exactly when
+    // levels.json (488 KiB) and save hydration are in flight. A listener added
+    // after them can miss the growth event entirely — the loop's per-frame
+    // ensureViewport() now covers that too, this just makes the common case
+    // instant.
+    window.addEventListener("resize", () => renderer.resize());
+    // iOS Safari landscape toolbar + PWA chrome resize the VISUAL viewport
+    // without always firing window resize — re-fit the game to the visible area.
+    if (window.visualViewport) {
+        window.visualViewport.addEventListener("resize", () => renderer.resize());
     }
+    window.addEventListener("orientationchange", () => {
+        // Re-fit immediately (so a browser that already published the new metrics
+        // paints correctly at once) and again after the rotation settles for iOS,
+        // where visualViewport updates late. resize() no-ops when nothing moved.
+        renderer.resize();
+        setTimeout(() => renderer.resize(), 80);
+        setTimeout(() => renderer.resize(), 300);
+    });
 
     try {
         const res = await fetch("src/data/levels.json");
@@ -903,38 +947,6 @@ async function boot() {
 
     renderer.onAssetsReady(() => {
         platform.loadingFinished();
-    });
-
-    // One entry point for every viewport change. Resizing the canvas alone is
-    // not enough: the level was built against the OLD viewport, so a rotation
-    // left the puzzle (and its camera fit) laid out for the previous
-    // orientation until the level was rebuilt — the reviewer's "UI breaks on
-    // rotation", which only exiting to the menu and re-entering cured. Re-fit
-    // the live level in place after every resize so rotation lands correctly
-    // on the very next frame, with progress intact.
-    const handleViewportChange = () => {
-        renderer.resize();
-        // Resize reallocates the canvas backing store, which detaches Poki's
-        // captureStream — re-point it at the new buffer so playtest recordings
-        // don't freeze on the pre-resize frame.
-        platform.pokiBindPlaytestCapture(canvas);
-        game.relayout({ width: renderer.width, height: renderer.height });
-    };
-
-    window.addEventListener("resize", handleViewportChange);
-    // iOS Safari landscape toolbar + PWA chrome resize the VISUAL viewport
-    // without always firing window resize — re-fit the game to the visible area.
-    if (window.visualViewport) {
-        window.visualViewport.addEventListener("resize", handleViewportChange);
-    }
-    window.addEventListener("orientationchange", () => {
-        // Re-fit twice: immediately (so a browser that already published the new
-        // metrics paints correctly at once) and again after the rotation settles
-        // for iOS, where visualViewport updates late. relayout() is a no-op once
-        // the viewport stops changing, so the second pass costs nothing.
-        handleViewportChange();
-        setTimeout(handleViewportChange, 80);
-        setTimeout(handleViewportChange, 300);
     });
 
     // Host pause (Playgama / Playables) freezes the loop even when visible.
