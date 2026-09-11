@@ -349,11 +349,72 @@ export function buildLevel(config, viewport, assets = null) {
         tutorial: config.tutorial || null,
         dda: config.dda || { failThreshold: 3, tierSteps: ["snip", "slow", "hint"] },
         camera: config.camera ? { ...config.camera } : null,
+        // The viewport this level was laid out for. Node coordinates are
+        // `viewport centre + config offset`, so rotating the device has to
+        // re-centre the whole build (relayoutLevel) — see the rotation fix.
+        layoutCenter: { x: cx, y: cy },
+        layoutViewport: { width: viewport.width, height: viewport.height },
         // New mechanics (all optional, data-driven):
         wireRule: config.wireRule || null,      // { legend: { red: "no", blue: "cut", ... } }
         pickups,                                 // [{ id, fuseId, fuseIndex, at, x, y, collected }]
         douse,                                   // [{ id, fuseId, fuseIndex, at }]
     };
+}
+
+/** Re-centre an already-built level for a NEW viewport, in place.
+ *
+ *  buildLevel() bakes the viewport centre into every coordinate
+ *  (`x = width / 2 + config offset`) and computeFitCamera fits the build-time
+ *  viewport. Rotating the device therefore left the entire puzzle — and every
+ *  world-space mark placed on it — laid out for the OLD orientation, and the
+ *  only cure was re-entering the level, which rebuilt it. This applies the
+ *  centre delta to the built geometry so rotation re-centres immediately,
+ *  without touching progress: sparks live at a `progress` t along their fuse,
+ *  so they ride along with the wick, and `at`-relative data (douse points,
+ *  stickiness, arc lengths) is translation-invariant.
+ *
+ *  Points are collected in a Set and moved by identity: fuse.cp1/cp2 alias
+ *  path[0]'s controls on shaped fuses, `_segs` aliases `path` entries and the
+ *  start node, and a naive per-array shift would move those twice.
+ *
+ *  Returns { dx, dy, changed } — `changed` is false when the viewport is
+ *  unchanged, so callers can cheaply ignore duplicate resize events. */
+export function relayoutLevel(level, viewport) {
+    const result = { dx: 0, dy: 0, changed: false };
+    if (!level || !viewport) return result;
+    const prevViewport = level.layoutViewport || null;
+    const prevCenter = level.layoutCenter || { x: viewport.width / 2, y: viewport.height / 2 };
+    const resized = !prevViewport
+        || prevViewport.width !== viewport.width
+        || prevViewport.height !== viewport.height;
+    const dx = viewport.width / 2 - prevCenter.x;
+    const dy = viewport.height / 2 - prevCenter.y;
+    if (!resized && !dx && !dy) return result;
+
+    if (dx || dy) {
+        const pts = new Set();
+        const add = (p) => { if (p && typeof p.x === "number" && typeof p.y === "number") pts.add(p); };
+        for (const n of level.nodes || []) add(n);
+        for (const key in level.intersectionMap || {}) add(level.intersectionMap[key]);
+        for (const f of level.fuses || []) {
+            add(f.cp1);
+            add(f.cp2);
+            add(f.intersectionPt);
+            for (const seg of f.path || []) { add(seg.cp1); add(seg.cp2); add(seg.end); }
+            for (const seg of f._segs || []) { add(seg.p0); add(seg.cp1); add(seg.cp2); add(seg.p3); }
+        }
+        // Gold bonus-snip stars caches an absolute x/y derived from fusePoint;
+        // their `at` stays valid, so the cached point just rides the shift.
+        for (const p of level.pickups || []) add(p);
+        for (const p of pts) { p.x += dx; p.y += dy; }
+    }
+
+    level.layoutCenter = { x: viewport.width / 2, y: viewport.height / 2 };
+    level.layoutViewport = { width: viewport.width, height: viewport.height };
+    result.dx = dx;
+    result.dy = dy;
+    result.changed = true;
+    return result;
 }
 
 /** Fit all nodes + intersections into the viewport. Returns a camera that

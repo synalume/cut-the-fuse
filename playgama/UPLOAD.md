@@ -19,6 +19,18 @@
 
 ## Review rounds
 
+- **2026-09-11 (round 4, proactive):** fixed the screen-rotation UI alignment
+  bug MediaCube reported on the Playables build (same code, so the Playgama zip
+  is rebuilt too). Level geometry is laid out as `viewport centre + config
+  offset` and the camera is fitted to the build-time viewport, so rotating
+  refitted the canvas but left the *level* and its world-space marks (cut marks,
+  gold stars, hint markers) laid out for the old orientation — only re-entering
+  the level rebuilt it. New `relayoutLevel()` (`LevelManager.js`) re-centres a
+  built level in place and `game.relayout()` (`GameLoop.js`) re-fits the camera
+  and moves the world-space state; `main.js` routes `resize`,
+  `visualViewport.resize` and `orientationchange` through one
+  `handleViewportChange()`. Progress is untouched. Regression test:
+  `tools/smoke/verify-rotation.mjs`. Zip rebuilt 2026-09-11 (`make-playgama-bundle.sh`).
 - **2026-09-07 (round 3):** reviewer reported "Progress is not restored" after
   reload (save did fire). Root cause: real Bridge v2 `storage.get` auto-parses
   stored JSON on read (`tryParseJson` defaults true), so the save — a JSON

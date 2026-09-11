@@ -2,6 +2,16 @@
 
 YouTube Playables / MC Play upload. Build: `./cert/make-bundle.sh` → `cert/out/cut-the-fuse-playables.zip`.
 
+## Status (2026-09-11)
+
+- **MediaCube feedback addressed — screen rotation UI alignment bug**: *"When rotating the device from portrait to landscape, the UI elements break and become misaligned; the player has to exit to the menu and return to the level to restore the layout."* Zip rebuilt 2026-09-11 (`./cert/make-bundle.sh`, 9.84 MiB) and re-verified on the staged build.
+  - **Root cause**: `buildLevel()` lays geometry out as `viewport centre + config offset` and `computeFitCamera()` fits the build-time viewport, so a rotation refitted the canvas (CSS, `--app-h`, `#game-container`) but left the *level* — and every world-space mark on it (cut marks, gold stars, hint markers) — laid out for the OLD orientation, along with the camera fit. Only re-entering the level rebuilt it against the new viewport, which is exactly the reported workaround.
+  - **Fix**: new `relayoutLevel()` (`src/engine/LevelManager.js`) re-centres an already-built level in place for a new viewport, and `game.relayout()` (`src/engine/GameLoop.js`) re-fits the camera and carries the world-space state with it. `main.js` now routes `resize`, `visualViewport.resize` and `orientationchange` (immediate + 80 ms + 300 ms settle passes) through one `handleViewportChange()`.
+  - Progress is untouched: sparks live at a `progress` t along their fuse, so they ride along with the wick; douse points, stickiness and arc lengths are `at`-relative/translation-invariant. **Cut marks must move** — `_cutAheadOnFuse()` compares `game.cuts` against fuse coordinates every frame, so stale points would let a severed spark burn straight through its own cut. Transient cosmetics (slash bursts, dust, popups) are cleared rather than translated: several hold bare references to the same swipe-point objects and a double shift would fling them across the screen.
+  - Shifted by object identity (a `Set`): `fuse.cp1/cp2` alias `path[0]`'s controls on shaped fuses and `_segs` aliases both `path` entries and the start node, so a naive per-array shift moves those twice.
+  - **New regression test** `tools/smoke/verify-rotation.mjs` (23 checks, passes on source *and* the staged zip): portrait→landscape and the round trip must match a fresh load in that orientation exactly (camera, nodes, fuse controls, shaped paths, arc lengths), `--app-h`/`#game-container`/canvas follow, header + controls stay in bounds, a real swipe's cut keeps the same `t` and stays within the cut radius of its shifted wick, and shaped wicks + gold stars re-fit (evidence: `tools/smoke/rotate-portrait.png`, `rotate-landscape.png`).
+- **Re-verified**: smoke, verify-ui, verify-coverage, verify-portal (25/25) all pass; wheel untouched (levels 1-60 geometry unchanged).
+
 ## Status (2026-09-09)
 
 - **MediaCube moderator feedback addressed** (interstitial + rewarded hints + console-pause UI freeze). Zip rebuilt: `./cert/make-bundle.sh` → `cert/out/cut-the-fuse-playables.zip` (9.84 MiB).

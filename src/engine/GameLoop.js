@@ -1,6 +1,7 @@
 // GameLoop.js — rAF loop, state machine, and the simulation.
 // Owns all mutable game state. Renders through the injected Renderer.
 import { distToSegment, clamp, fusePoint, fuseClosest, fuseLength } from "./MathUtils.js";
+import { relayoutLevel } from "./LevelManager.js";
 import { COMIC_WORDS } from "./Renderer.js";
 
 export const STATE = { PLAYING: "playing", WON: "won", LOST: "lost", PAUSED: "paused" };
@@ -182,6 +183,63 @@ export class GameLoop {
 
     changeZoom(amount) {
         this.camera.zoom = clamp(this.camera.zoom + amount, 0.3, 3);
+    }
+
+    /** Re-fit a live level to a NEW viewport (device rotation, window resize).
+     *
+     *  Level geometry is baked against the viewport that built it, so rotating
+     *  left the puzzle laid out for the old orientation until the level was
+     *  rebuilt — the reviewer's "UI breaks on rotation", whose only cure was
+     *  exiting to the menu and re-entering. This re-centres the build in place
+     *  (progress untouched) and brings the world-space marks with it, so a cut
+     *  that stopped a spark still sits on that wick: `cuts` are checked against
+     *  fuse coordinates every frame (see _cutAheadOnFuse), so a stale cut point
+     *  would either stop a spark that should burn or let one through.
+     *
+     *  Returns true when the viewport actually changed, so duplicate resize
+     *  events from one rotation are cheap no-ops. */
+    relayout(viewport) {
+        if (!this.level) return false;
+        const size = viewport || { width: this.renderer.width, height: this.renderer.height };
+        const { dx, dy, changed } = relayoutLevel(this.level, size);
+        if (!changed) return false;
+
+        const shift = (p) => { if (p) { p.x += dx; p.y += dy; } };
+        // Persistent cut marks: drawn as scars AND read by the sim, so they must
+        // stay on the wick they severed.
+        for (const c of this.cuts) shift(c);
+        // The gold stars the player already banked are a per-attempt copy of the
+        // level's (Collected state lives here), so they shift on their own.
+        for (const p of this.pickups || []) shift(p);
+        // Hint markers are derived from fuse geometry — recompute off the shifted
+        // build rather than translating their cached points.
+        this.hintTargets = this._computeHintTargets();
+
+        // Transient cosmetics (slash bursts, dust, PERFECT!/SNAP! popups) are
+        // mid-fade and only live a fraction of a second. They are dropped rather
+        // than translated: several hold bare references to the same swipe-point
+        // objects, and moving a shared point twice would fling the effect across
+        // the screen. A rotation is a visual reset moment, so clearing reads fine.
+        this.particles = [];
+        this.fadingSlashes = [];
+        this.cutFlashes = [];
+        this.perfectSnipsAt = [];
+        this.multikills = [];
+        this.bonusSnipsAt = [];
+        this.snapAt = null;
+        this.snapSlash = null;
+        this.deniedSlash = null;
+        this.noSnipsAt = null;
+        this.deadCutAt = null;
+        this.wireOffenseAt = null;
+        this.wireDeniedSlash = null;
+
+        // Re-fit exactly like a fresh load (a level with an authored camera keeps
+        // it; computeFitCamera already honours that).
+        this.camera = this.level.camera
+            ? { x: this.level.camera.x, y: this.level.camera.y, zoom: this.level.camera.zoom }
+            : this.renderer.computeFitCamera?.(this.level) || this.camera;
+        return true;
     }
 
     panCamera(dx, dy) {

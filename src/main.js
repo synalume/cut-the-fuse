@@ -145,6 +145,12 @@ async function loadLevel(index) {
     game.levelMode = dailyMode ? "daily" : "story";
     game.loadLevel(level, index);
     renderer.resize();
+    // The build above uses the renderer's dims, which can be one frame stale if
+    // the viewport moved while this level was loading (the player rotated while
+    // waiting on an interstitial or on the art). Re-fitting here means whatever
+    // actually lands on screen matches the real viewport; a no-op when they
+    // already agree.
+    game.relayout({ width: renderer.width, height: renderer.height });
 
     levelLabel.textContent = dailyMode ? "DAILY ▾" : `LEVEL ${config.level_id}`;
     updateUi();
@@ -899,26 +905,36 @@ async function boot() {
         platform.loadingFinished();
     });
 
-    window.addEventListener("resize", () => {
+    // One entry point for every viewport change. Resizing the canvas alone is
+    // not enough: the level was built against the OLD viewport, so a rotation
+    // left the puzzle (and its camera fit) laid out for the previous
+    // orientation until the level was rebuilt — the reviewer's "UI breaks on
+    // rotation", which only exiting to the menu and re-entering cured. Re-fit
+    // the live level in place after every resize so rotation lands correctly
+    // on the very next frame, with progress intact.
+    const handleViewportChange = () => {
         renderer.resize();
         // Resize reallocates the canvas backing store, which detaches Poki's
         // captureStream — re-point it at the new buffer so playtest recordings
         // don't freeze on the pre-resize frame.
         platform.pokiBindPlaytestCapture(canvas);
-    });
+        game.relayout({ width: renderer.width, height: renderer.height });
+    };
+
+    window.addEventListener("resize", handleViewportChange);
     // iOS Safari landscape toolbar + PWA chrome resize the VISUAL viewport
     // without always firing window resize — re-fit the game to the visible area.
     if (window.visualViewport) {
-        window.visualViewport.addEventListener("resize", () => {
-            renderer.resize();
-            platform.pokiBindPlaytestCapture(canvas);
-        });
+        window.visualViewport.addEventListener("resize", handleViewportChange);
     }
     window.addEventListener("orientationchange", () => {
-        setTimeout(() => {
-            renderer.resize();
-            platform.pokiBindPlaytestCapture(canvas);
-        }, 80); // wait for the rotation to settle
+        // Re-fit twice: immediately (so a browser that already published the new
+        // metrics paints correctly at once) and again after the rotation settles
+        // for iOS, where visualViewport updates late. relayout() is a no-op once
+        // the viewport stops changing, so the second pass costs nothing.
+        handleViewportChange();
+        setTimeout(handleViewportChange, 80);
+        setTimeout(handleViewportChange, 300);
     });
 
     // Host pause (Playgama / Playables) freezes the loop even when visible.
