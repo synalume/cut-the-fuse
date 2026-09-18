@@ -153,6 +153,8 @@ async function loadLevel(index) {
     game.relayout({ width: renderer.width, height: renderer.height });
 
     levelLabel.textContent = dailyMode ? "DAILY ▾" : `LEVEL ${config.level_id}`;
+    // Platform messages (playgama level_completed, etc.) carry the level number.
+    platform.levelNo = dailyMode ? null : config.level_id;
     updateUi();
     closeModals();
     startTutorialIfPresent(level);

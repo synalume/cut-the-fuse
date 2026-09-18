@@ -33,6 +33,8 @@ export class SaveManager {
         this.impl = storageImpl; // { get, set } — test / alternate sync storage
         this.async = this._detectAsyncBackend(); // platform storage (Playgama / Playables)
         this._writeTail = null; // serialized async write chain (last write wins)
+        this._hydrated = false; // true once init() has merged the stored save
+        this._deferredRaw = null; // portal write held until the backend appears
         this.data = this._load();
     }
 
@@ -96,6 +98,23 @@ export class SaveManager {
             const raw = await this.async.load();
             if (raw) this.data = { ...freshDefaults(), ...JSON.parse(raw) };
         } catch { /* corrupt / unavailable -> keep defaults */ }
+        this._hydrated = true;
+        // Flush a write that arrived while the backend was still undetectable.
+        // Only ever queued after hydration, so this can't clobber a stored save
+        // with fresh defaults (see _save).
+        if (this._deferredRaw != null) {
+            const raw = this._deferredRaw;
+            this._deferredRaw = null;
+            this._asyncWrite(raw);
+        }
+    }
+
+    /** Serialize a write through the platform backend (last write wins). */
+    _asyncWrite(raw) {
+        if (!this.async) return;
+        this._writeTail = (this._writeTail || Promise.resolve())
+            .then(() => this.async.save(raw))
+            .catch(() => { /* platform save failed; keep the session copy */ });
     }
 
     _load() {
@@ -128,16 +147,19 @@ export class SaveManager {
                 (hasWindow && (!!window.__CUT_THE_FUSE_PLAYGAMA__ || !!window.__CUT_THE_FUSE_PLAYABLES__)) ||
                 (typeof ytgame !== "undefined" && !!ytgame.IN_PLAYABLES_ENV);
             if (this.async) {
-                // Fire-and-forget through the platform backend, serialized so
-                // rapid saves keep order (each write ships the full snapshot).
-                this._writeTail = (this._writeTail || Promise.resolve())
-                    .then(() => this.async.save(raw))
-                    .catch(() => { /* platform save failed; keep the session copy */ });
+                this._asyncWrite(raw);
             } else if (this.impl && typeof this.impl.set === "function") {
                 this.impl.set(KEY, raw);
             } else if (inPortal) {
-                // On a portal build whose backend hasn't been detected yet (Bridge
-                // init still resolving), never leak progress into localStorage.
+                // Portal build whose backend still isn't detectable (Bridge init
+                // unresolved / storage module not ready). Never leak progress
+                // into localStorage — but don't silently drop it either: re-detect
+                // and hold the snapshot until init() can flush it. Only queued
+                // once hydrated, so a stalled boot can't overwrite a real save
+                // with fresh defaults.
+                this.async = this._detectAsyncBackend();
+                if (this.async) this._asyncWrite(raw);
+                else if (this._hydrated) this._deferredRaw = raw;
             } else {
                 localStorage.setItem(KEY, raw);
             }

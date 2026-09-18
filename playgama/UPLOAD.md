@@ -14,17 +14,54 @@
 | Rewarded | Cosmetic only; grants only on success |
 | Auth | Answer **No** |
 | Loading | `gameReady` fires when the title is interactive |
+| Console | No "Before using the SDK you must initialize it" from our code |
 
 4. Submit only after the walk — fix before Update/Submit, not after rejection.
 
-**Current build: 2026-09-11** — `playgama/out/cut-the-fuse-playgama.zip`, 11.31 MiB
-(11,860,517 bytes), sha256 `1c7f26030a8fea6e…`, from `main` @ `5d783b3`. Carries
-**both** round-4 fixes (screen-rotation re-layout + zero-size cold-boot latch)
-plus the ads and console-pause work. **Not yet resubmitted to Playgama** — the
-round-4 zip went to MC Play only; walk the QA table above before uploading.
+**Current build: 2026-09-18** — `playgama/out/cut-the-fuse-playgama.zip`, 11.31 MiB
+(11,863,023 bytes), sha256 `4c2b009625dd0aa8…`, from `main` @ _(this commit)_.
+Carries the round-5 fixes (SDK init race + interstitial never reaching the
+platform + portal message set). Walk the QA table above before uploading.
 
 ## Review rounds
 
+- **2026-09-18 (round 5, pending):** reviewer flagged three things on the
+  2026-09-07 zip — "The interstitial ad was not triggered / the platform did not
+  intercept an interstitial ad call", the `Before using the SDK you must
+  initialize it` error, and "Progress is not restored". All three had real
+  causes in our code (verified against the actual `bridge.playgama.com` v2.2.0
+  bundle, not just our mock):
+  1. **Interstitial never reached the platform.** Two compounding causes.
+     (a) The Bridge's ad module only shows an interstitial *after* `game_ready`
+     has been sent — it timestamps that message and its `show()` bails out
+     while `initialInterstitialDelay` has not elapsed, **failing before it ever
+     calls the platform**. Our config set `initialInterstitialDelay: 45`, so a
+     level cleared inside the first 45 s produced no platform call at all →
+     now `0`. (b) Our `game_ready` send was gated on a *synchronous* read of
+     `bridge.platform?.sendMessage` from `loadingFinished()`, and
+     `renderer.onAssetsReady()` fires on every asset batch; the message was also
+     re-sent on each batch, which the SDK rejects. It is now deduped and queued
+     behind Bridge init (`_sendGameReady`).
+  2. **`Before using the SDK you must initialize it`.** The Bridge exposes
+     `platform` / `storage` / `advertisement` as getters gated on
+     `initialize()`, and reading one early makes the SDK log exactly that error
+     and return `undefined`. `Platform._boot()` called
+     `_bindPlaygamaHostEvents()` immediately (before init resolved), which read
+     `bridge.platform`. Nothing touches a Bridge module now until the init
+     promise settles (`_playgamaInitialized` gate) and the Bridge global may
+     even still be downloading (`_waitForBridge`).
+  3. **Progress not restored.** `_save()` dropped writes on a portal build whose
+     backend wasn't detectable yet; it now re-detects and holds the snapshot
+     until `init()` can flush it. The domain fix (accepting the SDK's
+     auto-parsed JSON) landed in round 3 — see below.
+  Also: the interstitial now uses the declared placement `level_completed`
+  (it was sending an undeclared `level_complete`), and `gameplay_started` /
+  `gameplay_stopped` / `level_completed` are reported to the portal.
+  `tools/smoke/verify-portal.mjs` now drives its mock from the **real**
+  `playgama-bridge-config.json` and models the SDK's module gating, the
+  `game_ready` precondition and the initial-delay gate — the old mock exposed
+  `platform` unconditionally and had no delay gate, which is why this shipped.
+  Zip rebuilt 2026-09-18 (verified 18/18 against the staged zip itself).
 - **2026-09-11 (round 4, second fix):** MediaCube flagged a zero-size cold-boot
   latch — "the game started while the frame had zero size, the frame has since
   grown, and the game still has not reached a working state". `new
@@ -68,10 +105,14 @@ round-4 zip went to MC Play only; walk the QA table above before uploading.
   no level present an empty spark list in the PLAYING state ran the win/lose
   check on a null level. Fix (in `src/engine/GameLoop.js`, applies to ALL
   builds, not just Playgama): `_update()` and `_finishLevel()` both bail when
-  `!this.level`. The Playgama "Before using the SDK you must initialize it"
-  console line is Bridge's own informational startup log — the game awaits
-  `bridge.initialize()` before any SDK call, so it is not an app error. Zip
-  rebuilt from current `main` and cold-start walked with no errors.
+  `!this.level`. Zip rebuilt from current `main` and cold-start walked with no
+  errors.
+  - _Correction (round 5):_ this entry originally claimed the
+    `Before using the SDK you must initialize it` line was only Bridge's own
+    informational startup log and "not an app error". **That was wrong.**
+    `Platform._boot()` was reading `bridge.platform` before `initialize()`
+    resolved, and the Bridge logs that exact message when a module is touched
+    early. Fixed in round 5 — do not re-add a pre-init Bridge read.
 - **2026-08-31 (round 1):** initial submission.
 
 ## Covers (exact sizes)

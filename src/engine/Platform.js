@@ -17,9 +17,12 @@ export class Platform {
         this._pokiInitDone = false;
         this._pokiUiReady = false;
         this._pokiLoaded = false;
-        this._bound = {};
         this._bridgeReady = null; // resolves once Playgama Bridge is initialized
+        this._playgamaInitialized = false; // gate for every bridge.* module read
+        this._gameReadySent = false;
+        this._gameplaySent = null; // last gameplay_started/stopped state sent
         this._pendingAdNext = null; // level-transition callback to fire when an ad closes
+        this.levelNo = null; // current level number, for platform messages
         this.language = "en"; // platform.language read after Bridge init
         this._boot();
     }
@@ -61,23 +64,13 @@ export class Platform {
         }
         if (IN_PLAYGAMA) {
             window.addEventListener("message", (e) => this._onBridgeMessage(e));
-            // Host pause/mute must bind even if bridge.initialize() is slow —
-            // the QA tool's qa_tool platform can emit signals while init is
-            // pending. Idempotent, so the post-init pass just fills the gap
-            // when the modules weren't ready yet at boot.
-            this._bindPlaygamaHostEvents();
-            if (typeof bridge !== "undefined" && bridge.initialize) {
-                try {
-                    this._bridgeReady = bridge.initialize()
-                        .then(() => {
-                            this.language = bridge.platform?.language || this.language;
-                            this._bindPlaygamaHostEvents();
-                            this._bindPlaygamaAdEvents();
-                            this._applyPlaygamaAudioState();
-                        })
-                        .catch(() => { /* Bridge still usable via mocks */ });
-                } catch { /* noop */ }
-            }
+            // Every Bridge module (platform / storage / advertisement / player)
+            // is a getter gated behind initialize(): reading ANY of them before
+            // the promise resolves makes the SDK log
+            //   "Before using the SDK you must initialize it"
+            // and hand back undefined. So nothing in this class may touch
+            // bridge.* directly — it all goes through _bridgeReady below.
+            this._bridgeReady = this._initPlaygama();
         }
         // YouTube Playables forbids the Page Visibility API — its onPause /
         // onResume callbacks (wired in main.js) replace this listener there.
@@ -87,6 +80,104 @@ export class Platform {
                 else if (IN_PLAYGAMA) this._applyPlaygamaAudioState();
             });
         }
+    }
+
+    /** Bind the Bridge global, initialize it, then wire host signals.
+     *
+     *  Ordering is mandatory (Playgama doc step 1: "Wait for Bridge
+     *  initialization before calling any SDK API"). The script is a classic
+     *  <script src> so the global normally exists by the time this module
+     *  evaluates, but a slow CDN or a cache miss can still land us first —
+     *  hence the bounded wait. If the global never appears we give up after
+     *  the timeout so a blocked CDN can't hang boot (the game stays playable,
+     *  just without portal storage/ads).
+     *
+     *  Resolving only once init has settled also protects the SAVE path:
+     *  main.js awaits platform.ready() before save.init(), so storage is never
+     *  detected while bridge.storage is still undefined (which would silently
+     *  drop every write as "portal build, backend not ready"). */
+    async _initPlaygama() {
+        const b = await this._waitForBridge();
+        if (!b) return;
+        try {
+            await b.initialize();
+        } catch { /* Bridge still usable via mocks / QA tool */ }
+        // Only treat the bridge as usable if its modules actually came up. A
+        // rejected init leaves every module getter undefined (and logging) in
+        // the real SDK, so binding against them would just produce the very
+        // "Before using the SDK you must initialize it" noise we're removing.
+        // `isInitialized` is a plain getter (not module-gated), so reading it is
+        // always safe; bridges that don't expose it are assumed usable.
+        const usable = typeof b.isInitialized === "boolean" ? b.isInitialized : true;
+        if (!usable) return;
+        this._playgamaInitialized = true;
+        this.language = b.platform?.language || this.language;
+        // Safe now: every module getter below is past the init gate.
+        this._bindPlaygamaHostEvents();
+        this._bindPlaygamaAdEvents();
+        this._applyPlaygamaAudioState();
+    }
+
+    /** Poll for the Bridge global (it may still be downloading). Bounded. */
+    _waitForBridge(timeoutMs = 15000) {
+        return new Promise((resolve) => {
+            const started = Date.now();
+            const tick = () => {
+                const b = typeof window !== "undefined" ? window.bridge : null;
+                if (b && typeof b.initialize === "function") { resolve(b); return; }
+                if (Date.now() - started >= timeoutMs) { resolve(null); return; }
+                setTimeout(tick, 50);
+            };
+            tick();
+        });
+    }
+
+    /** Send a Bridge platform message (game_ready / gameplay_started /
+     *  level_completed …). Queued behind _bridgeReady, so it can be called at
+     *  ANY point in boot without tripping the SDK's init guard. The SDK
+     *  rejects a duplicate game_ready, so the rejection is swallowed. */
+    _say(message, payload) {
+        if (!IN_PLAYGAMA) return;
+        const send = () => {
+            if (!this._playgamaInitialized) return;
+            if (typeof bridge === "undefined" || !bridge.platform) return;
+            if (typeof bridge.platform.sendMessage !== "function") return;
+            try {
+                const res = bridge.platform.sendMessage(message, payload);
+                if (res && typeof res.then === "function") res.catch(() => { /* deduped by SDK */ });
+            } catch { /* noop */ }
+        };
+        if (this._bridgeReady) this._bridgeReady.then(send, send);
+        else send();
+    }
+
+    /** Bridge message constant, falling back to the literal so we still send the
+     *  documented string if the SDK's enum isn't readable. */
+    _msg(name, fallback) {
+        const M = typeof bridge !== "undefined" ? bridge.PLATFORM_MESSAGE : null;
+        return (M && M[name]) || fallback;
+    }
+
+    /** The portal hides its loading screen and starts analytics on this. It also
+     *  ARMS INTERSTITIALS: the Bridge's ad module records the game_ready
+     *  timestamp and refuses to show ANY interstitial until
+     *  `initialInterstitialDelay` seconds after it (failing before it ever
+     *  reaches the platform). So this must fire exactly once, and reliably —
+     *  sending it is a precondition for the level-complete ad to exist at all. */
+    _sendGameReady() {
+        if (!IN_PLAYGAMA || this._gameReadySent) return;
+        this._gameReadySent = true;
+        this._say(this._msg("GAME_READY", "game_ready"));
+    }
+
+    /** gameplay_started / gameplay_stopped, deduped (the Bridge forwards each to
+     *  the platform's analytics, and setPaused can call these repeatedly). */
+    _sendGameplay(started) {
+        if (!IN_PLAYGAMA || this._gameplaySent === started) return;
+        this._gameplaySent = started;
+        this._say(started
+            ? this._msg("GAMEPLAY_STARTED", "gameplay_started")
+            : this._msg("GAMEPLAY_STOPPED", "gameplay_stopped"));
     }
 
     /** Resolves once Playgama Bridge is initialized — Bridge SDK calls (storage,
@@ -102,6 +193,7 @@ export class Platform {
      *  tool's qa_tool platform can expose events without full init). Idempotent. */
     _bindPlaygamaHostEvents() {
         if (this._playgamaHostBound) return;
+        if (!this._playgamaInitialized) return; // never touch bridge.* pre-init
         if (typeof bridge === "undefined") return;
         const pauseEvt = bridge.EVENT_NAME?.PAUSE_STATE_CHANGED || "pause_state_changed";
         const audioEvt = bridge.EVENT_NAME?.AUDIO_STATE_CHANGED || "audio_state_changed";
@@ -131,6 +223,7 @@ export class Platform {
      *  init resolves, so this always runs after _bridgeReady settles. */
     _bindPlaygamaAdEvents() {
         if (this._playgamaAdBound) return;
+        if (!this._playgamaInitialized) return;
         if (typeof bridge === "undefined" || !bridge.advertisement) return;
         try {
             const on = bridge.advertisement.on?.bind(bridge.advertisement);
@@ -148,6 +241,10 @@ export class Platform {
      *  later changes, so the initial value must be applied manually). Re-read
      *  after init and whenever the iframe regains focus. */
     _applyPlaygamaAudioState() {
+        // Guarded on our own flag, not on `bridge.platform` — reading that getter
+        // before initialize() resolves is exactly what makes the SDK log
+        // "Before using the SDK you must initialize it".
+        if (!this._playgamaInitialized) return;
         if (typeof bridge === "undefined" || !bridge.platform) return;
         try {
             const en = bridge.platform.isAudioEnabled;
@@ -211,12 +308,16 @@ export class Platform {
             this.signalFirstFrameReady();
             this.signalGameReady();
         }
-        if (IN_PLAYGAMA && typeof bridge !== "undefined" && bridge.platform?.sendMessage) {
+        if (IN_PLAYGAMA) {
             // Playgama required message once the first playable frame is up —
             // platforms use it to hide their loading screen + start analytics.
-            (this._bridgeReady || Promise.resolve()).then(() => {
-                try { bridge.platform.sendMessage("game_ready"); } catch { /* noop */ }
-            });
+            // Deduped + queued behind Bridge init on purpose: onAssetsReady fires
+            // on EVERY asset batch (and synchronously when nothing is pending),
+            // and the real SDK rejects a second game_ready. It also ARMS
+            // interstitials — the ad module timestamps this message and refuses
+            // to show an interstitial until initialInterstitialDelay has passed
+            // since it, so game_ready must land exactly once.
+            this._sendGameReady();
         }
     }
 
@@ -253,12 +354,16 @@ export class Platform {
         if (IN_POKI && typeof PokiSDK !== "undefined") {
             try { PokiSDK.gameplayStart(); } catch { /* noop */ }
         }
+        // Playgama wants GAMEPLAY_STARTED/STOPPED for its session analytics and
+        // ad-pacing decisions. Deduped inside (setPaused can fire it repeatedly).
+        this._sendGameplay(true);
     }
 
     gameplayStop() {
         if (IN_POKI && typeof PokiSDK !== "undefined") {
             try { PokiSDK.gameplayStop(); } catch { /* noop */ }
         }
+        this._sendGameplay(false);
     }
 
     /** Ad at a natural break (results / level clear). */
@@ -271,18 +376,32 @@ export class Platform {
             this.playablesInterstitial("level_complete").then(go, go);
             return;
         }
-        if (IN_PLAYGAMA && typeof bridge !== "undefined" && bridge.advertisement?.showInterstitial) {
-            (this._bridgeReady || Promise.resolve()).then(() => {
-                this.gameplayStop();
+        if (IN_PLAYGAMA) {
+            // Tell the portal the level finished BEFORE requesting the ad — the
+            // placement id below is the one modelled in playgama-bridge-config.json
+            // ("level_completed", matching bridge.PLATFORM_MESSAGE.LEVEL_COMPLETED).
+            // Passing the long-standing typo "level_complete" sent an undeclared
+            // placement the platform didn't recognise.
+            this._say(this._msg("LEVEL_COMPLETED", "level_completed"), this.levelNo != null ? { level: String(this.levelNo) } : undefined);
+            this.gameplayStop();
+            const show = () => {
+                if (!this._playgamaInitialized) return false;
+                if (typeof bridge === "undefined" || !bridge.advertisement) return false;
+                if (typeof bridge.advertisement.showInterstitial !== "function") return false;
                 this.adOpen = true;
                 this._pendingAdNext = go;
                 try {
                     // Settle on the promise OR the state event — whichever lands
                     // first; _settleAd() is idempotent for the other.
-                    Promise.resolve(bridge.advertisement.showInterstitial("level_complete"))
-                        .then(() => this._settleAd())
-                        .catch(() => this._settleAd());
-                } catch { this._settleAd(); }
+                    const res = bridge.advertisement.showInterstitial("level_completed");
+                    if (res && typeof res.then === "function") res.then(() => this._settleAd(), () => this._settleAd());
+                    return true;
+                } catch { return false; }
+            };
+            (this._bridgeReady || Promise.resolve()).then(() => {
+                // If the ad API isn't usable, never swallow the transition — the
+                // player still gets their win panel / next level.
+                if (!show()) { this.adOpen = false; this._pendingAdNext = null; this.gameplayStart(); go(); }
             });
             return;
         }

@@ -1,7 +1,7 @@
 {
   "advertisement": {
     "minimumDelayBetweenInterstitial": 60,
-    "initialInterstitialDelay": 45,
+    "initialInterstitialDelay": 0,
     "interstitial": {
       "disable": false,
       "preloadOnStart": "level_completed",
@@ -15,7 +15,8 @@
       "preloadOnStart": "continue",
       "placementFallback": "continue",
       "placements": [
-        { "id": "continue" }
+        { "id": "continue" },
+        { "id": "hint_refill" }
       ]
     }
   }

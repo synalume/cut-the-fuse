@@ -2,6 +2,21 @@
 
 YouTube Playables / MC Play upload. Build: `./cert/make-bundle.sh` → `cert/out/cut-the-fuse-playables.zip`.
 
+> **Validate a staged zip directly** (not just the dev tree) — both bundles copy
+> `src/` verbatim, so a fix can pass on `localhost` and still be built wrong:
+> `cd cert/out/stage && python3 -m http.server 8098` then
+> `PORTAL_BASE=http://localhost:8098 PORTAL_ONLY=playables node tools/smoke/verify-portal.mjs`
+> (use `playgama/out/stage` + `PORTAL_ONLY=playgama` for the Bridge zip).
+
+## Status (2026-09-18)
+
+- **Playgama reviewer feedback addressed (round 5) — shared `src/`, so this build is rebuilt too.** The three items were reported against the Playgama zip, but `Platform.js` / `SaveManager.js` / `main.js` are the same files both bundles ship, so the fixes are in here as well. Artifact: `cert/out/cut-the-fuse-playables.zip`, 9.85 MiB (10,325,669 bytes), sha256 `2218e07997df4512…`. Verified 15/15 against the staged zip (`PORTAL_BASE=<stage> PORTAL_ONLY=playables node tools/smoke/verify-portal.mjs`).
+  1. **Interstitial never reached the platform.** The Bridge's ad module only shows an interstitial once `game_ready` has been sent and `initialInterstitialDelay` has elapsed since it — `show()` returns `failed` *before* calling the platform, which is literally "did not intercept an interstitial ad call". `game_ready` is now sent exactly once, queued behind Bridge init (`Platform._sendGameReady`); it was previously gated on a synchronous `bridge.platform?.sendMessage` read and re-sent per asset batch (the SDK rejects duplicates). Playables is unaffected — `ytgame.ads` has no such precondition — but the dedupe removes the duplicate-signal noise.
+  2. **`Before using the SDK you must initialize it`.** The Bridge exposes `platform`/`storage`/`advertisement` as getters gated on `initialize()`; reading one early logs that message. No Bridge module is touched before the init promise settles now. Playgama-only, but it lives in shared `Platform.js`.
+  3. **Progress not restored.** `_save()` no longer silently drops a write on a portal build whose backend isn't detectable yet — it re-detects and holds the snapshot for `init()` to flush. The Playables `ytgame.game.saveData` path is unchanged.
+  - Also in shared code: the Playgama interstitial placement is now the declared `level_completed`, and `gameplay_started` / `gameplay_stopped` / `level_completed` are reported to the portal. Both are gated on `IN_PLAYGAMA`, so nothing new runs on Playables.
+  - `tools/smoke/verify-portal.mjs` was hardened: its Playgama mock is driven by the **real** `playgama/playgama-bridge-config.json`, gates its modules on init exactly like the SDK, and enforces the `game_ready` + initial-delay preconditions. The previous mock exposed `platform` unconditionally and had no delay gate, which is why a build that failed on the portal passed here. It also gained `PORTAL_ONLY=playgama|playables` and `PORTAL_BASE` so a staged zip can be validated directly.
+
 ## Status (2026-09-11)
 
 - **SUBMITTED to MC Play 2026-09-11** — round 4 zip carrying **both** rotation and cold-boot fixes, on top of the ads + console-pause round. Artifact: `cert/out/cut-the-fuse-playables.zip`, 9.84 MiB (10,323,172 bytes), sha256 `dde3655483ee40ea…`. Source: `main` @ `5d783b3` (rotation fix `e2df22f`). Awaiting moderator review.

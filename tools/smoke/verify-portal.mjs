@@ -7,8 +7,14 @@
 //   Playables: firstFrameReady before gameReady, onPause/onResume registered,
 //              saveData/loadData used for persistence.
 import { chromium } from "playwright";
+import { readFileSync } from "node:fs";
 
 const BASE = process.env.PORTAL_BASE || "http://localhost:8080";
+// Section filter: `PORTAL_ONLY=playgama` checks just the Bridge build (the right
+// mode for validating a staged playgama/out zip, which ships no Playables SDK).
+const ONLY = (process.env.PORTAL_ONLY || "").toLowerCase();
+const wantPg = ONLY === "" || ONLY === "playgama";
+const wantPb = ONLY === "" || ONLY === "playables";
 const browser = await chromium.launch();
 const results = [];
 const ok = (name, cond, extra = "") => {
@@ -75,48 +81,142 @@ async function winCurrentLevel(page) {
 // ---- Playgama Bridge -------------------------------------------------------
 
 console.log("\n[verify] Playgama Bridge compliance (mock v2 SDK)");
-const pgInit = () => {
+// Drive the mock from the REAL shipped config: the Bridge's ad module refuses
+// to show an interstitial until `initialInterstitialDelay` seconds after
+// game_ready, failing BEFORE it reaches the platform (which is exactly how a
+// 45s delay made moderation report "no interstitial ad call"). Reading the
+// config here means a regression to a long delay fails this suite.
+const pgConfig = JSON.parse(
+    readFileSync(new URL("../../playgama/playgama-bridge-config.json", import.meta.url), "utf8"),
+);
+ok("interstitial placement declared as level_completed", pgConfig?.advertisement?.interstitial?.placements?.some((p) => p.id === "level_completed"), JSON.stringify(pgConfig?.advertisement?.interstitial?.placements));
+ok("initialInterstitialDelay does not suppress the first level-clear ad",
+    Number(pgConfig?.advertisement?.initialInterstitialDelay ?? 60) === 0,
+    `initialInterstitialDelay=${pgConfig?.advertisement?.initialInterstitialDelay}`);
+
+const pgInit = (cfg) => {
     window.__CUT_THE_FUSE_PLAYGAMA__ = true;
-    window.__mock = { order: [], messages: [], subs: {}, adCalls: [], storageReads: 0, storageWrites: 0 };
+    window.__mock = {
+        order: [], messages: [], subs: {}, adCalls: [],
+        storageReads: 0, storageWrites: 0,
+        earlyAccess: [], // bridge.<module> read before initialize() resolved
+        adBlocked: [],   // interstitials the SDK refused before reaching the platform
+    };
     const store = {};
-    // Real Bridge v2 keeps `bridge.storage` undefined until initialize() resolves;
-    // the storage module is only registered mid-init. Mock that faithfully.
+
+    // ---- Faithful reproduction of Bridge v2.2.0 semantics -------------------
+    // Every module is a GETTER gated on init: reading platform/storage/
+    // advertisement before initialize() resolves makes the real SDK log
+    // "Before using the SDK you must initialize it" and hand back undefined.
+    // Modelling that is what catches the init-race class of bug — the old mock
+    // exposed `platform` unconditionally, so a pre-init read looked fine here
+    // while failing on the portal.
     let inited = false;
-    let storage = undefined;
+    let storage;
+    const guard = (name, mod) => {
+        if (!inited) {
+            window.__mock.earlyAccess.push(name);
+            return undefined;
+        }
+        return mod;
+    };
+
+    // The real ad module only reaches the platform when game_ready has been
+    // sent (it timestamps PLATFORM_MESSAGE_SENT and bails out of show() until
+    // `initialInterstitialDelay` has elapsed — DEFAULT 60s, ours was 45s).
+    // Without game_ready, #X stays null and show() fails immediately: the
+    // platform sees no interstitial call at all.
+    let gameReadyAt = null;
+    const INITIAL_DELAY_S = Number(cfg?.advertisement?.initialInterstitialDelay ?? 60);
+
     window.bridge = {
+        version: "2.2.0",
+        PLATFORM_MESSAGE: {
+            GAME_READY: "game_ready",
+            GAMEPLAY_STARTED: "gameplay_started",
+            GAMEPLAY_STOPPED: "gameplay_stopped",
+            LEVEL_STARTED: "level_started",
+            LEVEL_COMPLETED: "level_completed",
+        },
+        EVENT_NAME: {
+            PAUSE_STATE_CHANGED: "pause_state_changed",
+            AUDIO_STATE_CHANGED: "audio_state_changed",
+            INTERSTITIAL_STATE_CHANGED: "interstitial_state_changed",
+            PLATFORM_MESSAGE_SENT: "platform_message_sent",
+        },
         initialize: () => new Promise((res) => setTimeout(() => {
-            window.__mock.order.push("init-resolve");
+            // Register the modules at the END of init, exactly like the real SDK.
             storage = {
-                get: async (keys) => { window.__mock.order.push("storage-get"); window.__mock.storageReads++; return keys.map((k) => store[k] ?? null); },
-                set: async (keys, vals) => { window.__mock.order.push("storage-set"); window.__mock.storageWrites++; keys.forEach((k, i) => { store[k] = vals[i]; }); },
+                get: async (keys) => {
+                    window.__mock.order.push("storage-get");
+                    window.__mock.storageReads++;
+                    return keys.map((k) => store[k] ?? null);
+                },
+                set: async (keys, vals) => {
+                    window.__mock.order.push("storage-set");
+                    window.__mock.storageWrites++;
+                    keys.forEach((k, i) => { store[k] = vals[i]; });
+                },
             };
             inited = true;
+            window.__mock.order.push("init-resolve");
             res();
         }, 30)),
-        get storage() { return inited ? storage : undefined; },
-        EVENT_NAME: { PAUSE_STATE_CHANGED: "pause_state_changed", AUDIO_STATE_CHANGED: "audio_state_changed" },
-        platform: {
-            language: "en",
-            isAudioEnabled: true,
-            sendMessage: (m) => { window.__mock.messages.push(m); window.__mock.order.push("message:" + m); return Promise.resolve(); },
-            on: (evt, cb) => { window.__mock.subs[evt] = cb; return () => {}; },
+        get isInitialized() { return inited; },
+        get storage() { return guard("storage", storage); },
+        get platform() {
+            return guard("platform", {
+                language: "en",
+                isAudioEnabled: true,
+                sendMessage: (m) => {
+                    window.__mock.messages.push(m);
+                    window.__mock.order.push("message:" + m);
+                    // The ad module arms interstitials off this event.
+                    if (m === "game_ready") {
+                        if (gameReadyAt !== null) return Promise.reject(new Error("game_ready already sent"));
+                        gameReadyAt = performance.now();
+                    }
+                    return Promise.resolve();
+                },
+                on: (evt, cb) => { window.__mock.subs[evt] = cb; return () => {}; },
+            });
         },
-        advertisement: {
-            showRewarded: () => { window.__mock.order.push("rewarded"); window.__mock.adCalls.push("rewarded"); return new Promise((res) => setTimeout(res, 5)); },
-            showInterstitial: () => { window.__mock.order.push("interstitial"); window.__mock.adCalls.push("interstitial"); return Promise.resolve(); },
-            on: () => () => {},
+        get advertisement() {
+            return guard("advertisement", {
+                showInterstitial: (placement = null) => {
+                    const p = placement || "level_completed";
+                    // Preconditions, in the real module's order.
+                    if (gameReadyAt === null) {
+                        window.__mock.adBlocked.push(`no-game-ready:${p}`);
+                        return Promise.resolve();
+                    }
+                    if (INITIAL_DELAY_S > 0 && (performance.now() - gameReadyAt) / 1000 < INITIAL_DELAY_S) {
+                        window.__mock.adBlocked.push(`initial-delay:${p}`);
+                        return Promise.resolve();
+                    }
+                    window.__mock.order.push("interstitial");
+                    window.__mock.adCalls.push(`interstitial:${p}`);
+                    return Promise.resolve();
+                },
+                showRewarded: (placement = null) => {
+                    window.__mock.order.push("rewarded");
+                    window.__mock.adCalls.push(`rewarded:${placement || "continue"}`);
+                    return Promise.resolve();
+                },
+                on: () => () => {},
+            });
         },
     };
 };
 
-{
+if (wantPg) {
     const page = await browser.newPage({ viewport: { width: 480, height: 800 } });
     page.on("pageerror", (e) => console.error("  [pageerror]", e.message));
     // The cert zip references the YouTube game_api script; stub it whenever the
     // suite runs against a flagged stage build (the host wrapper provides it).
     await page.route("https://www.youtube.com/game_api/v1", (route) =>
         route.fulfill({ status: 200, contentType: "text/javascript", body: "" }));
-    await page.addInitScript(pgInit);
+    await page.addInitScript(pgInit, pgConfig);
     await page.goto(BASE);
     await page.waitForFunction(
         () => window.__CTF__?.levels?.length === 120 && window.__mock?.order?.includes("init-resolve") &&
@@ -129,8 +229,14 @@ const pgInit = () => {
         hasPauseSub: typeof window.__mock.subs["pause_state_changed"] === "function",
         hasAudioSub: typeof window.__mock.subs["audio_state_changed"] === "function",
         storageReads: window.__mock.storageReads,
+        earlyAccess: window.__mock.earlyAccess.slice(),
     }));
     ok("bridge.initialize resolved before storage.get", mock.order.indexOf("storage-get") > mock.order.indexOf("init-resolve") && mock.order.indexOf("init-resolve") !== -1, `order=${mock.order.join(" → ")}`);
+    // The reviewer's console error: any bridge.<module> read before init logs
+    // "Before using the SDK you must initialize it" and returns undefined.
+    ok("no SDK module touched before initialize() resolved",
+        mock.earlyAccess.length === 0,
+        mock.earlyAccess.length ? `pre-init reads of bridge: ${mock.earlyAccess.join(", ")}` : "");
     ok("game_ready sent after init", mock.order.indexOf("message:game_ready") > mock.order.indexOf("init-resolve") && mock.messages.includes("game_ready"), `messages=${mock.messages.join(",")}`);
     ok("pause_state_changed subscribed", mock.hasPauseSub);
     ok("audio_state_changed subscribed", mock.hasAudioSub);
@@ -163,9 +269,20 @@ const pgInit = () => {
     ok("host resume signal unfreezes the game", true);
 
     await winCurrentLevel(page);
-    await page.waitForFunction(() => window.__mock?.adCalls?.includes("interstitial"), null, { timeout: 8000 });
+    await page.waitForFunction(() => window.__mock?.adCalls?.some((c) => c.startsWith("interstitial")), null, { timeout: 8000 });
     const after = await page.evaluate(() => window.__mock);
-    ok("interstitial shown at level clear", after.adCalls.includes("interstitial"), `ads=${after.adCalls.join(",")}`);
+    ok("interstitial intercepted by the platform at level clear",
+        after.adCalls.some((c) => c.startsWith("interstitial")),
+        `ads=${after.adCalls.join(",")} blocked=${(after.adBlocked || []).join(",")}`);
+    ok("interstitial uses the declared placement",
+        after.adCalls.includes("interstitial:level_completed"),
+        `ads=${after.adCalls.join(",")} (config declares "level_completed")`);
+    ok("gameplay messages mirror play/pause",
+        after.messages.includes("gameplay_started") && after.messages.includes("gameplay_stopped"),
+        `messages=${after.messages.join(",")}`);
+    ok("level_completed reported to the portal",
+        after.messages.includes("level_completed"),
+        `messages=${after.messages.join(",")}`);
     ok("progress persisted via bridge.storage.set", after.storageWrites >= 1, `writes=${after.storageWrites}`);
     await page.close();
 }
@@ -202,7 +319,7 @@ const pbInit = () => {
     };
 };
 
-{
+if (wantPb) {
     const page = await browser.newPage({ viewport: { width: 480, height: 800 } });
     page.on("pageerror", (e) => console.error("  [pageerror]", e.message));
     // Stop the real game_api script (the mock stands in for it on the cert build).
@@ -303,7 +420,7 @@ const pbInit = () => {
 // Rewarded-hint economy (MediaCube feature request): fresh save starts with 3
 // free hint credits; an empty bank opens the rewarded prompt; watching grants
 // +3 (one spent immediately on the reveal) and the new balance persists.
-{
+if (wantPb) {
     const page = await browser.newPage({ viewport: { width: 480, height: 800 } });
     page.on("pageerror", (e) => console.error("  [pageerror]", e.message));
     await page.route("https://www.youtube.com/game_api/v1", (route) =>
