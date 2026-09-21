@@ -6,10 +6,12 @@
 
 | Check | Expect |
 |-------|--------|
+| Loading | A "CUT THE FUSE" loading screen shows first, then fades to the hub |
 | Pause (visible iframe) | Game freezes; resumes on host resume |
 | Pause (hidden tab) | Game freezes + saves |
 | Mute | Button icon matches muted state; host veto respected |
 | Audio | Baked files play; no echo stacking on rapid snips |
+| Audio | The fuse hiss STOPS when leaving a level for the hub (no lingering buzz) |
 | Interstitial | Appears at level clear, not mid-game |
 | Rewarded | Cosmetic only; grants only on success |
 | Auth | Answer **No** |
@@ -18,13 +20,33 @@
 
 4. Submit only after the walk — fix before Update/Submit, not after rejection.
 
-**Current build: 2026-09-18** — `playgama/out/cut-the-fuse-playgama.zip`, 11.31 MiB
-(11,863,023 bytes), sha256 `4c2b009625dd0aa8…`, from `main` @ _(this commit)_.
-Carries the round-5 fixes (SDK init race + interstitial never reaching the
-platform + portal message set). Walk the QA table above before uploading.
+**Current build: 2026-09-21** — `playgama/out/cut-the-fuse-playgama.zip`, 11.32 MiB
+(11,865,646 bytes), sha256 `25ca3f0e6c44a207…`. Carries the round-6 fixes (real
+loading screen + firstFrameReady ordering, fuse hiss stops on level exit) on top
+of round 5. Walk the QA table above before uploading.
 
 ## Review rounds
 
+- **2026-09-21 (round 6, pending):** both MediaCube fixes for the Playables build
+  live in shared `src/`, so this zip carries them too.
+  1. **firstFrameReady (CTF_01).** It was signalled off the game loop's first
+     *painted* frame, which needs `requestAnimationFrame` — and the SDK test
+     suite runs the game in an off-screen iframe where rAF never fires, so the
+     signal arrived *after* gameReady (or not at all). There is now a real
+     loading screen (`#loading-overlay`, static HTML+CSS, painted before any JS)
+     and `boot()` signals it as its first statement with that splash on screen,
+     exactly as the docs ask ("no need to finish loading the game").
+     `signalGameReady()` retries firstFrameReady first, so the order can't invert.
+  2. **Fuse hiss kept playing after Menu (CTF_02).** The `wick_crackle` loop was
+     started/stopped from `_update()`, which stops running once the game is
+     paused — so the "Menu" button orphaned the loop and it played forever.
+     `setPaused(true)` now stops gameplay loops (the real fix is shared;
+     `resetLevel()` also clears them so a retry can't stack a second hiss).
+  Regression tests: `tools/smoke/verify-firstframe.mjs` (reproduces the inverted
+  `gameReady → firstFrameReady` order without rAF) and
+  `tools/smoke/verify-hiss-exit.mjs` (fails with `loops=[wick_crackle]` on the
+  old code). Both pass on the staged zips. Zip rebuilt 2026-09-21;
+  verified 18/18 (`PORTAL_ONLY=playgama`).
 - **2026-09-18 (round 5, pending):** reviewer flagged three things on the
   2026-09-07 zip — "The interstitial ad was not triggered / the platform did not
   intercept an interstitial ad call", the `Before using the SDK you must

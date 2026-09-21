@@ -46,7 +46,7 @@ function makeStubs() {
         computeFitCamera: (level) => computeFitCamera(level, { width: 1280, height: 720 }),
         draw() {},
     };
-    const audio = { play() {}, startLoop() {}, stopLoop() {} };
+    const audio = { play() {}, startLoop() {}, stopLoop() {}, stopAllLoops() {} };
     const analytics = { track() {} };
     const platform = { gameplayStart() {}, gameplayStop() {} };
     return { renderer, audio, analytics, platform };
@@ -851,6 +851,7 @@ check(swept === levels.length, `winnability sweep: all ${levels.length} levels w
         play: (id, o = {}) => played.push({ id, rate: o.rate }),
         startLoop() {},
         stopLoop() {},
+        stopAllLoops() {},
     };
     const g = new GameLoop({ canvas: null, ...makeStubs(), audio: recAudio });
     g.loadLevel(buildLevel(cfg, { width: 1280, height: 720 }), 0);

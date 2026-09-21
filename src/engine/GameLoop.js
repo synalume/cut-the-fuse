@@ -94,6 +94,12 @@ export class GameLoop {
     resetLevel() {
         this.gameState = STATE.PLAYING;
         this.frameCount = 0;
+        // Every level (re)start begins from silence: stop any gameplay loop still
+        // running from the previous attempt. _update() owns the restart, so a
+        // level that ends up with burning wicks gets its hiss back on the next
+        // tick. Without this, abandoning a burning level for another one could
+        // stack a second hiss, and a retry inherited the old loop.
+        this.audio?.stopAllLoops?.();
         this.cuts = [];
         this.cutFlashes = [];
         this.particles = [];
@@ -808,6 +814,16 @@ export class GameLoop {
     setPaused(paused) {
         if (paused && this.gameState === STATE.PLAYING) {
             this.gameState = STATE.PAUSED;
+            // Gameplay-only loops must not outlive the gameplay state. The
+            // burning-fuse hiss is started/stopped from _update(), which stops
+            // running the moment we pause — so without this the hiss played on
+            // forever over the main menu (MediaCube CTF_02: "the hissing sound
+            // of the fuse fails to stop and continues to play indefinitely").
+            // _update() restarts it on resume if anything is still burning.
+            // (Host/ad pauses also suspend the audio graph, but the in-game
+            // "Menu" button only routes through here.) `?.()` because unit
+            // stubs inject a partial audio mock.
+            this.audio?.stopAllLoops?.();
         } else if (!paused && this.gameState === STATE.PAUSED) {
             this.gameState = STATE.PLAYING;
             this._lastT = performance.now();

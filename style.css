@@ -36,6 +36,73 @@ body, html {
 #game-container { position: relative; width: 100%; height: 100%; }
 canvas { display: block; position: absolute; z-index: 10; }
 
+/* ---- Loading / splash screen -------------------------------------------
+   Purely static HTML+CSS so it is painted on the browser's FIRST frame, with
+   no JS, no font download and no image fetch on the critical path (the mark is
+   a plain <img> that degrades to empty if it hasn't arrived yet — the title,
+   bar and hint below it are always visible). YouTube Playables requires
+   firstFrameReady() to be called while this is up. */
+#loading-overlay {
+    /* Above the modals (100) so the splash cross-fades over the menu card that
+       openMenu() has already put up, and below .host-shield (200) so a host
+       pause during loading still blocks input on top of everything. */
+    position: fixed; inset: 0; z-index: 150;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center; gap: 18px;
+    background-color: #F2E8D0;
+    background-image: url('assets/ui/ui-bg-paper.png');
+    background-repeat: repeat;
+    background-size: 1024px 1024px;
+    transition: opacity 260ms ease;
+}
+/* Fade-out state, then main.js removes it. */
+#loading-overlay.is-hidden { opacity: 0; pointer-events: none; }
+#loading-mark {
+    width: 84px; height: 84px; object-fit: contain;
+    animation: splash-spin 2.4s ease-in-out infinite;
+}
+#loading-title {
+    font-family: 'Luckiest Guy', 'Baloo 2', 'Courier New', monospace;
+    font-size: clamp(28px, 9vw, 64px);
+    letter-spacing: 2px;
+    color: #3A2A1A;
+    text-shadow: 2px 2px 0 rgba(255, 255, 255, 0.6);
+    text-align: center; padding: 0 16px;
+}
+/* Burning-fuse progress bar: a warm fill crawling across a soot track. */
+#loading-bar {
+    width: min(240px, 60vw); height: 10px;
+    background: rgba(58, 42, 26, 0.18);
+    border: 2px solid #3A2A1A; border-radius: 6px;
+    overflow: hidden;
+}
+#loading-bar span {
+    display: block; width: 40%; height: 100%;
+    background: linear-gradient(90deg, #C8452F, #E8892F, #F2C14E);
+    animation: splash-burn 1.15s ease-in-out infinite;
+}
+#loading-hint {
+    font-size: 13px; letter-spacing: 3px;
+    color: rgba(58, 42, 26, 0.72);
+    animation: splash-pulse 1.6s ease-in-out infinite;
+}
+@keyframes splash-spin {
+    0%, 100% { transform: rotate(-8deg); }
+    50%      { transform: rotate(8deg); }
+}
+@keyframes splash-burn {
+    0%   { transform: translateX(-100%); }
+    100% { transform: translateX(250%); }
+}
+@keyframes splash-pulse {
+    0%, 100% { opacity: 0.5; }
+    50%      { opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+    #loading-mark, #loading-bar span, #loading-hint { animation: none; }
+    #loading-bar span { width: 100%; }
+}
+
 /* Vintage film grain + scratches over the whole game, under the UI chrome.
    soft-light keeps the texture without darkening the paper. */
 #film-overlay {

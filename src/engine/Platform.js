@@ -321,13 +321,21 @@ export class Platform {
         }
     }
 
-    /** YouTube Playables lifecycle, phase 1: the first frame has rendered.
-     *  Signaled from the first rAF paint in main.js, NOT after assets finish.
-     *  Idempotent — later calls (e.g. loadingFinished backstop) are no-ops.
-     *  Real SDK shape: ytgame.game.firstFrameReady() (NOT top-level — Big
-     *  Fluff passes the cert suite with this namespace). If the game
-     *  namespace isn't present yet the flag stays clear so a later path
-     *  (loadingFinished) retries. */
+    /** YouTube Playables lifecycle, phase 1: the LOADING SCREEN is up.
+     *
+     *  Per the Playables docs and MediaCube's CTF_01, this must be called while
+     *  a splash/loading screen is being rendered — NOT after the game finishes
+     *  loading. `#loading-overlay` is static HTML+CSS and is already painted when
+     *  main.js calls this at the top of boot(), so it is honest about what is on
+     *  screen and needs no canvas, no rAF and no awaited asset.
+     *
+     *  It must never be derived from a rendered canvas frame: the SDK test suite
+     *  runs the game in an off-screen iframe where requestAnimationFrame never
+     *  fires, so a paint-gated signal could never arrive while gameReady still
+     *  would — which is exactly the reported failure.
+     *
+     *  Idempotent, and retries (rather than latching) if the SDK namespace isn't
+     *  up yet, so the loadingFinished backstop can still land it. */
     signalFirstFrameReady() {
         if (this._ffrSent) return;
         const fn = IN_PLAYABLES && typeof ytgame !== "undefined" ? ytgame.game?.firstFrameReady : null;
@@ -339,9 +347,16 @@ export class Platform {
     /** YouTube Playables lifecycle, phase 2: the game is interactable. The
      *  main menu renders and accepts input once openMenu() runs (level art
      *  loads lazily on PLAY). Idempotent. Real SDK shape:
-     *  ytgame.game.gameReady(). */
+     *  ytgame.game.gameReady().
+     *
+     *  Retries firstFrameReady first: the cert suite fails the firstFrameReady
+     *  test outright if gameReady arrives before it, and the phase-1 call can
+     *  have been skipped if the SDK namespace wasn't up yet (it retries rather
+     *  than latching). Enforcing the order here means no call site can get it
+     *  wrong. */
     signalGameReady() {
         if (this._grSent) return;
+        this.signalFirstFrameReady();
         const fn = IN_PLAYABLES && typeof ytgame !== "undefined" ? ytgame.game?.gameReady : null;
         if (typeof fn !== "function") return; // SDK / game namespace not ready — retry later
         this._grSent = true;

@@ -70,6 +70,21 @@
 </head>
 <body>
 
+<!-- Loading / splash screen. Rendered from the static HTML+CSS, so it is on
+     screen from the browser's first paint — long before main.js, levels.json or
+     any art loads. This is what YouTube Playables' firstFrameReady() describes:
+     the API must fire while a loading screen is visibly up, NOT once the game
+     has finished loading. Signalling it from a rendered canvas frame instead
+     breaks in an off-screen/hidden iframe, where requestAnimationFrame never
+     runs and the signal could never arrive (MediaCube CTF_01). Removed by
+     showSplash(false) once the menu is interactable (gameReady). -->
+<div id="loading-overlay">
+    <img id="loading-mark" src="assets/ui/ui-icon-scissors.png" alt="" aria-hidden="true">
+    <div id="loading-title">CUT THE FUSE</div>
+    <div id="loading-bar"><span></span></div>
+    <div id="loading-hint">LIGHTING THE SPARKS…</div>
+</div>
+
 <div id="game-container">
     <canvas id="game-canvas"></canvas>
     <!-- Vintage film grain + scratches layered over the game, under the UI -->

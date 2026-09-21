@@ -854,12 +854,46 @@ function buyLockedItem(item, price) {
 
 // ---- boot -----------------------------------------------------------------------------
 
+/** Show / hide the loading splash (#loading-overlay, static HTML+CSS — see
+ *  index.html). It must come down as soon as the menu is usable, or it would
+ *  sit over a playable game. Hiding fades via CSS, then removes the node on
+ *  transitionend, with a timer as the floor: if the transition never runs
+ *  (prefers-reduced-motion, or a frame the browser never painted because the
+ *  iframe is off-screen), the removal still happens. Idempotent. */
+function showSplash(on) {
+    const el = $("loading-overlay");
+    if (!el) return;
+    if (on) {
+        el.classList.remove("is-hidden");
+        el.style.display = "flex";
+        return;
+    }
+    el.classList.add("is-hidden");
+    let gone = false;
+    const remove = () => {
+        if (gone) return;
+        gone = true;
+        el.style.display = "none";
+    };
+    el.addEventListener("transitionend", remove, { once: true });
+    setTimeout(remove, 400); // > the 260ms CSS fade; also the reduced-motion path
+}
+
 async function boot() {
-    // Start rendering IMMEDIATELY — firstFrameReady must signal on the very
-    // first painted frame, before levels.json / save / art finish loading.
-    // draw() handles the no-level home state (menu spark over the paper bg),
-    // so this is safe from the first rAF; the onFirstFrame hook below fires from
-    // the first frame that actually painted at a real size.
+    // firstFrameReady describes the LOADING SCREEN, per the Playables docs and
+    // MediaCube's CTF_01: "must be called either the game is rendering splash
+    // screen or loading screen, no need to finish loading the game."
+    //
+    // #loading-overlay is static HTML+CSS, so it is already painted at this
+    // point — signal immediately, from here. This must NOT be derived from a
+    // rendered canvas frame: the SDK test suite loads the game in an off-screen
+    // iframe, where requestAnimationFrame never fires, so a paint-gated signal
+    // could never arrive (and gameReady still would, which is exactly the
+    // reported failure). No await, no canvas, no rAF.
+    if (platform.isPlayables) platform.signalFirstFrameReady();
+
+    // Start rendering immediately — the canvas warm-up no longer gates any
+    // lifecycle signal, but drawing early keeps the first level snappy.
     game.start();
 
     // One entry point for every viewport change. Resizing the canvas alone is
@@ -883,11 +917,7 @@ async function boot() {
     renderer.root = $("game-container");
     renderer.resize(true);
 
-    // firstFrameReady describes the first frame that actually painted — a
-    // zero-size WebView frame must not be announced (MediaCube: "the game
-    // started while the frame had zero size"). Fired from the loop, so it still
-    // lands long before gameReady.
-    if (platform.isPlayables) game.onFirstFrame = () => platform.signalFirstFrameReady();
+    // (firstFrameReady was already signalled at the top of boot, off the splash.)
 
     // Registered BEFORE the awaits below on purpose: YouTube boots a playable in
     // a zero-size WebView and grows it during loading, which is exactly when
@@ -915,6 +945,9 @@ async function boot() {
         levels = await res.json();
     } catch (e) {
         console.error("Failed to load levels.json", e);
+        // Never leave the splash stranded over a dead game — it would read as a
+        // permanently-stuck loading screen. Drop it so the failure is visible.
+        showSplash(false);
         return;
     }
 
@@ -943,6 +976,12 @@ async function boot() {
     // gameReady follows firstFrameReady. Idempotent; the onAssetsReady
     // loadingFinished() backstop below can never fire it out of order or twice.
     if (platform.isPlayables) platform.signalGameReady();
+    // Drop the splash now that something real is behind it. Runs on EVERY build
+    // (the splash covers the canvas on plain/portal builds too, where no
+    // platform signal would otherwise ever remove it). Non-blocking: the fade is
+    // CSS and removal is floored by a timer, so a reduced-motion or backgrounded
+    // frame can never leave the splash stranded over the game.
+    showSplash(false);
 
     // Load baked audio cues from assets/audio/ (silently skips un-baked cues).
     audio.loadAll();
